@@ -1,0 +1,211 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Background and foreground */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    /* Card colors */
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    /* Popover colors */
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    /* Primary colors - using blue scale */
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Secondary colors - using zinc scale */
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    /* Muted colors */
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    /* Accent colors */
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    /* Destructive colors - using red scale */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Border and input */
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar colors - using zinc scale */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 240 5.9% 90%;
+    --sidebar-ring: 221.2 83.2% 53.3%;
+
+    /* Additional color palette variables for consistent theming */
+    --blue-50: 214 100% 97%;
+    --blue-100: 214 95% 93%;
+    --blue-200: 213 97% 87%;
+    --blue-300: 212 96% 78%;
+    --blue-400: 213 94% 68%;
+    --blue-500: 217 91% 60%;
+    --blue-600: 221 83% 53%;
+    --blue-700: 224 76% 48%;
+    --blue-800: 226 71% 40%;
+    --blue-900: 224 64% 33%;
+
+    --green-50: 138 76% 97%;
+    --green-100: 141 84% 93%;
+    --green-200: 141 79% 85%;
+    --green-300: 142 77% 73%;
+    --green-400: 142 69% 58%;
+    --green-500: 142 71% 45%;
+    --green-600: 142 76% 36%;
+    --green-700: 142 72% 29%;
+    --green-800: 143 64% 24%;
+    --green-900: 144 61% 20%;
+
+    --red-50: 0 86% 97%;
+    --red-100: 0 93% 94%;
+    --red-200: 0 96% 89%;
+    --red-300: 0 94% 82%;
+    --red-400: 0 91% 71%;
+    --red-500: 0 84% 60%;
+    --red-600: 0 72% 51%;
+    --red-700: 0 74% 42%;
+    --red-800: 0 70% 35%;
+    --red-900: 0 63% 31%;
+
+    --yellow-50: 55 92% 95%;
+    --yellow-100: 55 97% 88%;
+    --yellow-200: 53 98% 77%;
+    --yellow-300: 50 98% 64%;
+    --yellow-400: 48 96% 53%;
+    --yellow-500: 45 93% 47%;
+    --yellow-600: 41 96% 40%;
+    --yellow-700: 35 91% 33%;
+    --yellow-800: 32 81% 29%;
+    --yellow-900: 28 73% 26%;
+
+    --cyan-50: 183 100% 96%;
+    --cyan-100: 185 96% 90%;
+    --cyan-200: 186 94% 82%;
+    --cyan-300: 187 92% 69%;
+    --cyan-400: 188 86% 53%;
+    --cyan-500: 189 94% 43%;
+    --cyan-600: 192 91% 36%;
+    --cyan-700: 193 82% 31%;
+    --cyan-800: 194 70% 27%;
+    --cyan-900: 196 64% 24%;
+
+    --zinc-50: 240 5% 96%;
+    --zinc-100: 240 5% 90%;
+    --zinc-200: 240 5% 84%;
+    --zinc-300: 240 5% 65%;
+    --zinc-400: 240 4% 46%;
+    --zinc-500: 240 4% 37%;
+    --zinc-600: 240 5% 26%;
+    --zinc-700: 240 5% 21%;
+    --zinc-800: 240 4% 16%;
+    --zinc-900: 240 6% 10%;
+  }
+
+  .dark {
+    /* Dark theme using the color palette */
+    --background: 240 6% 10%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 240 6% 10%;
+
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+
+    --accent: 240 4% 16%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 217 91% 60%;
+
+    --sidebar-background: 240 6% 10%;
+    --sidebar-foreground: 240 5% 84%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 240 5% 84%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Utility classes for the color palette */
+@layer utilities {
+  .text-blue-500 {
+    color: hsl(var(--blue-500));
+  }
+  .bg-blue-500 {
+    background-color: hsl(var(--blue-500));
+  }
+  .border-blue-500 {
+    border-color: hsl(var(--blue-500));
+  }
+  
+  .text-green-500 {
+    color: hsl(var(--green-500));
+  }
+  .bg-green-500 {
+    background-color: hsl(var(--green-500));
+  }
+  .border-green-500 {
+    border-color: hsl(var(--green-500));
+  }
+
+  .text-red-500 {
+    color: hsl(var(--red-500));
+  }
+  .bg-red-500 {
+    background-color: hsl(var(--red-500));
+  }
+  .border-red-500 {
+    border-color: hsl(var(--red-500));
+  }
+}

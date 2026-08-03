@@ -1,0 +1,519 @@
+# Zwayam Release Hub — UI/UX Reference Specification
+
+## 1. Product Objective
+
+Build a centralized Release Hub that allows Zwayam to:
+
+1. Manage upcoming and released features.
+2. Package features and minor improvements into monthly releases.
+3. Ensure documentation, release notes, videos, configurations, and announcements are ready before release.
+4. Control which customers receive a feature and its default activation state.
+5. Give customers a single location to discover releases, understand features, and manage eligible feature settings.
+6. Improve feature visibility through home-page banners and contextual in-product announcements.
+
+The product will have two distinct experiences:
+
+* **Internal Release Management Console:** Used by Zwayam teams.
+* **Customer Release Hub:** Used by customer administrators and end users.
+
+---
+
+## 2. Important Requirements to Add
+
+### 2.1 Separate Feature Availability from Activation
+
+The current three classifications should be represented through two separate settings:
+
+| Setting          | Options                                      |
+| ---------------- | -------------------------------------------- |
+| Default state    | Enabled / Disabled                           |
+| Customer control | Customer can change / Customer cannot change |
+
+This produces the required combinations:
+
+| Configuration | Default state | Customer control |
+| ------------- | ------------: | ---------------: |
+| Default On    |       Enabled |          Allowed |
+| Default Off   |      Disabled |          Allowed |
+| Mandatory     |       Enabled |      Not allowed |
+
+This structure is easier to extend later.
+
+### 2.2 Customer Eligibility and Rollout Scope
+
+Each feature must define who is eligible:
+
+* All customers
+* Selected customers
+* Customer segment or subscription plan
+* Beta customers
+* Specific product/module customers
+
+A customer should not see a toggle for a feature they are not eligible to use.
+
+### 2.3 Feature Lifecycle
+
+Each feature should move through controlled statuses:
+
+**Draft → Under Review → Ready for Release → Scheduled → Released → Deprecated**
+
+A feature should not be released until the required readiness checks are complete.
+
+### 2.4 Release Readiness Checklist
+
+Each feature should have a checklist covering:
+
+* Product sign-off
+* Engineering deployment readiness
+* QA sign-off
+* Feature flag or configuration mapped
+* Feature documentation uploaded
+* Release notes uploaded
+* Demo video uploaded, where applicable
+* Banner copy completed
+* Contextual pop-up content completed
+* Target customers confirmed
+* Support and Customer Success teams informed
+
+The system should clearly show missing assets and block release publication when mandatory items are incomplete.
+
+### 2.5 Roles and Permissions
+
+Recommended roles:
+
+| Role              | Permissions                                       |
+| ----------------- | ------------------------------------------------- |
+| Product Admin     | Create and edit features and releases             |
+| Release Manager   | Schedule and publish releases                     |
+| Engineering Admin | Configure technical flag and rollout readiness    |
+| Content Editor    | Upload documentation, release notes and videos    |
+| Customer Admin    | View releases and manage eligible feature toggles |
+| Customer User     | View release information only                     |
+
+Feature toggles should generally be restricted to customer administrators.
+
+### 2.6 Auditability and Rollback
+
+The platform should record:
+
+* Who created or edited a feature
+* Who changed the release date
+* Who published the release
+* Which customer enabled or disabled a feature
+* Previous and new configuration values
+* Date and time of every change
+
+Internal administrators should be able to disable or roll back a feature for selected customers in exceptional cases.
+
+### 2.7 Notification Governance
+
+Banners and pop-ups need:
+
+* Start and end dates
+* Target customer and user groups
+* Applicable page or module
+* Priority
+* Dismissibility
+* Frequency cap
+* “Show once” or “Show until acknowledged” behaviour
+* Preview before publication
+
+This prevents users from repeatedly seeing the same announcements.
+
+### 2.8 Analytics
+
+Track:
+
+* Release Hub visitors
+* Feature detail views
+* Banner impressions and clicks
+* Pop-up impressions and dismissals
+* Demo video plays
+* Documentation views
+* Feature enablement and disablement rates
+* Adoption after enablement
+* Customers who have not reviewed a mandatory change
+* Release readiness completed on time
+* Support tickets generated after release
+
+---
+
+## 3. Recommended Information Architecture
+
+### Internal Console
+
+1. Release Dashboard
+2. Features
+3. Releases
+4. Announcements
+5. Customer Rollout
+6. Audit Log
+7. Analytics
+
+### Customer Experience
+
+1. What’s New
+2. Feature Library
+3. Changelog
+4. Feature Settings
+5. Feature Details
+
+“Feature Settings” should only appear for users with customer-admin permissions.
+
+---
+
+## 4. Core Data Objects
+
+### Feature
+
+Recommended fields:
+
+* Feature name
+* Internal feature ID
+* Module
+* Feature owner
+* Feature or changelog item
+* One-line summary
+* Detailed description
+* Maximum three pop-up bullets
+* Feature documentation
+* Release notes
+* Demo video
+* Default activation state
+* Customer control allowed or not
+* Eligibility and rollout scope
+* Technical feature flag or configuration ID
+* Dependencies
+* Applicable pages or routes
+* Release date
+* Lifecycle status
+* Support contact or escalation owner
+
+### Release
+
+A release should contain:
+
+* Release name, such as “August 2026 Release”
+* Planned release date
+* Included features
+* Included changelog items
+* Release summary
+* Overall release notes
+* Readiness percentage
+* Approval status
+* Customer communication status
+* Release owner
+
+### Changelog Item
+
+A lightweight release item containing:
+
+* Title
+* Module
+* Change date
+* One-line description
+* Optional supporting document or image
+* Related feature, where applicable
+
+Changelog items should not require all the assets expected for a major feature.
+
+---
+
+## 5. Internal User Journeys
+
+### 5.1 Create a Feature
+
+1. Product manager selects **Create Feature**.
+2. Enters the feature name, module, summary, owner and description.
+3. Selects Feature or Changelog.
+4. Configures eligibility, default state and customer control.
+5. Uploads documentation, release notes and video.
+6. Adds banner and contextual pop-up content.
+7. Maps the feature to its relevant pages and technical flag.
+8. Saves as Draft or submits for review.
+
+### 5.2 Create the Monthly Release
+
+1. Release manager creates the monthly release.
+2. Selects the first Wednesday release date.
+3. Adds all approved features and changelog items.
+4. Reviews the release readiness checklist.
+5. Resolves missing assets or approvals.
+6. Previews the customer Release Hub and announcements.
+7. Schedules the release.
+8. The release is published on the configured date.
+
+### 5.3 Manage Customer Rollout
+
+1. Internal user opens a released feature.
+2. Reviews eligible customers and current activation states.
+3. Adds or removes customers from the rollout.
+4. Overrides the activation state where required.
+5. Reviews the resulting audit trail.
+
+---
+
+## 6. Customer User Journeys
+
+### 6.1 Discover a New Release
+
+1. User sees a “What’s New” banner on the home page.
+2. User selects the banner.
+3. The relevant feature detail page opens in the Release Hub.
+4. User views the summary, documentation, release notes and demo.
+5. Customer administrator enables the feature when customer control is allowed.
+
+### 6.2 Discover a Change Contextually
+
+1. User visits the page where a feature was introduced.
+2. A contextual pop-up explains the change using a title and up to three bullets.
+3. User can select:
+
+   * Learn More
+   * Watch Demo
+   * Dismiss
+4. “Learn More” opens the corresponding Release Hub page.
+5. The announcement remains accessible through a “What’s New” icon after dismissal.
+
+### 6.3 Manage Feature Settings
+
+1. Customer administrator opens Feature Settings.
+2. Features are grouped by module.
+3. Each feature shows:
+
+   * Enabled or disabled status
+   * Mandatory status
+   * Release date
+   * Short description
+4. Administrator changes an eligible toggle.
+5. A confirmation message explains the impact.
+6. The new state is saved and recorded in the audit log.
+
+---
+
+## 7. Screen-Level Reference
+
+### Screen 1: Internal Release Dashboard
+
+Show:
+
+* Next release date
+* Days remaining
+* Release readiness percentage
+* Features planned
+* Assets pending
+* Approvals pending
+* Customers targeted
+* Recently released items
+
+Primary actions:
+
+* Create Feature
+* Create Release
+* Review Readiness
+* Preview Customer Experience
+
+### Screen 2: Feature List
+
+Columns:
+
+* Feature
+* Module
+* Type
+* Owner
+* Planned release
+* Activation model
+* Rollout scope
+* Readiness
+* Status
+
+Filters:
+
+* Module
+* Owner
+* Release
+* Feature or changelog
+* Lifecycle status
+* Missing assets
+
+### Screen 3: Feature Editor
+
+Use a step-based layout:
+
+1. Basic Information
+2. Availability and Activation
+3. Documentation and Assets
+4. Announcements
+5. Technical Configuration
+6. Review and Publish
+
+A persistent right-side panel should show:
+
+* Readiness percentage
+* Missing requirements
+* Customer experience preview
+
+### Screen 4: Monthly Release Detail
+
+Show:
+
+* Release date
+* Release owner
+* Overall status
+* Readiness checklist
+* Included features
+* Included changelog items
+* Customer targeting
+* Communication preview
+* Release activity timeline
+
+### Screen 5: Customer Release Hub
+
+Header:
+
+**What’s New in Zwayam**
+
+Sections:
+
+* Featured in the latest release
+* All features
+* Recent improvements
+* Changelog
+
+Filters:
+
+* Module
+* Release month
+* Feature type
+* Enabled status
+
+Each feature card should display:
+
+* New, Improved or Mandatory badge
+* Feature title
+* One-line summary
+* Module
+* Release date
+* Enabled status
+* View Details action
+
+### Screen 6: Customer Feature Detail
+
+Display:
+
+* Feature title and status
+* One-line summary
+* Release date
+* Module
+* Detailed explanation
+* Maximum three key benefits
+* Demo video
+* Feature documentation
+* Release notes
+* Enable or disable control, when permitted
+* Related features and changelog items
+
+### Screen 7: Feature Settings
+
+Group features by module.
+
+Each row should include:
+
+* Feature name
+* Short description
+* Release date
+* Status
+* Toggle
+* Mandatory indicator
+* Learn More action
+
+Mandatory features should show:
+
+**Enabled — Required by Zwayam**
+
+No toggle should be displayed.
+
+---
+
+## 8. Announcement UX Rules
+
+### Home-Page Banner
+
+* Carousel with a maximum of three active announcements.
+* One-line copy only.
+* Each item redirects to the relevant feature.
+* Dismissible.
+* Automatically expires after the configured end date.
+* Do not show the same banner repeatedly after dismissal.
+
+### Contextual Pop-Up
+
+* Appears only on the page where the change is relevant.
+* Shows a title and no more than three bullets.
+* Should not block the user’s primary workflow.
+* Normally displayed once per user.
+* Mandatory or compliance-related changes may require acknowledgement.
+* Must include a direct link to the feature details.
+
+---
+
+## 9. Monthly Release Workflow
+
+Recommended cadence:
+
+| Timeline        | Activity                                       |
+| --------------- | ---------------------------------------------- |
+| T-15 days       | Release scope locked                           |
+| T-10 days       | Feature documentation and release assets ready |
+| T-7 days        | Product, engineering and QA sign-off           |
+| T-5 days        | Customer targeting and announcements finalized |
+| T-3 days        | Support and Customer Success enablement        |
+| First Wednesday | Features released and announcements published  |
+| T+2 days        | Adoption, errors and support impact reviewed   |
+
+The Release Dashboard should flag any release that is at risk of missing these milestones.
+
+---
+
+## 10. MVP Scope
+
+The MVP should include:
+
+* Feature and changelog creation
+* Monthly release creation
+* Asset uploads
+* Readiness checklist
+* Default On, Default Off and Mandatory configurations
+* Customer eligibility
+* Customer Release Hub
+* Customer-admin feature toggles
+* Home-page banners
+* Contextual pop-ups
+* Audit log
+* Basic views and enablement analytics
+
+Later phases can introduce:
+
+* Gradual percentage-based rollout
+* Automated release emails
+* Customer subscriptions to modules
+* Customer feedback and reactions
+* Localization
+* In-app guided walkthroughs
+* Experimentation and A/B rollout
+* Automated rollback based on error thresholds
+* Integration with engineering deployment pipelines
+
+---
+
+## 11. Key Success Metrics
+
+* Percentage of release items ready by T-7 days
+* Percentage of monthly releases launched on schedule
+* Release Hub reach among active customers
+* Banner and pop-up click-through rate
+* Feature enablement rate
+* Feature adoption after enablement
+* Reduction in “What changed?” support requests
+* Support tickets per release
+* Percentage of mandatory changes acknowledged

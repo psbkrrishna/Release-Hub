@@ -1,103 +1,111 @@
-import { ArrowRight, BriefcaseBusiness, CalendarCheck, CheckCircle2, Clock3, Users } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PERF } from '@/data/performance';
 
-const metrics = [
-  { label: 'Open positions', value: '24', helper: '6 closing this month', icon: BriefcaseBusiness, tone: 'text-blue-600 bg-blue-50' },
-  { label: 'Active candidates', value: '186', helper: '18 added this week', icon: Users, tone: 'text-purple-600 bg-purple-50' },
-  { label: 'Reviews in progress', value: '68%', helper: '42 of 62 completed', icon: CalendarCheck, tone: 'text-emerald-600 bg-emerald-50' },
-  { label: 'Tasks due', value: '7', helper: '2 need attention today', icon: Clock3, tone: 'text-amber-600 bg-amber-50' },
+const initialPriorities = [
+  { title: 'Approve 3 offer letters', sub: 'Recruiting', done: true },
+  { title: 'Review payroll variance', sub: 'Payroll', done: false },
+  { title: 'Complete manager calibration', sub: 'Performance', done: false },
+  { title: 'Publish onboarding checklist', sub: 'Employee Experience', done: false },
 ];
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [priorities, setPriorities] = useState(initialPriorities);
+
+  const toggle = (i: number) =>
+    setPriorities((list) => list.map((t, idx) => (idx === i ? { ...t, done: !t.done } : t)));
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-6 lg:px-6">
-      <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-        <div>
-          <p className="text-sm font-medium text-blue-600">Wednesday, July 22</p>
-          <h1 className="mt-1 text-2xl font-semibold text-gray-900">Good afternoon, Ananya</h1>
-          <p className="mt-1 text-sm text-gray-600">Here&apos;s what&apos;s happening across your organization.</p>
+    <>
+      <nav className="crumb"><b>Dashboard</b></nav>
+
+      <div className="page-head">
+        <div className="dash-head">
+          <div className="dash-date">Wednesday, July 22</div>
+          <h1>Good afternoon, Ananya</h1>
+          <p className="lede">Here's what's happening across your organization.</p>
         </div>
-        <Button onClick={() => navigate('/performance-reviews')} className="self-start sm:self-auto">
-          Open performance reviews
-        </Button>
+        <div className="head-actions">
+          <button className="btn btn-primary btn-lg" onClick={() => navigate('/performance-reviews')}>
+            Open performance reviews
+          </button>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(({ label, value, helper, icon: Icon, tone }) => (
-          <Card key={label} className="shadow-sm">
-            <CardContent className="flex items-start justify-between p-5">
-              <div>
-                <p className="text-sm text-gray-500">{label}</p>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
-                <p className="mt-1 text-xs text-gray-500">{helper}</p>
-              </div>
-              <div className={`rounded-lg p-2.5 ${tone}`}><Icon className="h-5 w-5" /></div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="dash-stats">
+        <div className="stat-card">
+          <div>
+            <div className="stat-label">Open positions</div>
+            <div className="stat-value tnum">24</div>
+            <div className="stat-sub">6 closing this month</div>
+          </div>
+          <div className="dstat-icon t-blue"><i className="ph ph-briefcase" /></div>
+        </div>
+        <div className="stat-card">
+          <div>
+            <div className="stat-label">Active candidates</div>
+            <div className="stat-value tnum">186</div>
+            <div className="stat-sub">18 added this week</div>
+          </div>
+          <div className="dstat-icon t-indigo"><i className="ph ph-users-three" /></div>
+        </div>
+        <div className="stat-card">
+          <div>
+            <div className="stat-label">Reviews in progress</div>
+            <div className="stat-value tnum">{PERF.completion}%</div>
+            <div className="stat-sub">{PERF.submitted} of {PERF.people} completed</div>
+          </div>
+          <div className="dstat-icon t-green"><i className="ph ph-calendar-blank" /></div>
+        </div>
+        <div className="stat-card">
+          <div>
+            <div className="stat-label">Tasks due</div>
+            <div className="stat-value tnum">7</div>
+            <div className="stat-sub">2 need attention today</div>
+          </div>
+          <div className="dstat-icon t-amber"><i className="ph ph-clock-counter-clockwise" /></div>
+        </div>
       </div>
 
-      <div className="mt-6 grid gap-5 xl:grid-cols-[1.6fr_1fr]">
-        <Card className="shadow-sm">
-          <CardHeader className="flex-row items-center justify-between space-y-0">
+      <div className="main-grid">
+        <div className="panel">
+          <div className="cycle-head">
             <div>
-              <CardTitle className="text-base">Performance review cycle</CardTitle>
-              <p className="mt-1 text-sm text-gray-500">Mid-year review · July 1–31</p>
+              <h2>Performance review cycle</h2>
+              <div className="sub">Mid-year review · July 1–31</div>
             </div>
-            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">On track</Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-2 flex justify-between text-sm">
-              <span className="font-medium text-gray-700">42 of 62 reviews complete</span>
-              <span className="text-gray-500">68%</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-gray-100">
-              <div className="h-full w-[68%] rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
-            </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              {[
-                ['Self reviews', '58 / 62'],
-                ['Manager reviews', '42 / 62'],
-                ['Calibrations', '12 / 18'],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-lg border bg-gray-50/60 p-3">
-                  <p className="text-xs text-gray-500">{label}</p>
-                  <p className="mt-1 text-sm font-semibold text-gray-900">{value}</p>
-                </div>
-              ))}
-            </div>
-            <Button variant="link" className="mt-3 h-auto p-0 text-blue-600" onClick={() => navigate('/performance-reviews')}>
-              View performance reviews <ArrowRight className="ml-1 h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
+            <span className="pill-ontrack">On track</span>
+          </div>
+          <div className="cycle-progress-row">
+            <span>{PERF.submitted} of {PERF.people} reviews complete</span>
+            <span className="pct tnum">{PERF.completion}%</span>
+          </div>
+          <div className="cycle-track"><div className="cycle-fill" style={{ width: `${PERF.completion}%` }} /></div>
+          <div className="cycle-mini-row">
+            <div className="cycle-mini"><div className="l">Self reviews</div><div className="v tnum">{PERF.self[0]} / {PERF.self[1]}</div></div>
+            <div className="cycle-mini"><div className="l">Manager reviews</div><div className="v tnum">{PERF.manager[0]} / {PERF.manager[1]}</div></div>
+            <div className="cycle-mini"><div className="l">Calibrations</div><div className="v tnum">{PERF.calib[0]} / {PERF.calib[1]}</div></div>
+          </div>
+          <a className="cycle-link" href="/performance-reviews" onClick={(e) => { e.preventDefault(); navigate('/performance-reviews'); }}>
+            View performance reviews <i className="ph ph-arrow-right" />
+          </a>
+        </div>
 
-        <Card className="shadow-sm">
-          <CardHeader><CardTitle className="text-base">Today&apos;s priorities</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              ['Approve 3 offer letters', 'Recruiting'],
-              ['Review payroll variance', 'Payroll'],
-              ['Complete manager calibration', 'Performance'],
-              ['Publish onboarding checklist', 'Employee Experience'],
-            ].map(([title, category], index) => (
-              <div key={title} className="flex items-start gap-3">
-                <CheckCircle2 className={`mt-0.5 h-4 w-4 ${index === 0 ? 'text-blue-600' : 'text-gray-300'}`} />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-800">{title}</p>
-                  <p className="text-xs text-gray-500">{category}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <div className="panel pri-panel">
+          <h2>Today's priorities</h2>
+          {priorities.map((t, i) => (
+            <button key={t.title} className={`todo-item${t.done ? ' done' : ''}`} onClick={() => toggle(i)}>
+              <span className="todo-check"><i className="ph ph-check" /></span>
+              <span className="todo-text">
+                <span className="todo-title">{t.title}</span>
+                <span className="todo-sub">{t.sub}</span>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

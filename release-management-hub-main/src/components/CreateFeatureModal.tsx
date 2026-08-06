@@ -1,374 +1,247 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useFeatureStore } from '@/components/FeatureStore';
+import { MODULES, addDays, formatDate, releaseMonthOf } from '@/data/features';
+import { FEATURE_TYPES, type Feature, type FeatureType } from '@/types/Feature';
 
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import type { Feature } from '@/types/Feature';
+/* Every field in the pane is required. The list is declared once and drives
+   both the labels and the validation, so a new field can't be added to the
+   form and silently skip the check. */
+const FIELDS = [
+  { key: 'title', label: 'Feature Title', error: 'Feature title is required.' },
+  { key: 'featureTag', label: 'Feature Tag', error: 'Feature tag is required.' },
+  { key: 'summary', label: 'Feature Summary', error: 'Feature summary is required.' },
+  { key: 'productModule', label: 'Product Module', error: 'Product module is required.' },
+  { key: 'featureType', label: 'Feature Type', error: 'Feature type is required.' },
+  { key: 'releaseNotes', label: 'Release Notes URL', error: 'Release notes URL is required.' },
+  { key: 'demoVideo', label: 'Demo Video URL', error: 'Demo video URL is required.' },
+  { key: 'prodEnablementDate', label: 'Production Enablement Date', error: 'Production enablement date is required.' },
+  { key: 'productGate', label: 'Feature Flag (Internal)', error: 'Feature flag is required.' },
+  { key: 'configurationDoc', label: 'Configuration Document URL', error: 'Configuration document URL is required.' },
+] as const;
 
-interface CreateFeatureModalProps {
-  isOpen: boolean;
+type FieldKey = (typeof FIELDS)[number]['key'];
+type FormState = Record<FieldKey, string>;
+
+const EMPTY: FormState = {
+  title: '',
+  featureTag: 'Enhancement',
+  summary: '',
+  productModule: MODULES[0],
+  featureType: 'Default On',
+  releaseNotes: '',
+  demoVideo: '',
+  prodEnablementDate: '2026-07-01',
+  productGate: '',
+  configurationDoc: '',
+};
+
+const CreateFeatureModal = ({
+  open,
+  feature,
+  onClose,
+}: {
+  open: boolean;
+  feature: Feature | null;
   onClose: () => void;
-  onSubmit: (feature: Omit<Feature, 'id'>) => void;
-  editingFeature?: Feature | null;
-}
-
-const CreateFeatureModal = ({ isOpen, onClose, onSubmit, editingFeature }: CreateFeatureModalProps) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    summary: '',
-    productModule: '',
-    releaseNotes: '',
-    demoVideo: '',
-    prodEnablementDate: '',
-    deferrableTill: '',
-    isEnabled: false,
-    isPaid: false,
-    status: 'Disabled' as 'Enabled' | 'Disabled' | 'Deferred',
-    productGate: '',
-    configurationDoc: '',
-    featureType: 'Direct Enablement',
-    featureTag: 'Enhancement' as 'Enhancement' | 'New Feature'
-  });
-
-  // Auto-calculate deferrable till date when prod enablement date changes
-  useEffect(() => {
-    if (formData.prodEnablementDate && formData.featureType !== 'Non Deferrable') {
-      const prodDate = new Date(formData.prodEnablementDate);
-      const deferrableDate = new Date(prodDate);
-      deferrableDate.setDate(deferrableDate.getDate() + 90);
-      
-      setFormData(prev => ({
-        ...prev,
-        deferrableTill: deferrableDate.toISOString().split('T')[0]
-      }));
-    } else if (formData.featureType === 'Non Deferrable') {
-      setFormData(prev => ({
-        ...prev,
-        deferrableTill: ''
-      }));
-    }
-  }, [formData.prodEnablementDate, formData.featureType]);
+}) => {
+  const { upsert } = useFeatureStore();
+  const [form, setForm] = useState<FormState>(EMPTY);
+  const [invalid, setInvalid] = useState<Set<FieldKey>>(new Set());
 
   useEffect(() => {
-    if (editingFeature) {
-      setFormData({
-        title: editingFeature.title,
-        summary: editingFeature.summary || '',
-        productModule: editingFeature.productModule,
-        releaseNotes: editingFeature.releaseNotes,
-        demoVideo: editingFeature.demoVideo || '',
-        prodEnablementDate: editingFeature.prodEnablementDate,
-        deferrableTill: editingFeature.deferrableTill || '',
-        isEnabled: editingFeature.isEnabled,
-        isPaid: editingFeature.isPaid || false,
-        status: editingFeature.status,
-        productGate: editingFeature.productGate || '',
-        configurationDoc: editingFeature.configurationDoc || '',
-        featureType: editingFeature.featureType || 'Direct Enablement',
-        featureTag: editingFeature.featureTag
-      });
-    } else {
-      setFormData({
-        title: '',
-        summary: '',
-        productModule: '',
-        releaseNotes: '',
-        demoVideo: '',
-        prodEnablementDate: '',
-        deferrableTill: '',
-        isEnabled: false,
-        isPaid: false,
-        status: 'Disabled' as 'Enabled' | 'Disabled' | 'Deferred',
-        productGate: '',
-        configurationDoc: '',
-        featureType: 'Direct Enablement',
-        featureTag: 'Enhancement' as 'Enhancement' | 'New Feature'
-      });
-    }
-  }, [editingFeature, isOpen]);
+    if (!open) return;
+    setInvalid(new Set());
+    setForm(
+      feature
+        ? {
+            title: feature.title,
+            featureTag: feature.featureTag,
+            summary: feature.summary ?? '',
+            productModule: feature.productModule,
+            featureType: feature.featureType ?? 'Default On',
+            releaseNotes: feature.releaseNotes ?? '',
+            demoVideo: feature.demoVideo ?? '',
+            prodEnablementDate: feature.prodEnablementDate,
+            productGate: feature.productGate ?? '',
+            configurationDoc: feature.configurationDoc ?? '',
+          }
+        : EMPTY,
+    );
+  }, [open, feature]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validation for mandatory fields
-    if (formData.featureType === 'Direct Enablement' && !formData.productGate.trim()) {
-      alert('Product Gate is required for Direct Enablement features');
-      return;
-    }
-    
-    if (formData.featureType === 'Support Required' && !formData.configurationDoc.trim()) {
-      alert('Configuration Document URL is required for Support Required features');
-      return;
-    }
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
 
-    if (formData.featureType === 'Self Configurable' && !formData.configurationDoc.trim()) {
-      alert('Configuration Document URL is required for Self Configurable features');
-      return;
-    }
-    
-    const supportNeeded = formData.featureType === 'Support Required';
-    
-    onSubmit({
-      ...formData,
-      supportNeeded,
-      enablementDate: formData.prodEnablementDate,
-      status: formData.isEnabled ? 'Enabled' : 'Disabled',
-      featureTag: formData.featureTag as 'Enhancement' | 'New Feature',
-      featureType: formData.featureType as 'Direct Enablement' | 'Non Deferrable' | 'Self Configurable' | 'Support Required'
-    });
-    
-    // Reset form only if not editing
-    if (!editingFeature) {
-      setFormData({
-        title: '',
-        summary: '',
-        productModule: '',
-        releaseNotes: '',
-        demoVideo: '',
-        prodEnablementDate: '',
-        deferrableTill: '',
-        isEnabled: false,
-        isPaid: false,
-        status: 'Disabled' as 'Enabled' | 'Disabled' | 'Deferred',
-        productGate: '',
-        configurationDoc: '',
-        featureType: 'Direct Enablement',
-        featureTag: 'Enhancement' as 'Enhancement' | 'New Feature'
+  // Non Deferrable features have no deferment window to show.
+  const deferrable = useMemo(() => {
+    if (form.featureType === 'Non Deferrable') return 'Not deferrable';
+    if (!form.prodEnablementDate) return '';
+    return formatDate(addDays(form.prodEnablementDate, 90));
+  }, [form.featureType, form.prodEnablementDate]);
+
+  // A field stops complaining as soon as it's filled in.
+  const set = (key: FieldKey, value: string) => {
+    setForm((f) => ({ ...f, [key]: value }));
+    if (value.trim()) {
+      setInvalid((s) => {
+        if (!s.has(key)) return s;
+        const next = new Set(s);
+        next.delete(key);
+        return next;
       });
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const submit = () => {
+    const missing = FIELDS.filter((f) => !String(form[f.key] ?? '').trim()).map((f) => f.key);
+    if (missing.length) {
+      setInvalid(new Set(missing));
+      document.getElementById(`in-${missing[0]}`)?.focus();
+      return;
+    }
+
+    const type = form.featureType as FeatureType;
+    // Feature Type carries enablement: Default Off ships disabled, the other
+    // two ship on. There is no separate Enabled switch to disagree with it.
+    const isEnabled = type !== 'Default Off';
+    const prod = form.prodEnablementDate;
+
+    upsert(
+      {
+        ...(feature ?? ({} as Feature)),
+        id: feature?.id ?? 'FEAT-NEW',
+        title: form.title.trim(),
+        featureTag: form.featureTag as Feature['featureTag'],
+        summary: form.summary.trim(),
+        productModule: form.productModule,
+        featureType: type,
+        releaseNotes: form.releaseNotes.trim(),
+        demoVideo: form.demoVideo.trim(),
+        configurationDoc: form.configurationDoc.trim(),
+        productGate: form.productGate.trim(),
+        prodEnablementDate: prod,
+        enablementDate: feature?.enablementDate ?? prod,
+        releaseMonth: releaseMonthOf(prod),
+        deferrableTill: type === 'Non Deferrable' ? undefined : addDays(prod, 90),
+        supportNeeded: feature?.supportNeeded ?? false,
+        isEnabled,
+        status: isEnabled ? 'Enabled' : 'Disabled',
+        published: feature?.published ?? false,
+        announcementBullets: feature?.announcementBullets ?? [form.summary.split('\n')[0]].filter(Boolean),
+        enabledCustomers: feature?.enabledCustomers ?? 0,
+        activeCustomers: feature?.activeCustomers ?? 0,
+        mauLast30Days: feature?.mauLast30Days ?? 0,
+        dauLast30DayAvg: feature?.dauLast30DayAvg ?? 0,
+      },
+      Boolean(feature),
+    );
+    onClose();
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  if (!open) return null;
 
-  const handleSwitchChange = (name: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: checked
-    }));
-  };
+  const fieldClass = (key: FieldKey, extra = '') =>
+    `fld${extra ? ` ${extra}` : ''}${invalid.has(key) ? ' invalid' : ''}`;
+  const errorOf = (key: FieldKey) => FIELDS.find((f) => f.key === key)!.error;
+  const Req = () => <span className="req">*</span>;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {editingFeature ? 'Edit Feature' : 'Create New Feature'}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Feature Title</Label>
-              <Input 
-                id="title" 
-                name="title"
-                value={formData.title} 
-                onChange={handleChange} 
-                required 
-              />
+    <div className="overlay open" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal" role="dialog" aria-modal="true" aria-label={feature ? 'Edit feature' : 'New feature'}>
+        <div className="modal-head">
+          <h3>{feature ? 'Edit feature' : 'New feature'}</h3>
+          <button className="icon-btn" onClick={onClose} aria-label="Close"><i className="ph ph-x" /></button>
+        </div>
+
+        <div className="modal-body">
+          <div className="f2">
+            <div className={fieldClass('title')}>
+              <label htmlFor="in-title">Feature Title <Req /></label>
+              <input id="in-title" placeholder="e.g. Skills Gap Analysis" value={form.title} onChange={(e) => set('title', e.target.value)} />
+              <span className="err">{errorOf('title')}</span>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="featureTag">Feature Tag</Label>
-              <Select value={formData.featureTag} onValueChange={(value) => handleSelectChange('featureTag', value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select feature tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Enhancement">Enhancement</SelectItem>
-                  <SelectItem value="New Feature">New Feature</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="summary">Feature Summary</Label>
-            <Textarea
-              id="summary"
-              name="summary"
-              value={formData.summary}
-              onChange={handleChange}
-              placeholder="Brief 2-line summary of the feature..."
-              className="min-h-[80px]"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="productModule">Product Module</Label>
-              <Select value={formData.productModule} onValueChange={(value) => handleSelectChange('productModule', value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a module" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Performance Management">Performance Management</SelectItem>
-                  <SelectItem value="Recruiting">Recruiting</SelectItem>
-                  <SelectItem value="Payroll">Payroll</SelectItem>
-                  <SelectItem value="Benefits">Benefits</SelectItem>
-                  <SelectItem value="Time Tracking">Time Tracking</SelectItem>
-                  <SelectItem value="Learning">Learning</SelectItem>
-                  <SelectItem value="Analytics">Analytics</SelectItem>
-                  <SelectItem value="Employee Experience">Employee Experience</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className={fieldClass('featureTag')}>
+              <label htmlFor="in-featureTag">Feature Tag <Req /></label>
+              <select id="in-featureTag" value={form.featureTag} onChange={(e) => set('featureTag', e.target.value)}>
+                <option>Enhancement</option>
+                <option>New Feature</option>
+              </select>
+              <span className="err">{errorOf('featureTag')}</span>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="featureType">Feature Type</Label>
-              <Select value={formData.featureType} onValueChange={(value) => handleSelectChange('featureType', value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select feature type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Direct Enablement">Direct Enablement</SelectItem>
-                  <SelectItem value="Non Deferrable">Non Deferrable</SelectItem>
-                  <SelectItem value="Self Configurable">Self Configurable</SelectItem>
-                  <SelectItem value="Support Required">Support Required</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="releaseNotes">Release Notes URL</Label>
-              <Input
-                type="url"
-                id="releaseNotes"
-                name="releaseNotes"
-                value={formData.releaseNotes}
-                onChange={handleChange}
-                required
-              />
+            <div className={fieldClass('summary', 'span2')}>
+              <label htmlFor="in-summary">Feature Summary <Req /></label>
+              <textarea id="in-summary" placeholder="First line is the summary shown in the table. Any further lines appear under Show more." value={form.summary} onChange={(e) => set('summary', e.target.value)} />
+              <span className="hint">Line 1 shows in the table; later lines expand behind "Show more".</span>
+              <span className="err">{errorOf('summary')}</span>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="demoVideo">Demo Video URL</Label>
-              <Input
-                type="url"
-                id="demoVideo"
-                name="demoVideo"
-                value={formData.demoVideo}
-                onChange={handleChange}
-                placeholder="Optional"
-              />
+            <div className={fieldClass('productModule')}>
+              <label htmlFor="in-productModule">Product Module <Req /></label>
+              <select id="in-productModule" value={form.productModule} onChange={(e) => set('productModule', e.target.value)}>
+                {MODULES.map((m) => <option key={m}>{m}</option>)}
+              </select>
+              <span className="err">{errorOf('productModule')}</span>
+            </div>
+
+            <div className={fieldClass('featureType')}>
+              <label htmlFor="in-featureType">Feature Type <Req /></label>
+              <select id="in-featureType" value={form.featureType} onChange={(e) => set('featureType', e.target.value)}>
+                {FEATURE_TYPES.map((t) => <option key={t}>{t}</option>)}
+              </select>
+              <span className="hint">Default On ships enabled. Default Off waits for the customer. Non Deferrable cannot be postponed.</span>
+              <span className="err">{errorOf('featureType')}</span>
+            </div>
+
+            <div className={fieldClass('releaseNotes')}>
+              <label htmlFor="in-releaseNotes">Release Notes URL <Req /></label>
+              <input id="in-releaseNotes" placeholder="https://" value={form.releaseNotes} onChange={(e) => set('releaseNotes', e.target.value)} />
+              <span className="err">{errorOf('releaseNotes')}</span>
+            </div>
+
+            <div className={fieldClass('demoVideo')}>
+              <label htmlFor="in-demoVideo">Demo Video URL <Req /></label>
+              <input id="in-demoVideo" placeholder="https://" value={form.demoVideo} onChange={(e) => set('demoVideo', e.target.value)} />
+              <span className="err">{errorOf('demoVideo')}</span>
+            </div>
+
+            <div className={fieldClass('prodEnablementDate')}>
+              <label htmlFor="in-prodEnablementDate">Production Enablement Date <Req /></label>
+              <input id="in-prodEnablementDate" type="date" value={form.prodEnablementDate} onChange={(e) => set('prodEnablementDate', e.target.value)} />
+              <span className="err">{errorOf('prodEnablementDate')}</span>
+            </div>
+
+            <div className="fld">
+              <label htmlFor="in-deferrable">Deferrable Till Date</label>
+              <input id="in-deferrable" readOnly value={deferrable} />
+              <span className="hint">Auto-calculated as Production Enablement Date + 90 days.</span>
+            </div>
+
+            <div className={fieldClass('productGate')}>
+              <label htmlFor="in-productGate">Feature Flag (Internal) <Req /></label>
+              <input id="in-productGate" placeholder="module.area.flag_name" value={form.productGate} onChange={(e) => set('productGate', e.target.value)} />
+              <span className="err">{errorOf('productGate')}</span>
+            </div>
+
+            <div className={fieldClass('configurationDoc')}>
+              <label htmlFor="in-configurationDoc">Configuration Document URL <Req /></label>
+              <input id="in-configurationDoc" placeholder="https://" value={form.configurationDoc} onChange={(e) => set('configurationDoc', e.target.value)} />
+              <span className="err">{errorOf('configurationDoc')}</span>
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="prodEnablementDate">Production Enablement Date</Label>
-              <Input
-                type="date"
-                id="prodEnablementDate"
-                name="prodEnablementDate"
-                value={formData.prodEnablementDate}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="deferrableTill">Deferrable Till Date</Label>
-              <Input
-                type="date"
-                id="deferrableTill"
-                name="deferrableTill"
-                value={formData.deferrableTill}
-                onChange={handleChange}
-                placeholder={formData.featureType === 'Non Deferrable' ? 'Not applicable' : 'Auto-calculated as Prod Date + 90 days'}
-                readOnly={formData.featureType !== 'Non Deferrable'}
-                disabled={formData.featureType === 'Non Deferrable'}
-                className={formData.featureType === 'Non Deferrable' ? 'bg-gray-100' : 'bg-gray-50'}
-              />
-              <p className="text-xs text-gray-500">
-                {formData.featureType === 'Non Deferrable' 
-                  ? 'Non-deferrable features cannot be deferred' 
-                  : 'Auto-calculated as Production Enablement Date + 90 days'}
-              </p>
-            </div>
-            <div></div> {/* Empty div for spacing */}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="productGate">
-                Product Gate (Internal) 
-                {formData.featureType === 'Direct Enablement' && <span className="text-red-500">*</span>}
-              </Label>
-              <Input
-                type="text"
-                id="productGate"
-                name="productGate"
-                value={formData.productGate}
-                onChange={handleChange}
-                placeholder={formData.featureType === 'Direct Enablement' ? 'Required' : 'Optional'}
-                required={formData.featureType === 'Direct Enablement'}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="configurationDoc">
-                Configuration Document URL
-                {(formData.featureType === 'Support Required' || formData.featureType === 'Self Configurable') && <span className="text-red-500">*</span>}
-              </Label>
-              <Input
-                type="url"
-                id="configurationDoc"
-                name="configurationDoc"
-                value={formData.configurationDoc}
-                onChange={handleChange}
-                placeholder={(formData.featureType === 'Support Required' || formData.featureType === 'Self Configurable') ? 'Required' : 'Optional'}
-                required={formData.featureType === 'Support Required' || formData.featureType === 'Self Configurable'}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="isEnabled">Enabled</Label>
-              <Switch
-                id="isEnabled"
-                checked={formData.isEnabled}
-                onCheckedChange={(checked) => handleSwitchChange('isEnabled', checked)}
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="isPaid">Paid Feature</Label>
-              <Switch
-                id="isPaid"
-                checked={formData.isPaid}
-                onCheckedChange={(checked) => handleSwitchChange('isPaid', checked)}
-              />
-            </div>
-          </div>
-
-          <Button type="submit">{editingFeature ? 'Update Feature' : 'Create Feature'}</Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <div className="modal-foot">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={submit}>{feature ? 'Update Feature' : 'Create Feature'}</button>
+        </div>
+      </div>
+    </div>
   );
 };
 

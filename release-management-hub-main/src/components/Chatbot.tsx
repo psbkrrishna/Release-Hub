@@ -1,151 +1,93 @@
+import { useEffect, useRef, useState } from 'react';
+import { useFeatureStore } from '@/components/FeatureStore';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Bot, User } from 'lucide-react';
+const SUGGESTIONS = [
+  'Which features need my CSM?',
+  'What is a feature flag?',
+  'How does deferment work?',
+];
 
-interface Message {
-  id: string;
-  content: string;
-  sender: 'user' | 'bot';
-  timestamp: Date;
+interface Bubble {
+  from: 'assistant' | 'user';
+  text: string;
 }
 
 const Chatbot = () => {
-  const [messages, setMessages] = useState<Message[]>([
+  const { visibleFeatures } = useFeatureStore();
+  const [messages, setMessages] = useState<Bubble[]>([
     {
-      id: '1',
-      content: 'Hello! I\'m your Knowledge Assistant. I can help you find information about features, documentation, and release notes. What would you like to know?',
-      sender: 'bot',
-      timestamp: new Date(),
+      from: 'assistant',
+      text: 'Hi — I can explain anything in this release: enablement status, feature flags, deferment rules or utilization.',
     },
   ]);
-  const [inputValue, setInputValue] = useState('');
+  const [draft, setDraft] = useState('');
+  const bodyRef = useRef<HTMLDivElement>(null);
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: inputValue,
-      sender: 'user',
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: getBotResponse(inputValue),
-        sender: 'bot',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, botResponse]);
-    }, 1000);
+  const answer = (question: string) => {
+    const t = question.toLowerCase();
+    if (t.includes('csm') || t.includes('contact')) {
+      const needsCsm = visibleFeatures.filter((f) => f.status === 'Contact CSM');
+      return `${needsCsm.length} feature${needsCsm.length === 1 ? '' : 's'} need CSM support to enable: ${
+        needsCsm.map((f) => f.title).join(', ') || 'none'
+      }. Your CSM turns these on for you.`;
+    }
+    if (t.includes('gate') || t.includes('flag')) {
+      return 'A feature flag is the internal switch that controls a feature. It is required when creating a feature so the platform knows what to turn on.';
+    }
+    if (t.includes('defer')) {
+      return 'Deferrable features can be postponed until the Deferrable Till Date — automatically 90 days after the production enablement date. Non Deferrable features cannot be postponed.';
+    }
+    if (t.includes('utilization') || t.includes('adoption')) {
+      const enabled = visibleFeatures.filter((f) => f.isEnabled).length;
+      const pct = visibleFeatures.length ? Math.round((100 * enabled) / visibleFeatures.length) : 0;
+      return `Platform utilization is enabled features over total: ${enabled} of ${visibleFeatures.length} (${pct}%).`;
+    }
+    return 'I can help with enablement status, feature flags, deferment rules and utilization. Try one of the suggestions above.';
   };
 
-  const getBotResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-    
-    if (input.includes('hire') || input.includes('candidate')) {
-      return 'I can help you with Hire module features like Candidate Scoring, Interview Scheduling, and Application Tracking. Would you like documentation or video tutorials for any specific feature?';
-    }
-    
-    if (input.includes('amplify') || input.includes('performance')) {
-      return 'The Amplify module includes Performance Analytics, Goal Setting, and Feedback System features. I have comprehensive guides and training materials available. What specific aspect would you like to explore?';
-    }
-    
-    if (input.includes('analytics') || input.includes('dashboard')) {
-      return 'Our Analytics module offers Custom Dashboards, Data Export, and Report Builder functionality. I can provide detailed documentation and step-by-step video guides. Which feature interests you most?';
-    }
-    
-    if (input.includes('brand') || input.includes('logo') || input.includes('theme')) {
-      return 'The Brand module handles Logo Management, Theme Customization, and Brand Guidelines. I have setup guides and customization tutorials available. How can I assist with your branding needs?';
-    }
-    
-    if (input.includes('plan') || input.includes('subscription') || input.includes('billing')) {
-      return 'The Plan module covers Subscription Management, Usage Tracking, and Billing Integration. I can help you understand pricing tiers, usage limits, and billing processes. What would you like to know?';
-    }
-    
-    if (input.includes('release') || input.includes('update')) {
-      return 'I can provide information about the latest release notes, feature updates, and version history for all modules. Which module\'s release information are you looking for?';
-    }
-    
-    return 'I understand you\'re looking for information. I can help you with documentation, video tutorials, and release notes for our Hire, Amplify, Analytics, Brand, and Plan modules. Could you be more specific about what you need?';
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+  const send = (text?: string) => {
+    const question = (text ?? draft).trim();
+    if (!question) return;
+    setMessages((m) => [...m, { from: 'user', text: question }]);
+    setDraft('');
+    window.setTimeout(() => {
+      setMessages((m) => [...m, { from: 'assistant', text: answer(question) }]);
+    }, 260);
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Messages Area - Takes remaining space and scrolls */}
-      <div className="flex-1 min-h-0">
-        <ScrollArea className="h-full p-4">
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${
-                  message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'
-                }`}
-              >
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  message.sender === 'user' ? 'bg-blue-100' : 'bg-gray-100'
-                }`}>
-                  {message.sender === 'user' ? (
-                    <User className="w-4 h-4 text-blue-600" />
-                  ) : (
-                    <Bot className="w-4 h-4 text-gray-600" />
-                  )}
-                </div>
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    message.sender === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
-                >
-                  <p className="text-sm">{message.content}</p>
-                  <p className={`text-xs mt-1 ${
-                    message.sender === 'user' ? 'text-blue-200' : 'text-gray-500'
-                  }`}>
-                    {message.timestamp.toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </p>
-                </div>
-              </div>
+    <>
+      <div className="kb-body" ref={bodyRef}>
+        {messages.map((m, i) => (
+          <div key={i} className={`bub ${m.from === 'user' ? 'u' : 'a'}`}>
+            {m.text}
+          </div>
+        ))}
+        {messages.length === 1 && (
+          <div className="kb-sugg">
+            {SUGGESTIONS.map((s) => (
+              <button key={s} onClick={() => send(s)}>{s}</button>
             ))}
           </div>
-        </ScrollArea>
+        )}
       </div>
-      
-      {/* Input Area - Fixed at bottom */}
-      <div className="flex-shrink-0 p-4 border-t bg-white">
-        <div className="flex gap-2">
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask me anything about features, docs, or releases..."
-            className="flex-1"
-          />
-          <Button onClick={handleSendMessage} size="sm">
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
+      <div className="kb-foot">
+        <input
+          value={draft}
+          placeholder="Ask a question…"
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && send()}
+        />
+        <button className="kb-send" onClick={() => send()} aria-label="Send">
+          <i className="ph ph-paper-plane-right" />
+        </button>
       </div>
-    </div>
+    </>
   );
 };
 

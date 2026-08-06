@@ -1,7 +1,7 @@
 
-import type { Feature } from '@/types/Feature';
+import type { SeedFeature } from '@/types/Feature';
 
-export const sampleFeatures: Feature[] = [
+export const sampleFeatures: SeedFeature[] = [
   {
     id: 'FEAT-001',
     title: 'AI-Powered Performance Review Analysis',

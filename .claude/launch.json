@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "release-hub",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "release-management-hub-main", "run", "dev"],
+      "port": 8080
+    }
+  ]
+}

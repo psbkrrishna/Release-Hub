@@ -1,4 +1,8 @@
 
+export type FeatureType = 'Default On' | 'Default Off' | 'Non Deferrable';
+
+export const FEATURE_TYPES: FeatureType[] = ['Default On', 'Default Off', 'Non Deferrable'];
+
 export interface Feature {
   id: string;
   title: string;
@@ -11,12 +15,20 @@ export interface Feature {
   deferrableTill?: string; // New field for automatic enablement date
   supportNeeded: boolean;
   isEnabled: boolean;
-  status: 'Enabled' | 'Disabled' | 'Deferred'; // New status field
-  productGate?: string; // Internal only field
+  status: 'Enabled' | 'Disabled' | 'Deferred' | 'Contact CSM' | 'Enablement requested';
+  /** Unpublished features are visible to the Creator role only. */
+  published: boolean;
+  /** The release a feature belongs to, e.g. "July 2026". Drives the month filter. */
+  releaseMonth: string;
+  /** Surfaced in the UI as "Feature Flag (Internal)". */
+  productGate?: string;
   customerName?: string; // Customer name for grouping in implementation view
   configurationDoc?: string; // Configuration document URL for implementation team
-  featureTag: 'Enhancement' | 'New Feature'; // New field for feature classification
-  featureType?: 'Direct Enablement' | 'Non Deferrable' | 'Self Configurable' | 'Support Required'; // Updated field for feature type
+  featureTag: 'Enhancement' | 'New Feature';
+  /* Three values only: what happens to the feature at release, stated from
+     the customer's side. The older set mixed enablement route with support
+     model, which is why two of its values meant the same thing to a reader. */
+  featureType?: FeatureType;
   isPaid?: boolean; // New field to indicate if it's a paid feature
   // Analytics fields for creator view
   enabledCustomers?: number; // Number of customers who have enabled this feature
@@ -27,6 +39,13 @@ export interface Feature {
   productRoute?: string;
   announcementBullets?: string[];
 }
+
+/** The seed rows as originally authored. data/features.ts applies the fields
+ *  the redesign added - publication state, release month, and the new Feature
+ *  Type vocabulary - so the seed file itself stays untouched. */
+export type SeedFeature = Omit<Feature, 'published' | 'releaseMonth' | 'featureType'> & {
+  featureType?: 'Direct Enablement' | 'Non Deferrable' | 'Self Configurable' | 'Support Required';
+};
 
 export interface Release {
   id: string;

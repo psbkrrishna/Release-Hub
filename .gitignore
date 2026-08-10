@@ -1,0 +1,11 @@
+# Production reference checkout — kept locally for design comparison only.
+zm-manage-new-setting-development/
+
+# Node
+node_modules/
+dist/
+.env.local
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db

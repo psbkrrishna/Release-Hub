@@ -37,6 +37,9 @@ const Navigation = () => {
   const navigate = useNavigate();
   const { userRole, setUserRole } = useUserRole();
   const [railCollapsed, setRailCollapsed] = useState(false);
+  // Production's rail widens on hover to reveal labels and overlays the
+  // canvas rather than reflowing it, so the shell keeps its 72px offset.
+  const [railExpanded, setRailExpanded] = useState(false);
   const [kbOpen, setKbOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(
     () => localStorage.getItem('annDismissed') === '1',
@@ -64,11 +67,12 @@ const Navigation = () => {
       key={label}
       type="button"
       className={`rail-btn${isActive(path) ? ' on' : ''}`}
-      title={label}
+      title={railExpanded ? undefined : label}
       aria-label={label}
       onClick={() => path && navigate(path)}
     >
       <i className={`ph ph-${icon}`} />
+      {railExpanded && <span className="rail-label">{label}</span>}
       {isNew && <span className="newdot">NEW</span>}
     </button>
   );
@@ -134,17 +138,17 @@ const Navigation = () => {
         <ReleaseBanner railCollapsed={railCollapsed} onDismiss={dismissBanner} />
       )}
 
-      <aside className={`rail${railCollapsed ? ' collapsed' : ''}`}>
+      <aside
+        className={`rail${railCollapsed ? ' collapsed' : ''}${railExpanded ? ' expanded' : ''}`}
+        onMouseEnter={() => setRailExpanded(true)}
+        onMouseLeave={() => setRailExpanded(false)}
+      >
         {topRail.map(railButton)}
         <div className="rail-sep" />
         {lowerRail.map(railButton)}
         <div className="rail-foot">
-          <button className="rail-btn" title="Settings" aria-label="Settings">
-            <i className="ph ph-gear-six" />
-          </button>
-          <button className="rail-btn" title="Help" aria-label="Help">
-            <i className="ph ph-question" />
-          </button>
+          {railButton({ icon: 'gear-six', label: 'Settings' })}
+          {railButton({ icon: 'question', label: 'Help' })}
         </div>
       </aside>
 

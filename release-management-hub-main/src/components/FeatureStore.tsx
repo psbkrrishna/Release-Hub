@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { toast as sonner } from 'sonner';
 import { allFeatures } from '@/data/features';
 import type { Feature } from '@/types/Feature';
 import { useUserRole } from '@/components/UserRoleProvider';
@@ -42,24 +43,20 @@ export const useFeatureStore = () => {
 const FeatureStore = ({ children }: { children: React.ReactNode }) => {
   const { userRole } = useUserRole();
   const [features, setFeatures] = useState<Feature[]>(() => allFeatures.map((f) => ({ ...f })));
-  const [toastState, setToastState] = useState<{ message: string; kind: ToastKind; n: number } | null>(null);
-  const toastTimer = useRef<number>();
 
   const isCreator = userRole === 'creator';
   const isImplementation = userRole === 'implementation';
   const isAdmin = userRole === 'customer-admin';
   const canToggle = isAdmin || isCreator;
 
+  /* sonner, configured the way production's AppLayout does it. The prototype
+     had its own bottom-centre toast; production is top-right with rich colours
+     and a close button, so that is what this uses. */
   const toast = useCallback((message: string, kind: ToastKind = 'ok') => {
-    setToastState((prev) => ({ message, kind, n: (prev?.n ?? 0) + 1 }));
+    if (kind === 'warn') sonner.warning(message);
+    else if (kind === 'info') sonner.info(message);
+    else sonner.success(message);
   }, []);
-
-  useEffect(() => {
-    if (!toastState) return;
-    window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToastState(null), 3200);
-    return () => window.clearTimeout(toastTimer.current);
-  }, [toastState]);
 
   const byId = useCallback((id: string) => features.find((f) => f.id === id), [features]);
 
@@ -171,22 +168,7 @@ const FeatureStore = ({ children }: { children: React.ReactNode }) => {
     ],
   );
 
-  const toastIcon =
-    toastState?.kind === 'warn' ? 'warning-circle' : toastState?.kind === 'info' ? 'info' : 'check-circle';
-
-  return (
-    <FeatureStoreContext.Provider value={value}>
-      {children}
-      <div className={`toast${toastState ? ' show' : ''}`} role="status" aria-live="polite">
-        {toastState && (
-          <>
-            <i className={`ph ph-${toastIcon}`} />
-            <span>{toastState.message}</span>
-          </>
-        )}
-      </div>
-    </FeatureStoreContext.Provider>
-  );
+  return <FeatureStoreContext.Provider value={value}>{children}</FeatureStoreContext.Provider>;
 };
 
 export default FeatureStore;

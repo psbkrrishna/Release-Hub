@@ -76,26 +76,35 @@
    ZERRA v2 tokens — same alias names as the other consoles
    ========================================================== */
 :root{
-  --blue-50:#EBF3FB; --blue-100:#D4E5F4; --blue-200:#A7C9E8; --blue-300:#74A8D8;
-  --blue-400:#4084C4; --blue-500:#1C6DB4; --blue-600:#0D59A3; --blue-700:#0A4985;
-  --blue-800:#083A6A; --blue-900:#072B4E;
-  --n-0:#FFFFFF; --n-25:#FAFAFA; --n-50:#F4F4F5; --n-100:#ECECEE; --n-150:#E4E4E7;
-  --n-200:#DADADC; --n-300:#C7C7CC; --n-400:#A1A1AA; --n-500:#818188; --n-600:#6B6B6B;
-  --n-700:#4E4E4E; --n-800:#333333; --n-900:#222222;
-  --green-50:#ECF5ED; --green-200:#A3D2A6; --green-600:#388E3C; --green-700:#2C7330;
-  --red-50:#FCEBEB; --red-200:#F0A8A8; --red-600:#C81E1F; --red-700:#A41819;
-  --amber-50:#FFF8E5; --amber-200:#F7DC83; --amber-500:#D8A715; --amber-700:#8A4B00;
-  --indigo-50:#F5F5FF; --indigo-200:#DAD8FF; --indigo-500:#483AFF; --indigo-600:#3A2DDB;
+  /* Palette taken from the production Tailwind theme (tailwind.config.js in
+     zm-manage-new-setting-development). Production calls the brand blue
+     lue.500; this scale keeps the Zerra step names, so --blue-500 here IS
+     production's brand blue and the two scales sit one step apart. */
+  --blue-50:#E7EEF6; --blue-100:#B4CCE2; --blue-200:#90B3D5; --blue-300:#5D90C1;
+  --blue-400:#3D7AB5; --blue-500:#0D59A3; --blue-600:#0C5194; --blue-700:#093F74;
+  --blue-800:#07315A; --blue-900:#052544;
+  --n-0:#FFFFFF; --n-25:#FAFAFA; --n-50:#F4F4F5; --n-100:#F1F1F1; --n-150:#E4E4E7;
+  --n-200:#DADADA; --n-300:#BABABA; --n-400:#A1A1AA; --n-500:#999999; --n-600:#6B6B6B;
+  --n-700:#4E4E4E; --n-800:#27272A; --n-900:#222222;
+  --green-50:#EBF4EC; --green-200:#A3CBA5; --green-600:#388E3C; --green-700:#1F4E21;
+  --red-50:#FCEBEB; --red-200:#F1A4A4; --red-600:#CC3535; --red-700:#7B2020;
+  --amber-50:#FBF6E8; --amber-200:#EDD793; --amber-500:#D8A715; --amber-700:#99770F;
+  /* Release news. Production defines purple.1000/1100/1200 only; the border
+     and hover steps below are derived from those three. */
+  --purple-50:#FCEBFF; --purple-200:#EDC7F4; --purple-500:#BC3AD2;
+  --purple-600:#A32EB8; --purple-900:#3A0143;
 
   --bg:var(--n-25); --card:var(--n-0); --su2:var(--n-50);
-  --bd:var(--n-100); --bd2:var(--n-150); --bd3:var(--n-300);
-  --tx:var(--n-900); --tx2:var(--n-700); --tx3:var(--n-600); --tx4:var(--n-400); --tx5:var(--n-300);
-  --brand:var(--blue-600); --brand-hover:var(--blue-700); --brand-soft:var(--blue-50);
-  --brand-softHover:var(--blue-100); --brand-border:var(--blue-200); --brand-text:var(--blue-700);
-  --ring:0 0 0 3px rgba(13,89,163,.34);
-  --elev1:0 1px 2px rgba(16,24,40,.06);
-  --elev2:0 2px 8px rgba(16,24,40,.08);
-  --elev3:0 8px 24px rgba(16,24,40,.10),0 2px 6px rgba(16,24,40,.06);
+  --bd:var(--n-150); --bd2:var(--n-150); --bd3:var(--n-200);
+  --tx:var(--n-900); --tx2:var(--n-700); --tx3:var(--n-600); --tx4:var(--n-500); --tx5:var(--n-300);
+  /* Top bar and general brand are blue.500; the primary button is blue.600,
+     exactly as production's Button component does it. */
+  --brand:var(--blue-500); --brand-hover:var(--blue-600); --brand-soft:var(--blue-50);
+  --brand-softHover:var(--blue-100); --brand-border:var(--blue-200); --brand-text:var(--blue-800);
+  --ring:0 0 0 2px var(--blue-500);
+  --elev1:0 2px 10px rgba(0,0,0,.03),0 0 20px rgba(0,0,0,.03);
+  --elev2:0 4px 8px rgba(75,97,119,.1);
+  --elev3:0 10px 24px rgba(15,23,42,.12);
 
   /* One typeface, strictly. Embedded, so it always resolves. */
   --font-ui:'Source Sans 3',sans-serif;
@@ -103,7 +112,8 @@
   --r-xs:4px; --r-sm:6px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-pill:999px;
   --sp-2:4px; --sp-4:8px; --sp-6:12px; --sp-8:16px; --sp-10:20px; --sp-12:24px; --sp-16:32px; --sp-24:48px;
   --h-xs:32px; --h-sm:36px; --h-md:40px; --h-lg:48px;
-  --topbar:56px; --rail:64px; --kb:340px; --annbar:48px;
+  /* 72px rail matches AppLayout.jsx in production. */
+  --topbar:56px; --rail:72px; --kb:340px; --annbar:48px;
 }
 
 *{box-sizing:border-box;}
@@ -178,7 +188,7 @@ button,input,select,textarea,optgroup,a{font-family:var(--font-ui);font-size:100
 .rail-btn.on{background:var(--brand);color:var(--n-0);}
 .rail-btn .newdot{
   position:absolute;top:-2px;right:-4px;font-size:9px;font-weight:700;letter-spacing:.02em;
-  background:var(--indigo-500);color:var(--n-0);border-radius:var(--r-xs);padding:1px 3px;line-height:1.2;
+  background:var(--purple-500);color:var(--n-0);border-radius:var(--r-xs);padding:1px 3px;line-height:1.2;
 }
 .rail-sep{width:24px;height:1px;background:var(--bd2);margin:var(--sp-4) 0;}
 .rail-foot{margin-top:auto;display:flex;flex-direction:column;gap:var(--sp-2);}
@@ -343,7 +353,7 @@ td.mid{vertical-align:middle;}
   display:inline-flex;align-items:center;font-size:12px;font-weight:600;white-space:nowrap;
   border-radius:var(--r-pill);padding:1px var(--sp-6);
 }
-.flabel.is-new{background:var(--indigo-50);color:var(--indigo-600);border:1px solid var(--indigo-200);}
+.flabel.is-new{background:var(--purple-50);color:var(--purple-900);border:1px solid var(--purple-200);}
 .flabel.is-enh{background:var(--su2);color:var(--tx2);border:1px solid var(--bd2);}
 
 .summary{color:var(--tx2);max-width:46ch;}
@@ -483,23 +493,23 @@ td.mid{vertical-align:middle;}
 /* ---------------- What's New dropdown ---------------- */
 /* The floater has to read as lifted off the page, so it carries a deeper
    shadow than any card, a hairline light ring to separate it from the
-   canvas, and the indigo top edge this system uses for anything new. */
+   canvas, and the purple top edge this system uses for anything new. */
 .wn-pop{
   position:fixed;top:calc(var(--topbar) + 8px);right:var(--sp-8);z-index:110;
   width:min(380px, calc(100vw - var(--sp-16)));
-  background:var(--card);border:1px solid var(--bd3);border-top:3px solid var(--indigo-500);
+  background:var(--card);border:1px solid var(--bd3);border-top:3px solid var(--purple-500);
   border-radius:var(--r-lg);display:none;overflow:hidden;
   box-shadow:0 24px 48px -12px rgba(16,24,40,.30),0 8px 16px -6px rgba(16,24,40,.14),
              0 0 0 1px rgba(255,255,255,.9);
 }
 .wn-pop.open{display:block;animation:wn-in .18s ease-out;}
 @keyframes wn-in{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
-.wn-head{padding:var(--sp-8) var(--sp-10);border-bottom:1px solid var(--bd);background:var(--indigo-50);
+.wn-head{padding:var(--sp-8) var(--sp-10);border-bottom:1px solid var(--bd);background:var(--purple-50);
   display:flex;align-items:flex-start;gap:var(--sp-6);}
-.wn-head .t{display:flex;align-items:center;gap:var(--sp-4);font-size:16px;font-weight:600;color:var(--indigo-600);}
+.wn-head .t{display:flex;align-items:center;gap:var(--sp-4);font-size:16px;font-weight:600;color:var(--purple-900);}
 .wn-head p{margin:var(--sp-2) 0 0;font-size:13px;color:var(--tx2);}
 .wn-head .x{margin-left:auto;flex-shrink:0;color:var(--tx3);}
-.wn-head .x:hover{background:rgba(72,58,255,.10);color:var(--indigo-600);}
+.wn-head .x:hover{background:rgba(188,58,210,.10);color:var(--purple-900);}
 .wn-list{max-height:280px;overflow-y:auto;padding:var(--sp-4);}
 /* Same list, reused inside the first-run popup where height isn't capped. */
 .wn-list.flat{max-height:none;overflow:visible;padding:0;margin-bottom:var(--sp-10);}
@@ -654,16 +664,16 @@ td.mid{vertical-align:middle;}
 .ai-card{cursor:pointer;}
 .ai-head{display:flex;align-items:center;gap:var(--sp-6);}
 .ai-card:hover .ai-title{color:var(--brand);}
-.ai-icon{width:40px;height:40px;border-radius:var(--r-md);background:var(--indigo-500);color:var(--n-0);
+.ai-icon{width:40px;height:40px;border-radius:var(--r-md);background:var(--purple-500);color:var(--n-0);
   display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
 .ai-title{font-size:16px;font-weight:600;display:flex;align-items:center;gap:var(--sp-4);}
 /* The badge is the control that reopens the announcement, so it's a real
    button, not decoration on a heading. */
-.new-badge{font-size:11px;font-weight:600;color:var(--indigo-500);background:var(--indigo-50);
-  border:1px solid var(--indigo-200);border-radius:var(--r-pill);padding:2px var(--sp-4);
+.new-badge{font-size:11px;font-weight:600;color:var(--purple-500);background:var(--purple-50);
+  border:1px solid var(--purple-200);border-radius:var(--r-pill);padding:2px var(--sp-4);
   display:inline-flex;align-items:center;gap:var(--sp-2);white-space:nowrap;
   font-family:var(--font-ui);cursor:pointer;}
-.new-badge:hover{background:var(--indigo-200);color:var(--indigo-600);}
+.new-badge:hover{background:var(--purple-200);color:var(--purple-900);}
 .new-badge .ph{font-size:12px;}
 .ai-sub{font-size:13px;color:var(--tx3);}
 
@@ -681,10 +691,10 @@ td.mid{vertical-align:middle;}
   box-shadow:var(--elev3);overflow:hidden;animation:spot-in .25s ease-out;}
 @keyframes spot-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .spot-hero{background:var(--brand);padding:var(--sp-12) var(--sp-12) var(--sp-10);color:var(--n-0);position:relative;}
-/* Release news is indigo everywhere in this app - the banner, the NEW dot,
-   the What's New floater - so its popup is indigo too. Product feature
+/* Release news is purple everywhere in this app - the banner, the NEW dot,
+   the What's New floater - so its popup is purple too. Product feature
    spotlights stay brand blue. */
-.spot-card.rel .spot-hero{background:var(--indigo-600);}
+.spot-card.rel .spot-hero{background:var(--purple-500);}
 .spot-close{position:absolute;top:var(--sp-6);right:var(--sp-6);width:var(--h-xs);height:var(--h-xs);border-radius:var(--r-md);
   border:none;background:rgba(255,255,255,.16);color:var(--n-0);cursor:pointer;
   display:flex;align-items:center;justify-content:center;font-size:16px;}
@@ -703,8 +713,8 @@ td.mid{vertical-align:middle;}
   font-family:var(--font-ui);font-size:14px;font-weight:600;cursor:pointer;
   display:flex;align-items:center;justify-content:center;gap:var(--sp-4);}
 .spot-cta:hover{background:var(--brand-hover);}
-.spot-card.rel .spot-cta{background:var(--indigo-600);}
-.spot-card.rel .spot-cta:hover{background:var(--indigo-500);}
+.spot-card.rel .spot-cta{background:var(--purple-500);}
+.spot-card.rel .spot-cta:hover{background:var(--purple-600);}
 .spot-dismiss{width:100%;text-align:center;margin-top:var(--sp-6);background:none;border:none;cursor:pointer;
   font-family:var(--font-ui);font-size:13px;color:var(--tx3);padding:var(--sp-4);border-radius:var(--r-sm);}
 .spot-dismiss:hover{color:var(--tx);}
@@ -724,22 +734,22 @@ td.mid{vertical-align:middle;}
    banner over the page content rather than a second global chrome layer. */
 /* A pale band, not a second dark bar. Against the blue top bar the
    separation is by value rather than hue, so the two layers stop competing
-   without the band having to shout. Pastel indigo also keeps the banner in
+   without the band having to shout. Pastel purple also keeps the banner in
    the family that marks everything new in this app. */
 .announce{
   position:fixed;top:var(--topbar);left:var(--rail);right:0;height:var(--annbar);z-index:60;
-  background:var(--indigo-200);color:var(--tx);display:flex;align-items:center;gap:var(--sp-6);
+  background:var(--purple-50);color:var(--purple-900);display:flex;align-items:center;gap:var(--sp-6);
   padding:0 var(--sp-6) 0 var(--sp-8);transition:left .18s;
-  border-bottom:1px solid rgba(72,58,255,.26);
+  border-bottom:1px solid rgba(188,58,210,.28);
 }
 .announce.rail-collapsed{left:0;}
 /* One saturated step up from the band - same hue, deeper value - so the chip
    reads as the accent without introducing a second colour. */
-.announce .ic{width:28px;height:28px;border-radius:var(--r-md);background:var(--indigo-500);color:var(--n-0);
+.announce .ic{width:28px;height:28px;border-radius:var(--r-md);background:var(--purple-500);color:var(--n-0);
   display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
 .announce .txt{font-size:14px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .announce .txt b{font-weight:600;margin-right:var(--sp-4);}
-.announce .explore{color:var(--indigo-600);font-weight:600;text-decoration:none;white-space:nowrap;
+.announce .explore{color:var(--purple-900);font-weight:600;text-decoration:none;white-space:nowrap;
   display:inline-flex;align-items:center;gap:var(--sp-2);margin-left:var(--sp-4);border-radius:var(--r-xs);}
 .announce .explore:hover{text-decoration:underline;}
 .announce .close{
@@ -747,7 +757,7 @@ td.mid{vertical-align:middle;}
   background:transparent;color:rgba(16,24,40,.62);cursor:pointer;
   display:flex;align-items:center;justify-content:center;font-size:16px;
 }
-.announce .close:hover{background:rgba(72,58,255,.14);color:var(--tx);}
+.announce .close:hover{background:rgba(188,58,210,.14);color:var(--tx);}
 
 .rail.collapsed{width:0;}
 .shell.rail-collapsed{padding-left:0;}
@@ -761,7 +771,7 @@ td.mid{vertical-align:middle;}
 .dstat-icon{width:40px;height:40px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;
   font-size:19px;flex-shrink:0;}
 .dstat-icon.t-blue{background:var(--brand-soft);color:var(--brand);}
-.dstat-icon.t-indigo{background:var(--indigo-50);color:var(--indigo-500);}
+.dstat-icon.t-purple{background:var(--purple-50);color:var(--purple-500);}
 .dstat-icon.t-green{background:var(--green-50);color:var(--green-600);}
 .dstat-icon.t-amber{background:var(--amber-50);color:var(--amber-700);}
 
@@ -809,3 +819,107 @@ td.mid{vertical-align:middle;}
   .announce .det{display:none;}
 }
 
+
+/* ============================================================
+   PRODUCTION ALIGNMENT
+   Overrides that bring the Zerra prototype in line with the real
+   component library in zm-manage-new-setting-development. Kept as one
+   appended layer rather than edits scattered through the sheet above, so
+   the delta from the prototype stays reviewable and revertible.
+
+   Sources: src/components/ui/{Button,Badge,Input,Select,Pagination}.jsx,
+            src/main.css (.rules-grid ag-grid theme), tailwind.config.js
+   ============================================================ */
+
+/* ---- Buttons ------------------------------------------------
+   Production Button: rounded-lg, px-4 py-2, text-base (16px), font-medium,
+   always bordered, disabled -> #e9e9e9 on grey-300. It has no grey "ghost"
+   variant: the secondary variant is an outlined blue that inverts on hover,
+   so .btn-ghost maps onto that rather than inventing a third look. */
+.btn{font-size:16px;border-radius:var(--r-md);}
+.btn .ph{font-size:18px;}
+.btn-primary{background:var(--blue-600);border-color:var(--blue-600);}
+.btn-primary:hover{background:var(--blue-700);border-color:var(--blue-700);}
+.btn-ghost{background:transparent;color:var(--blue-600);border-color:var(--blue-600);}
+.btn-ghost:hover{background:var(--blue-600);color:var(--n-0);border-color:var(--blue-600);}
+.btn:disabled{opacity:1;background:#E9E9E9;color:var(--n-600);border-color:transparent;box-shadow:none;}
+
+/* ---- Badges -------------------------------------------------
+   Production Badge is a rounded rectangle, not a pill: rounded-lg (8px),
+   px-2 py-1, text-xs, font-medium, leading-4. */
+.flabel,.mod-pill,.pill-csm,.pill-req,.tag,.new-badge,.spot-tag,.secrow .n,.code{
+  border-radius:var(--r-md);
+}
+.flabel,.mod-pill,.pill-csm,.pill-req,.tag,.new-badge{
+  font-size:12px;font-weight:500;line-height:16px;padding:var(--sp-2) var(--sp-4);
+}
+.flabel.is-new{background:var(--purple-50);color:var(--purple-900);border-color:var(--purple-200);}
+.new-badge{color:var(--purple-900);}
+.spot-tag{font-size:12px;font-weight:500;letter-spacing:.02em;padding:var(--sp-2) var(--sp-4);}
+
+/* ---- Form controls ------------------------------------------
+   Input: text-base, border-zinc-300, rounded-lg, hover/focus border-zinc-400,
+   placeholder #999. Select: same but rounded-md. Production signals focus by
+   darkening the border; the 2px brand ring stays for :focus-visible because
+   AGENTS.md treats a visible keyboard focus indicator as a requirement. */
+.search input,.fld input,.fld textarea,.kb-foot input{
+  font-size:16px;border-color:#D4D4D8;border-radius:var(--r-md);
+}
+select.sel,.fld select,.tfoot select,.role-sel{font-size:16px;border-radius:var(--r-sm);}
+select.sel,.fld select,.tfoot select{border-color:#D4D4D8;}
+.search input::placeholder,.fld input::placeholder,.fld textarea::placeholder,.kb-foot input::placeholder{color:#999999;}
+.search input:hover,select.sel:hover,.fld input:hover,.fld select:hover,.fld textarea:hover{border-color:#A1A1AA;}
+.search input:focus,select.sel:focus,.fld input:focus,.fld select:focus,.fld textarea:focus{
+  border-color:#A1A1AA;box-shadow:none;
+}
+.search input:focus-visible,select.sel:focus-visible,.fld input:focus-visible,
+.fld select:focus-visible,.fld textarea:focus-visible{border-color:var(--brand);box-shadow:var(--ring);}
+
+/* ---- Table --------------------------------------------------
+   Matched to the .rules-grid ag-grid theme production uses for data grids:
+   #f4f4f5 header, #e4e4e7 rules, #f9fafb row hover. Column headings follow
+   the hand-built tables (12px medium, grey-300) rather than ag-grid's 14/600,
+   because this table is hand-built too. */
+thead th{font-size:12px;font-weight:500;color:var(--tx3);background:var(--n-50);border-bottom:1px solid var(--n-150);}
+tbody td{border-bottom:1px solid var(--n-150);}
+tbody tr:hover{background:#F9FAFB;}
+tbody tr:hover td.stick{background:#F9FAFB;}
+.tfoot{background:var(--n-50);border-top:1px solid var(--n-150);}
+.pager .icon-btn{border-radius:var(--r-sm);}
+.pager .icon-btn:hover:not(:disabled){background:var(--brand);color:var(--n-0);border-color:var(--brand);}
+
+/* ---- Type ---------------------------------------------------
+   Production's Tailwind fontSize scale is fixed at 12/14/16/18/20/24, so the
+   prototype's 22px page title moves to 20px (`lg`). */
+h1{font-size:20px;}
+
+/* ---- Overlays -----------------------------------------------
+   Production dialogs use a black/50 scrim and an 8px radius. */
+.overlay,.spot-overlay{background:rgba(0,0,0,.5);}
+.modal,.spot-card{border-radius:var(--r-md);}
+
+/* ---- Rail ---------------------------------------------------
+   72px, expanding to 220px on hover with labels, overlaying the canvas
+   rather than reflowing it - matching AppLayout.jsx. */
+.rail{width:var(--rail);align-items:stretch;gap:var(--sp-4);padding:var(--sp-6) 0;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);}
+.rail.expanded{width:220px;}
+.rail-btn{
+  width:auto;height:auto;margin:0 var(--sp-6);padding:10px;gap:var(--sp-6);
+  border-radius:var(--r-md);justify-content:center;font-size:14px;color:var(--n-700);
+}
+.rail.expanded .rail-btn{justify-content:flex-start;}
+.rail-btn .ph{font-size:24px;flex-shrink:0;}
+.rail-btn:hover,.rail-btn.on{background:var(--brand);color:var(--n-0);}
+.rail-btn .rail-label{white-space:nowrap;overflow:hidden;}
+.rail-btn .newdot{position:static;margin-left:auto;background:var(--purple-500);}
+.rail:not(.expanded) .rail-btn .newdot{position:absolute;top:2px;right:8px;margin-left:0;}
+.rail-sep{width:auto;margin:var(--sp-4) var(--sp-6);}
+
+/* The release popup's hero carries 14px body copy on a solid fill, so it uses
+   the darker purple step: white-at-88% over #BC3AD2 is only 3.75:1, which
+   fails WCAG AA for normal text, while #A32EB8 reaches 4.8:1. The lighter
+   #BC3AD2 stays on the chip, the NEW dot and the floater's top edge, which are
+   decorative and only need 3:1. */
+.spot-card.rel .spot-hero{background:var(--purple-600);}
+.spot-card.rel .spot-cta{background:var(--purple-600);}
+.spot-card.rel .spot-cta:hover{background:var(--purple-900);}

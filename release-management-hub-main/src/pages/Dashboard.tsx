@@ -48,7 +48,7 @@ const Dashboard = () => {
             <div className="stat-value tnum">186</div>
             <div className="stat-sub">18 added this week</div>
           </div>
-          <div className="dstat-icon t-indigo"><i className="ph ph-users-three" /></div>
+          <div className="dstat-icon t-purple"><i className="ph ph-users-three" /></div>
         </div>
         <div className="stat-card">
           <div>

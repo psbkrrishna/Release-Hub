@@ -1,3 +1,4 @@
+import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
@@ -14,12 +15,11 @@ import FeatureStore from './components/FeatureStore';
 
 const queryClient = new QueryClient();
 
-/* Toasts are the Zerra `.toast` rendered by FeatureStore, so the shadcn and
-   sonner toasters are no longer mounted - two toast systems on one page was
-   the only reason messages appeared in two different visual languages. */
+/* Toaster configured exactly as production's AppLayout mounts it. */
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <Toaster richColors position="top-right" closeButton />
       <BrowserRouter>
         <UserRoleProvider>
           <ReleaseVisibilityProvider>

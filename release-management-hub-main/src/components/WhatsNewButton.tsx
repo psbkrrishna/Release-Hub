@@ -139,7 +139,7 @@ const WhatsNewButton = () => {
         </div>
       </div>
 
-      {/* Release news is indigo everywhere in this app, so its popup is too.
+      {/* Release news is purple everywhere in this app, so its popup is too.
           Product feature spotlights stay brand blue. */}
       <div
         className={`spot-overlay${popupOpen ? ' open' : ''}`}

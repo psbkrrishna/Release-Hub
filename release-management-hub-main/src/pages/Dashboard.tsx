@@ -1,5 +1,10 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Briefcase, Users, Calendar, History, ArrowRight, Check } from 'lucide-react';
+import Button from '@/components/primitives/Button';
+import Panel from '@/components/primitives/Panel';
+import Badge from '@/components/primitives/Badge';
+import Crumb from '@/components/primitives/Crumb';
 import { PERF } from '@/data/performance';
 
 const initialPriorities = [
@@ -8,6 +13,36 @@ const initialPriorities = [
   { title: 'Complete manager calibration', sub: 'Performance', done: false },
   { title: 'Publish onboarding checklist', sub: 'Employee Experience', done: false },
 ];
+
+/* The four stat tiles differ only by their icon tint, so the tints are a
+   lookup rather than four near-identical blocks. */
+const TINT = {
+  blue: 'bg-brand-soft text-brand',
+  purple: 'bg-purple-50 text-purple-500',
+  green: 'bg-green-50 text-green-600',
+  amber: 'bg-amber-50 text-amber-700',
+} as const;
+
+const StatCard = ({
+  label, value, sub, tint, children,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  tint: keyof typeof TINT;
+  children: ReactNode;
+}) => (
+  <div className="flex items-start justify-between rounded-xl border border-ink-150 bg-white p-5 shadow-elev1">
+    <div>
+      <div className="text-13 text-ink-600">{label}</div>
+      <div className="my-1 text-32 font-bold tabular-nums">{value}</div>
+      <div className="text-xs text-ink-500">{sub}</div>
+    </div>
+    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${TINT[tint]}`}>
+      {children}
+    </div>
+  </div>
+);
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,92 +53,120 @@ const Dashboard = () => {
 
   return (
     <>
-      <nav className="crumb"><b>Dashboard</b></nav>
+      <Crumb levels={[{ label: 'Dashboard' }]} />
 
-      <div className="page-head">
-        <div className="dash-head">
-          <div className="dash-date">Wednesday, July 22</div>
-          <h1>Good afternoon, Ananya</h1>
-          <p className="lede">Here's what's happening across your organization.</p>
+      <div className="mb-5 flex flex-col gap-6 min-[861px]:flex-row min-[861px]:items-start min-[861px]:justify-between">
+        <div>
+          <div className="mb-1 text-sm font-semibold text-brand">Wednesday, July 22</div>
+          <h1 className="mb-1 text-xl font-semibold leading-tight tracking-[-0.01em] text-brand">
+            Good afternoon, Ananya
+          </h1>
+          <p className="max-w-lede text-sm text-ink-600">
+            Here's what's happening across your organization.
+          </p>
         </div>
-        <div className="head-actions">
-          <button className="btn btn-primary btn-lg" onClick={() => navigate('/performance-reviews')}>
+        <div className="flex shrink-0 items-center gap-3">
+          <Button size="lg" onClick={() => navigate('/performance-reviews')}>
             Open performance reviews
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="dash-stats">
-        <div className="stat-card">
-          <div>
-            <div className="stat-label">Open positions</div>
-            <div className="stat-value tnum">24</div>
-            <div className="stat-sub">6 closing this month</div>
-          </div>
-          <div className="dstat-icon t-blue"><i className="ph ph-briefcase" /></div>
-        </div>
-        <div className="stat-card">
-          <div>
-            <div className="stat-label">Active candidates</div>
-            <div className="stat-value tnum">186</div>
-            <div className="stat-sub">18 added this week</div>
-          </div>
-          <div className="dstat-icon t-purple"><i className="ph ph-users-three" /></div>
-        </div>
-        <div className="stat-card">
-          <div>
-            <div className="stat-label">Reviews in progress</div>
-            <div className="stat-value tnum">{PERF.completion}%</div>
-            <div className="stat-sub">{PERF.submitted} of {PERF.people} completed</div>
-          </div>
-          <div className="dstat-icon t-green"><i className="ph ph-calendar-blank" /></div>
-        </div>
-        <div className="stat-card">
-          <div>
-            <div className="stat-label">Tasks due</div>
-            <div className="stat-value tnum">7</div>
-            <div className="stat-sub">2 need attention today</div>
-          </div>
-          <div className="dstat-icon t-amber"><i className="ph ph-clock-counter-clockwise" /></div>
-        </div>
+      <div className="mb-5 grid grid-cols-1 gap-4 min-[901px]:grid-cols-2 min-[1181px]:grid-cols-4">
+        <StatCard label="Open positions" value="24" sub="6 closing this month" tint="blue">
+          <Briefcase size={19} />
+        </StatCard>
+        <StatCard label="Active candidates" value="186" sub="18 added this week" tint="purple">
+          <Users size={19} />
+        </StatCard>
+        <StatCard
+          label="Reviews in progress"
+          value={`${PERF.completion}%`}
+          sub={`${PERF.submitted} of ${PERF.people} completed`}
+          tint="green"
+        >
+          <Calendar size={19} />
+        </StatCard>
+        <StatCard label="Tasks due" value="7" sub="2 need attention today" tint="amber">
+          <History size={19} />
+        </StatCard>
       </div>
 
-      <div className="main-grid">
-        <div className="panel">
-          <div className="cycle-head">
+      <div className="grid grid-cols-1 items-start gap-5 min-[901px]:grid-cols-[1.4fr_1fr]">
+        <Panel>
+          <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2>Performance review cycle</h2>
-              <div className="sub">Mid-year review · July 1–31</div>
+              <h2 className="text-base font-semibold">Performance review cycle</h2>
+              <div className="mt-0.5 text-13 text-ink-600">Mid-year review · July 1–31</div>
             </div>
-            <span className="pill-ontrack">On track</span>
+            <Badge variant="green" className="shrink-0 font-semibold">On track</Badge>
           </div>
-          <div className="cycle-progress-row">
-            <span>{PERF.submitted} of {PERF.people} reviews complete</span>
-            <span className="pct tnum">{PERF.completion}%</span>
-          </div>
-          <div className="cycle-track"><div className="cycle-fill" style={{ width: `${PERF.completion}%` }} /></div>
-          <div className="cycle-mini-row">
-            <div className="cycle-mini"><div className="l">Self reviews</div><div className="v tnum">{PERF.self[0]} / {PERF.self[1]}</div></div>
-            <div className="cycle-mini"><div className="l">Manager reviews</div><div className="v tnum">{PERF.manager[0]} / {PERF.manager[1]}</div></div>
-            <div className="cycle-mini"><div className="l">Calibrations</div><div className="v tnum">{PERF.calib[0]} / {PERF.calib[1]}</div></div>
-          </div>
-          <a className="cycle-link" href="/performance-reviews" onClick={(e) => { e.preventDefault(); navigate('/performance-reviews'); }}>
-            View performance reviews <i className="ph ph-arrow-right" />
-          </a>
-        </div>
 
-        <div className="panel pri-panel">
-          <h2>Today's priorities</h2>
+          <div className="mb-2 flex items-baseline justify-between text-sm">
+            <span>{PERF.submitted} of {PERF.people} reviews complete</span>
+            <span className="font-semibold tabular-nums text-ink-900">{PERF.completion}%</span>
+          </div>
+          <div className="mb-4 h-2 overflow-hidden rounded-full bg-ink-100">
+            <div
+              className="h-full rounded-full bg-brand transition-[width] duration-[600ms] ease-out"
+              style={{ width: `${PERF.completion}%` }}
+            />
+          </div>
+
+          <div className="mb-4 grid grid-cols-1 gap-3 min-[901px]:grid-cols-3">
+            {([
+              ['Self reviews', PERF.self],
+              ['Manager reviews', PERF.manager],
+              ['Calibrations', PERF.calib],
+            ] as const).map(([label, pair]) => (
+              <div key={label} className="rounded-lg border border-ink-150 bg-ink-50 px-4 py-3">
+                <div className="mb-1 text-xs text-ink-600">{label}</div>
+                <div className="text-base font-semibold tabular-nums">
+                  {pair[0]} / {pair[1]}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <a
+            className="inline-flex items-center gap-1 rounded text-sm font-medium text-brand no-underline hover:underline"
+            href="/performance-reviews"
+            onClick={(e) => { e.preventDefault(); navigate('/performance-reviews'); }}
+          >
+            View performance reviews <ArrowRight size={14} />
+          </a>
+        </Panel>
+
+        <Panel>
+          <h2 className="mb-4 text-base font-semibold">Today's priorities</h2>
           {priorities.map((t, i) => (
-            <button key={t.title} className={`todo-item${t.done ? ' done' : ''}`} onClick={() => toggle(i)}>
-              <span className="todo-check"><i className="ph ph-check" /></span>
-              <span className="todo-text">
-                <span className="todo-title">{t.title}</span>
-                <span className="todo-sub">{t.sub}</span>
+            <button
+              key={t.title}
+              onClick={() => toggle(i)}
+              className="flex w-full items-start gap-3 border-b border-ink-150 py-3 text-left last:border-b-0 last:pb-0"
+            >
+              <span
+                className={[
+                  'mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                  t.done ? 'border-brand bg-brand text-white' : 'border-ink-200 text-transparent',
+                ].join(' ')}
+              >
+                <Check size={13} />
+              </span>
+              <span className="flex flex-col gap-0.5">
+                <span
+                  className={[
+                    'text-sm font-semibold',
+                    t.done ? 'text-ink-600 line-through' : 'text-ink-900',
+                  ].join(' ')}
+                >
+                  {t.title}
+                </span>
+                <span className="text-xs text-ink-600">{t.sub}</span>
               </span>
             </button>
           ))}
-        </div>
+        </Panel>
       </div>
     </>
   );

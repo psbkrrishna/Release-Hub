@@ -1,171 +1,131 @@
-
 import type { Config } from "tailwindcss";
-import tailwindcssAnimate from "tailwindcss-animate";
 
+/* ---------------------------------------------------------------------------
+   The single source of design tokens for this app.
+
+   These values were previously CSS custom properties in src/styles/zerra.css
+   (--brand, --n-*, --purple-*, --elev*, ...). That stylesheet is gone; the
+   values live here so every colour, shadow and radius is reachable as a
+   Tailwind utility and nothing is defined twice.
+
+   Palette origin: the production Tailwind theme in
+   zm-manage-new-setting-development/tailwind.config.js. Production names the
+   brand blue `blue.500`, and this scale keeps that step, so `blue-500` here
+   IS production's brand blue.
+
+   Steps not listed below (e.g. green-500) fall through to Tailwind's own
+   defaults - prefer the steps defined here, which are the real tokens.
+   --------------------------------------------------------------------------- */
 export default {
-	darkMode: ["class"],
-	content: [
-		"./pages/**/*.{ts,tsx}",
-		"./components/**/*.{ts,tsx}",
-		"./app/**/*.{ts,tsx}",
-		"./src/**/*.{ts,tsx}",
-	],
-	prefix: "",
-	theme: {
-		container: {
-			center: true,
-			padding: '2rem',
-			screens: {
-				'2xl': '1400px'
-			}
-		},
-		extend: {
-			colors: {
-				border: 'hsl(var(--border))',
-				input: 'hsl(var(--input))',
-				ring: 'hsl(var(--ring))',
-				background: 'hsl(var(--background))',
-				foreground: 'hsl(var(--foreground))',
-				primary: {
-					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
-				},
-				secondary: {
-					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
-				},
-				destructive: {
-					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))'
-				},
-				muted: {
-					DEFAULT: 'hsl(var(--muted))',
-					foreground: 'hsl(var(--muted-foreground))'
-				},
-				accent: {
-					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
-				},
-				popover: {
-					DEFAULT: 'hsl(var(--popover))',
-					foreground: 'hsl(var(--popover-foreground))'
-				},
-				card: {
-					DEFAULT: 'hsl(var(--card))',
-					foreground: 'hsl(var(--card-foreground))'
-				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
-				},
-				// Extended color palette from the reference image
-				blue: {
-					50: 'hsl(var(--blue-50))',
-					100: 'hsl(var(--blue-100))',
-					200: 'hsl(var(--blue-200))',
-					300: 'hsl(var(--blue-300))',
-					400: 'hsl(var(--blue-400))',
-					500: 'hsl(var(--blue-500))',
-					600: 'hsl(var(--blue-600))',
-					700: 'hsl(var(--blue-700))',
-					800: 'hsl(var(--blue-800))',
-					900: 'hsl(var(--blue-900))',
-				},
-				green: {
-					50: 'hsl(var(--green-50))',
-					100: 'hsl(var(--green-100))',
-					200: 'hsl(var(--green-200))',
-					300: 'hsl(var(--green-300))',
-					400: 'hsl(var(--green-400))',
-					500: 'hsl(var(--green-500))',
-					600: 'hsl(var(--green-600))',
-					700: 'hsl(var(--green-700))',
-					800: 'hsl(var(--green-800))',
-					900: 'hsl(var(--green-900))',
-				},
-				red: {
-					50: 'hsl(var(--red-50))',
-					100: 'hsl(var(--red-100))',
-					200: 'hsl(var(--red-200))',
-					300: 'hsl(var(--red-300))',
-					400: 'hsl(var(--red-400))',
-					500: 'hsl(var(--red-500))',
-					600: 'hsl(var(--red-600))',
-					700: 'hsl(var(--red-700))',
-					800: 'hsl(var(--red-800))',
-					900: 'hsl(var(--red-900))',
-				},
-				yellow: {
-					50: 'hsl(var(--yellow-50))',
-					100: 'hsl(var(--yellow-100))',
-					200: 'hsl(var(--yellow-200))',
-					300: 'hsl(var(--yellow-300))',
-					400: 'hsl(var(--yellow-400))',
-					500: 'hsl(var(--yellow-500))',
-					600: 'hsl(var(--yellow-600))',
-					700: 'hsl(var(--yellow-700))',
-					800: 'hsl(var(--yellow-800))',
-					900: 'hsl(var(--yellow-900))',
-				},
-				cyan: {
-					50: 'hsl(var(--cyan-50))',
-					100: 'hsl(var(--cyan-100))',
-					200: 'hsl(var(--cyan-200))',
-					300: 'hsl(var(--cyan-300))',
-					400: 'hsl(var(--cyan-400))',
-					500: 'hsl(var(--cyan-500))',
-					600: 'hsl(var(--cyan-600))',
-					700: 'hsl(var(--cyan-700))',
-					800: 'hsl(var(--cyan-800))',
-					900: 'hsl(var(--cyan-900))',
-				},
-				zinc: {
-					50: 'hsl(var(--zinc-50))',
-					100: 'hsl(var(--zinc-100))',
-					200: 'hsl(var(--zinc-200))',
-					300: 'hsl(var(--zinc-300))',
-					400: 'hsl(var(--zinc-400))',
-					500: 'hsl(var(--zinc-500))',
-					600: 'hsl(var(--zinc-600))',
-					700: 'hsl(var(--zinc-700))',
-					800: 'hsl(var(--zinc-800))',
-					900: 'hsl(var(--zinc-900))',
-				},
-			},
-			borderRadius: {
-				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
-			},
-			keyframes: {
-				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
-				},
-				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
-				}
-			},
-			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
-		}
-	},
-	plugins: [tailwindcssAnimate],
+  content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        /* Brand aliases. Top bar and general brand are blue.500; the primary
+           button is blue.600, exactly as production's Button does it. */
+        brand: {
+          DEFAULT: "#0D59A3",
+          hover: "#0C5194",
+          soft: "#E7EEF6",
+          softhover: "#B4CCE2",
+          border: "#90B3D5",
+          text: "#07315A",
+        },
+        blue: {
+          50: "#E7EEF6", 100: "#B4CCE2", 200: "#90B3D5", 300: "#5D90C1", 400: "#3D7AB5",
+          500: "#0D59A3", 600: "#0C5194", 700: "#093F74", 800: "#07315A", 900: "#052544",
+        },
+        /* Neutrals. Named `ink` rather than `gray`/`neutral` so they can't
+           silently blend with Tailwind's own scales of those names. */
+        ink: {
+          0: "#FFFFFF", 25: "#FAFAFA", 50: "#F4F4F5", 100: "#F1F1F1", 150: "#E4E4E7",
+          200: "#DADADA", 300: "#BABABA", 400: "#A1A1AA", 500: "#999999", 600: "#6B6B6B",
+          700: "#4E4E4E", 800: "#27272A", 900: "#222222",
+        },
+        green: { 50: "#EBF4EC", 200: "#A3CBA5", 600: "#388E3C", 700: "#1F4E21" },
+        red: { 50: "#FCEBEB", 200: "#F1A4A4", 600: "#CC3535", 700: "#7B2020" },
+        amber: { 50: "#FBF6E8", 200: "#EDD793", 500: "#D8A715", 700: "#99770F" },
+        /* Release news. Production defines purple.1000/1100/1200 only; the
+           border and hover steps are derived from those three. */
+        purple: { 50: "#FCEBFF", 200: "#EDC7F4", 500: "#BC3AD2", 600: "#A32EB8", 900: "#3A0143" },
+      },
+      fontFamily: {
+        sans: ["'Source Sans 3'", "ui-sans-serif", "system-ui", "sans-serif"],
+      },
+      fontSize: {
+        /* Steps this design uses that aren't in Tailwind's defaults. */
+        "2xs": ["11px", "14px"],
+        "13": ["13px", "18px"],
+        "15": ["15px", "20px"],
+        "22": ["22px", "28px"],
+        "26": ["26px", "32px"],
+        "32": ["32px", "1.15"],
+      },
+      spacing: {
+        /* Named for what they measure in the shell, so the several places that
+           have to agree on these can't drift apart. */
+        topbar: "56px",
+        annbar: "48px",
+        rail: "72px",
+        "rail-open": "220px",
+        kb: "340px",
+        "shell-top": "104px", // topbar + annbar
+      },
+      boxShadow: {
+        elev1: "0 2px 10px rgba(0,0,0,.03), 0 0 20px rgba(0,0,0,.03)",
+        elev2: "0 4px 8px rgba(75,97,119,.1)",
+        elev3: "0 10px 24px rgba(15,23,42,.12)",
+        /* The What's New floater has to read as lifted off the page, so it
+           carries a deeper shadow than any card plus a hairline light ring. */
+        floater:
+          "0 24px 48px -12px rgba(16,24,40,.30), 0 8px 16px -6px rgba(16,24,40,.14), 0 0 0 1px rgba(255,255,255,.9)",
+        rail: "0 4px 6px -1px rgba(0,0,0,.1)",
+      },
+      zIndex: {
+        banner: "60",
+        rail: "70",
+        kb: "75",
+        topbar: "100",
+        floater: "110",
+        rowmenu: "115",
+        modal: "120",
+        spotlight: "130",
+      },
+      maxWidth: {
+        prose: "80ch",
+        lede: "70ch",
+        cell: "46ch",
+        empty: "44ch",
+      },
+      keyframes: {
+        /* Unseen release news: the button carries a ring pulse until the
+           reader opens the panel once, then settles to the quiet state. */
+        "wn-pulse": {
+          "0%": { boxShadow: "0 0 0 0 rgba(255,255,255,.55)" },
+          "60%": { boxShadow: "0 0 0 8px rgba(255,255,255,0)" },
+          "100%": { boxShadow: "0 0 0 0 rgba(255,255,255,0)" },
+        },
+        "wn-nudge": {
+          "0%, 72%, 100%": { transform: "none" },
+          "80%": { transform: "rotate(-12deg)" },
+          "88%": { transform: "rotate(10deg)" },
+        },
+        "wn-in": {
+          from: { opacity: "0", transform: "translateY(-6px)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        "spot-in": {
+          from: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "wn-pulse": "wn-pulse 2.4s ease-out infinite",
+        "wn-nudge": "wn-nudge 2.4s ease-out infinite",
+        "wn-in": "wn-in .18s ease-out",
+        "spot-in": "spot-in .25s ease-out",
+      },
+    },
+  },
+  plugins: [],
 } satisfies Config;

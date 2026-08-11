@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export type UserRole = 'customer' | 'customer-admin' | 'creator' | 'implementation';
 
@@ -19,25 +18,10 @@ export const useUserRole = () => {
   return context;
 };
 
-export const DemoRoleSelector = () => {
-  const { userRole, setUserRole } = useUserRole();
-  return (
-    <div className="flex items-center gap-2">
-      <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Demo Role:</label>
-      <Select value={userRole} onValueChange={(v) => setUserRole(v as UserRole)}>
-        <SelectTrigger className="w-[180px] h-8 text-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="customer">Customer</SelectItem>
-          <SelectItem value="customer-admin">Customer Admin</SelectItem>
-          <SelectItem value="creator">Creator (Internal)</SelectItem>
-          <SelectItem value="implementation">Implementation Team</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-};
+/* The exported DemoRoleSelector that used to live here is gone. It was the
+   app's only consumer of the shadcn Select, and nothing imported it - the
+   role picker that actually renders is the native <select> in Navigation's
+   top bar. */
 
 const UserRoleProvider = ({ children }: { children: React.ReactNode }) => {
   const [userRole, setUserRole] = useState<UserRole>('customer');

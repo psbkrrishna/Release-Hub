@@ -1,16 +1,23 @@
-
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FileText, Play, Download, ExternalLink } from 'lucide-react';
 import KnowledgeBaseHome from './KnowledgeBaseHome';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { FileText, Play, Download, ExternalLink } from 'lucide-react';
+import Panel from '@/components/primitives/Panel';
+import Button from '@/components/primitives/Button';
+import Badge from '@/components/primitives/Badge';
+import IconButton from '@/components/primitives/IconButton';
 
-const modules = [
+/* Badge tones rather than hand-written colour pairs, so a module looks the same
+   here as it does on the Knowledge Base home. */
+type Tone = 'brand' | 'green' | 'purple' | 'amber' | 'neutral';
+
+const modules: Array<{
+  name: string;
+  tone: Tone;
+  features: Array<{ name: string; documents: number; videos: number }>;
+}> = [
   {
     name: 'Hire',
-    color: 'bg-blue-100 text-blue-700',
+    tone: 'brand',
     features: [
       { name: 'Candidate Scoring', documents: 3, videos: 2 },
       { name: 'Interview Scheduling', documents: 2, videos: 1 },
@@ -19,7 +26,7 @@ const modules = [
   },
   {
     name: 'Amplify',
-    color: 'bg-green-100 text-green-700',
+    tone: 'green',
     features: [
       { name: 'Performance Analytics', documents: 5, videos: 2 },
       { name: 'Goal Setting', documents: 3, videos: 1 },
@@ -28,7 +35,7 @@ const modules = [
   },
   {
     name: 'Analytics',
-    color: 'bg-purple-100 text-purple-700',
+    tone: 'purple',
     features: [
       { name: 'Custom Dashboards', documents: 4, videos: 3 },
       { name: 'Data Export', documents: 2, videos: 1 },
@@ -37,7 +44,7 @@ const modules = [
   },
   {
     name: 'Brand',
-    color: 'bg-orange-100 text-orange-700',
+    tone: 'amber',
     features: [
       { name: 'Logo Management', documents: 2, videos: 1 },
       { name: 'Theme Customization', documents: 3, videos: 2 },
@@ -46,7 +53,7 @@ const modules = [
   },
   {
     name: 'Plan',
-    color: 'bg-indigo-100 text-indigo-700',
+    tone: 'neutral',
     features: [
       { name: 'Subscription Management', documents: 3, videos: 2 },
       { name: 'Usage Tracking', documents: 2, videos: 1 },
@@ -63,6 +70,14 @@ const releaseNotes = [
   { feature: 'Billing Integration v1.2.0', module: 'Plan', date: 'December 3, 2024', description: 'Streamlined billing process with automated invoicing.' },
 ];
 
+/* The left-hand nav entries. Selected is a filled brand row; the rest are quiet
+   until hovered - the same treatment the app's left rail uses. */
+const navItem = (active: boolean) =>
+  [
+    'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+    active ? 'bg-brand font-medium text-white' : 'text-ink-700 hover:bg-ink-50',
+  ].join(' ');
+
 const KnowledgeBase = () => {
   const [currentView, setCurrentView] = useState<'home' | 'detailed'>('home');
   const [selectedSection, setSelectedSection] = useState('release-notes');
@@ -76,7 +91,7 @@ const KnowledgeBase = () => {
     } else if (section === 'module' && module) {
       setSelectedSection('module');
       // Find the matching module from our local modules array by name
-      const matchingModule = modules.find(m => m.name === module.name) || modules[0];
+      const matchingModule = modules.find((m) => m.name === module.name) || modules[0];
       setSelectedModule(matchingModule);
     } else {
       setSelectedSection(section);
@@ -84,189 +99,157 @@ const KnowledgeBase = () => {
     setCurrentView('detailed');
   };
 
-  const handleBackToHome = () => {
-    setCurrentView('home');
-  };
-
   // If we're on the home view, show the home component
   if (currentView === 'home') {
     return <KnowledgeBaseHome onNavigateToSection={handleNavigateToSection} />;
   }
 
-  const getModuleColor = (moduleName: string) => {
-    const module = modules.find(m => m.name === moduleName);
-    return module ? module.color : 'bg-gray-100 text-gray-700';
-  };
+  const toneOf = (moduleName: string): Tone =>
+    modules.find((m) => m.name === moduleName)?.tone ?? 'neutral';
 
-  // Detailed view (existing functionality)
+  // Detailed view
   return (
     <div>
-      {/* Back to Home Button */}
-      <div className="mb-6">
-        <Button 
-          variant="ghost" 
-          onClick={handleBackToHome}
-          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Knowledge Base Home
+      <div className="mb-5">
+        <Button variant="secondary" onClick={() => setCurrentView('home')}>
+          <ArrowLeft size={18} />Back to Knowledge Base home
         </Button>
       </div>
 
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+      <div className="mb-5">
+        <h1 className="mb-1 text-xl font-semibold leading-tight tracking-[-0.01em] text-brand">
           Knowledge Base
         </h1>
-        <p className="text-lg text-gray-600">
-          Access release notes, documentation, and training videos for all product modules
+        <p className="max-w-lede text-sm text-ink-600">
+          Release notes, documentation, and training videos for every product module.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Navigation */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Navigation</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {/* Release Notes Section */}
-              <Button
-                variant={selectedSection === 'release-notes' ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setSelectedSection('release-notes')}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Release Notes
-              </Button>
-              
-              <div className="border-t pt-4 mt-4">
-                <h4 className="text-sm font-medium text-gray-500 mb-2">Product Modules</h4>
-                {modules.map((module) => (
-                  <Button
+      <div className="grid grid-cols-1 items-start gap-5 min-[901px]:grid-cols-[240px_1fr]">
+        <Panel>
+          <h2 className="mb-3 text-base font-semibold">Navigation</h2>
+
+          <button
+            className={navItem(selectedSection === 'release-notes')}
+            onClick={() => setSelectedSection('release-notes')}
+          >
+            <FileText size={16} />Release notes
+          </button>
+
+          <div className="mt-4 border-t border-ink-150 pt-4">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-[.04em] text-ink-500">
+              Product modules
+            </h3>
+            <div className="flex flex-col gap-1">
+              {modules.map((module) => {
+                const active = selectedSection === 'module' && selectedModule.name === module.name;
+                return (
+                  <button
                     key={module.name}
-                    variant={selectedSection === 'module' && selectedModule.name === module.name ? "default" : "ghost"}
-                    className="w-full justify-start"
+                    className={navItem(active)}
                     onClick={() => {
                       setSelectedSection('module');
                       setSelectedModule(module);
                     }}
                   >
-                    <Badge className={`mr-2 ${module.color}`}>
-                      {module.name}
-                    </Badge>
-                    {module.features.length} Features
-                  </Button>
+                    <span className={active ? 'font-medium' : ''}>{module.name}</span>
+                    <span className={`ml-auto text-xs ${active ? 'text-white/80' : 'text-ink-500'}`}>
+                      {module.features.length} features
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Panel>
+
+        <Panel>
+          {selectedSection === 'release-notes' ? (
+            <>
+              <h2 className="mb-4 flex items-center gap-2 text-base font-semibold">
+                <FileText size={18} />Latest release notes
+              </h2>
+              <div className="flex flex-col gap-3">
+                {releaseNotes.map((note) => (
+                  <div
+                    key={note.feature}
+                    className="flex items-start justify-between gap-4 rounded-lg border border-ink-150 bg-ink-25 p-4"
+                  >
+                    <div className="flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-semibold">{note.feature}</h3>
+                        <Badge variant={toneOf(note.module)}>{note.module}</Badge>
+                      </div>
+                      <p className="mb-1 text-13 text-ink-500">Released on {note.date}</p>
+                      <p className="text-sm text-ink-700">{note.description}</p>
+                    </div>
+                    <Button variant="secondary" className="shrink-0">
+                      <FileText size={16} />View
+                    </Button>
+                  </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        <div className="lg:col-span-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {selectedSection === 'release-notes' ? (
-                  <>
-                    <FileText className="w-5 h-5" />
-                    Latest Release Notes
-                  </>
-                ) : (
-                  <>
-                    <Badge className={selectedModule.color}>
-                      {selectedModule.name}
-                    </Badge>
-                    Module Documentation
-                  </>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedSection === 'release-notes' ? (
-                <div className="space-y-4">
-                  {releaseNotes.map((note, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-medium">{note.feature}</h4>
-                            <Badge className={getModuleColor(note.module)}>
-                              {note.module}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-1">
-                            Released on {note.date}
-                          </p>
-                          <p className="text-sm text-gray-700">
-                            {note.description}
-                          </p>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          <FileText className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
+            </>
+          ) : (
+            <>
+              <h2 className="mb-4 flex items-center gap-2 text-base font-semibold">
+                <Badge variant={selectedModule.tone}>{selectedModule.name}</Badge>
+                Module documentation
+              </h2>
+              <div className="flex flex-col gap-4">
+                {selectedModule.features.map((feature) => (
+                  <div key={feature.name} className="rounded-lg border border-ink-150 bg-ink-25 p-4">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold">{feature.name}</h3>
+                      <div className="flex gap-2">
+                        <Badge variant="neutral">{feature.documents} docs</Badge>
+                        <Badge variant="neutral">{feature.videos} videos</Badge>
                       </div>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold mb-4">Documentation & Videos</h3>
-                  {selectedModule.features.map((feature, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium">{feature.name}</h4>
-                        <div className="flex gap-2">
-                          <Badge variant="secondary">{feature.documents} docs</Badge>
-                          <Badge variant="secondary">{feature.videos} videos</Badge>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 gap-3">
-                        {Array.from({ length: feature.documents }, (_, docIndex) => (
-                          <div key={docIndex} className="border rounded p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-blue-600" />
-                                <span className="text-sm font-medium">{feature.name} Guide {docIndex + 1}</span>
-                              </div>
-                              <div className="flex gap-1">
-                                <Button variant="ghost" size="sm">
-                                  <ExternalLink className="w-3 h-3" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <Download className="w-3 h-3" />
-                                </Button>
-                              </div>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      {Array.from({ length: feature.documents }, (_, docIndex) => (
+                        <div key={docIndex} className="rounded-md border border-ink-150 bg-white p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              <FileText size={16} className="shrink-0 text-brand" />
+                              <span className="text-sm font-medium">
+                                {feature.name} Guide {docIndex + 1}
+                              </span>
                             </div>
-                            {/* Associated Videos */}
-                            {docIndex < feature.videos && (
-                              <div className="ml-6 pt-2 border-t">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Play className="w-3 h-3 text-green-600" />
-                                    <span className="text-xs text-gray-600">Related Tutorial Video</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500">5:30</span>
-                                    <Button variant="ghost" size="sm">
-                                      <Play className="w-3 h-3" />
-                                    </Button>
-                                  </div>
+                            <div className="flex gap-1">
+                              <IconButton tone="brand" aria-label="Open document">
+                                <ExternalLink size={14} />
+                              </IconButton>
+                              <IconButton tone="brand" aria-label="Download document">
+                                <Download size={14} />
+                              </IconButton>
+                            </div>
+                          </div>
+                          {docIndex < feature.videos && (
+                            <div className="mt-2 border-t border-ink-150 pt-2 pl-6">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <Play size={12} className="shrink-0 text-green-600" />
+                                  <span className="text-xs text-ink-600">Related tutorial video</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs tabular-nums text-ink-500">5:30</span>
+                                  <IconButton tone="brand" aria-label="Play video">
+                                    <Play size={12} />
+                                  </IconButton>
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </Panel>
       </div>
     </div>
   );

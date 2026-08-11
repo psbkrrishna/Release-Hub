@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Sparkles, X, ChevronRight, History } from 'lucide-react';
+import Spotlight from '@/components/primitives/Spotlight';
+import IconButton from '@/components/primitives/IconButton';
 import { LATEST_RELEASE } from '@/data/features';
 import { useFeatureStore } from '@/components/FeatureStore';
+import type { Feature } from '@/types/Feature';
 
 /* ---------------------------------------------------------------------------
    Two surfaces, one source. On a first visit the release arrives as a popup
@@ -12,6 +16,36 @@ import { useFeatureStore } from '@/components/FeatureStore';
 
 const SEEN_KEY = 'wnSpotSeen';
 const OPENED_KEY = 'wnOpened';
+
+/* One release item. `flat` is the variant used inside the first-run popup,
+   where the rows are separated by rules rather than sitting as loose cards. */
+const ReleaseItem = ({
+  feature,
+  flat = false,
+  onSelect,
+}: {
+  feature: Feature;
+  flat?: boolean;
+  onSelect: () => void;
+}) => (
+  <button
+    onClick={onSelect}
+    className={[
+      'flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-ink-50',
+      flat ? 'rounded-none border-b border-ink-150 last:border-b-0' : 'rounded-md',
+    ].join(' ')}
+  >
+    <span>
+      {/* Title over subtitle - these were inline once, so the two ran together
+          on a single line and the subtitle's offset had nothing to act on. */}
+      <span className="block text-sm font-semibold text-ink-900">{feature.title}</span>
+      <span className="mt-px block text-xs text-ink-500">
+        {flat ? `${feature.productModule} · ${feature.featureTag}` : feature.productModule}
+      </span>
+    </span>
+    <ChevronRight size={14} className="ml-auto shrink-0 text-ink-500" />
+  </button>
+);
 
 const WhatsNewButton = () => {
   const navigate = useNavigate();
@@ -48,7 +82,8 @@ const WhatsNewButton = () => {
     });
   };
 
-  // Click-away and Escape both close the floater.
+  // Click-away and Escape both close the floater. The popup gets both from
+  // Modal, so it needs no listener of its own.
   useEffect(() => {
     if (!floaterOpen) return;
     const onClick = () => closeFloater();
@@ -60,13 +95,6 @@ const WhatsNewButton = () => {
       document.removeEventListener('keydown', onKey);
     };
   }, [floaterOpen, closeFloater]);
-
-  useEffect(() => {
-    if (!popupOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closePopup();
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [popupOpen, closePopup]);
 
   const goToFeature = (id: string) => {
     closeFloater();
@@ -94,92 +122,97 @@ const WhatsNewButton = () => {
 
   return (
     <>
-      <button className={`whatsnew${pulse ? ' pulse' : ''}`} onClick={toggleFloater}>
-        <i className="ph ph-sparkle" />
+      {/* Unseen release news: the button carries a ring pulse until the reader
+          opens the panel once, then settles to the quiet default. The pulse is
+          an attention cue, not information, so with reduced motion the
+          brighter resting state carries the same signal without moving. */}
+      <button
+        onClick={toggleFloater}
+        className={[
+          'inline-flex h-8 items-center gap-2 rounded-md border px-3 text-sm font-medium text-white',
+          pulse
+            ? 'border-white/[.62] bg-white/20 animate-wn-pulse motion-reduce:animate-none motion-reduce:shadow-[0_0_0_2px_rgba(255,255,255,.5)]'
+            : 'border-white/[.34] bg-white/10 hover:bg-white/20',
+        ].join(' ')}
+      >
+        <Sparkles size={16} className={pulse ? 'animate-wn-nudge motion-reduce:animate-none' : ''} />
         What's New
       </button>
 
-      <div
-        className={`wn-pop${floaterOpen ? ' open' : ''}`}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-label="What's new"
-      >
-        <div className="wn-head">
-          <div>
-            <div className="t">
-              <i className="ph ph-sparkle" />
-              {LATEST_RELEASE} Release
+      {/* The floater. Deliberately heavier than any card - it sits above the
+          canvas rather than in it - with the purple top edge this system uses
+          for anything new. */}
+      {floaterOpen && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-label="What's new"
+          className="fixed right-4 top-[calc(theme(spacing.topbar)+8px)] z-floater w-[min(380px,calc(100vw-64px))] animate-wn-in overflow-hidden rounded-lg border border-ink-200 border-t-[3px] border-t-purple-500 bg-white shadow-floater"
+        >
+          <div className="flex items-start gap-3 border-b border-ink-150 bg-purple-50 p-4">
+            <div>
+              <div className="flex items-center gap-2 text-base font-semibold text-purple-900">
+                <Sparkles size={16} />
+                {LATEST_RELEASE} Release
+              </div>
+              <p className="mt-0.5 text-13 text-ink-600">
+                Two new features and two enhancements are live.
+              </p>
             </div>
-            <p>Two new features and two enhancements are live.</p>
+            <IconButton
+              onClick={closeFloater}
+              aria-label="Close What's New"
+              className="ml-auto text-ink-500 hover:!bg-[rgba(188,58,210,.10)] hover:!text-purple-900"
+            >
+              <X size={16} />
+            </IconButton>
           </div>
-          <button className="icon-btn x" onClick={closeFloater} aria-label="Close What's New">
-            <i className="ph ph-x" />
-          </button>
-        </div>
-        <div className="wn-list">
-          {latest.map((f) => (
-            <button key={f.id} className="wn-item" onClick={() => goToFeature(f.id)}>
-              <span>
-                <span className="tt">{f.title}</span>
-                <span className="ss">{f.productModule}</span>
-              </span>
-              <i className="ph ph-caret-right go" />
+
+          <div className="max-h-[280px] overflow-y-auto p-2">
+            {latest.map((f) => (
+              <ReleaseItem key={f.id} feature={f} onSelect={() => goToFeature(f.id)} />
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 border-t border-ink-150 bg-ink-50 px-4 py-3">
+            <button
+              onClick={handleReset}
+              className="inline-flex items-center gap-2 rounded text-13 text-ink-500 transition-colors hover:text-ink-900"
+            >
+              <History size={14} />
+              Reset demo
             </button>
-          ))}
+            <button
+              onClick={goToRelease}
+              className="ml-auto inline-flex items-center gap-2 rounded text-13 font-semibold text-brand hover:underline"
+            >
+              View release <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
-        <div className="wn-foot">
-          <button className="reset" onClick={handleReset}>
-            <i className="ph ph-clock-counter-clockwise" />
-            Reset demo
-          </button>
-          <button className="lnk" onClick={goToRelease}>
-            View release <i className="ph ph-caret-right" />
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Release news is purple everywhere in this app, so its popup is too.
           Product feature spotlights stay brand blue. */}
-      <div
-        className={`spot-overlay${popupOpen ? ' open' : ''}`}
-        onClick={(e) => e.target === e.currentTarget && closePopup()}
+      <Spotlight
+        open={popupOpen}
+        onClose={closePopup}
+        tone="news"
+        isRelease
+        tag={`${LATEST_RELEASE} release`}
+        title="Four new ways to move work forward"
+        intro="Two new features and two enhancements are live. Open any one to see what changed."
+        icon={<Sparkles size={20} />}
+        ctaLabel="View the full release"
+        onCta={goToRelease}
+        dismissLabel="Got it - find this under What's New"
       >
-        <div className="spot-card rel">
-          <div className="spot-hero">
-            <button className="spot-close" onClick={closePopup} aria-label="Close">
-              <i className="ph ph-x" />
-            </button>
-            <div className="spot-icon">
-              <i className="ph ph-sparkle" />
-            </div>
-            <span className="spot-tag">{LATEST_RELEASE} release</span>
-            <h3>Four new ways to move work forward</h3>
-            <p>Two new features and two enhancements are live. Open any one to see what changed.</p>
-          </div>
-          <div className="spot-body">
-            <div className="wn-list flat">
-              {latest.map((f) => (
-                <button key={f.id} className="wn-item" onClick={() => goToFeature(f.id)}>
-                  <span>
-                    <span className="tt">{f.title}</span>
-                    <span className="ss">
-                      {f.productModule} · {f.featureTag}
-                    </span>
-                  </span>
-                  <i className="ph ph-caret-right go" />
-                </button>
-              ))}
-            </div>
-            <button className="spot-cta" onClick={goToRelease}>
-              View the full release <i className="ph ph-arrow-right" />
-            </button>
-            <button className="spot-dismiss" onClick={closePopup}>
-              Got it - find this under What's New
-            </button>
-          </div>
+        <div className="mb-5">
+          {latest.map((f) => (
+            <ReleaseItem key={f.id} feature={f} flat onSelect={() => goToFeature(f.id)} />
+          ))}
         </div>
-      </div>
+      </Spotlight>
     </>
   );
 };

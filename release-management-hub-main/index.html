@@ -3,12 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Release Management Hub — Zwayam · Zerra v2</title>
+    <title>Release Management Hub — Zwayam</title>
     <meta name="description" content="Zwayam Release Management Hub — track, enable and publish product releases." />
 
     <meta property="og:title" content="Release Management Hub — Zwayam" />
     <meta property="og:description" content="Zwayam Release Management Hub — track, enable and publish product releases." />
     <meta property="og:type" content="website" />
+
+    <!-- Source Sans 3 was previously embedded as a base64 woff2 inside
+         src/styles/zerra.css. That stylesheet is gone, so the typeface is
+         loaded here instead. This is the one thing the refactor traded away:
+         the app now needs the network on first load to render in-brand
+         (it falls back to system-ui otherwise). Self-host under public/ if
+         offline rendering matters. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap"
+      rel="stylesheet"
+    />
   </head>
 
   <body>

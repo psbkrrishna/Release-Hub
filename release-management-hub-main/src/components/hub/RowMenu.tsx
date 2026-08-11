@@ -1,5 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react';
 import { createPortal } from 'react-dom';
+import { MoreVertical } from 'lucide-react';
+import IconButton from '@/components/primitives/IconButton';
 
 /* ---------------------------------------------------------------------------
    The actions menu is portalled to the body and fixed-positioned. Rendered
@@ -7,11 +9,15 @@ import { createPortal } from 'react-dom';
    below painted over it, and the table's own overflow container clipped it on
    the bottom rows. Placed by hand against the button, flipped above when
    there isn't room below, and closed on scroll.
+
+   Only the styling changed in this pass - the positioning logic is the same,
+   because it is the part that was hard to get right.
    --------------------------------------------------------------------------- */
 
 export interface RowMenuItem {
   label: string;
-  icon: string;
+  /** A lucide icon component, not a name string. */
+  icon: ComponentType<{ size?: number | string; className?: string }>;
   onSelect: () => void;
   danger?: boolean;
   separatorBefore?: boolean;
@@ -52,10 +58,9 @@ const RowMenu = ({ label, items }: { label: string; items: RowMenuItem[] }) => {
   }, [open]);
 
   return (
-    <div className="menu-wrap">
-      <button
+    <div className="relative">
+      <IconButton
         ref={btnRef}
-        className="icon-btn"
         aria-haspopup="true"
         aria-expanded={open}
         aria-label={`Actions for ${label}`}
@@ -64,28 +69,38 @@ const RowMenu = ({ label, items }: { label: string; items: RowMenuItem[] }) => {
           setOpen((v) => !v);
         }}
       >
-        <i className="ph ph-dots-three-vertical" />
-      </button>
+        <MoreVertical size={16} />
+      </IconButton>
+
       {open &&
         createPortal(
           <div
             ref={menuRef}
-            className="rowmenu open"
-            style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? 'visible' : 'hidden' }}
+            role="menu"
+            className="fixed z-rowmenu min-w-[216px] rounded-xl border border-ink-150 bg-white p-2 text-left shadow-elev3"
+            style={{
+              top: pos?.top ?? -9999,
+              left: pos?.left ?? -9999,
+              visibility: pos ? 'visible' : 'hidden',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            {items.map((item) => (
-              <div key={item.label}>
-                {item.separatorBefore && <div className="mi-sep" />}
+            {items.map(({ label: itemLabel, icon: Icon, onSelect, danger, separatorBefore }) => (
+              <div key={itemLabel}>
+                {separatorBefore && <div className="my-2 h-px bg-ink-150" />}
                 <button
-                  className={`mi${item.danger ? ' danger' : ''}`}
+                  role="menuitem"
+                  className={[
+                    'flex w-full min-h-9 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                    danger ? 'text-red-600 hover:bg-red-50' : 'text-ink-900 hover:bg-ink-50',
+                  ].join(' ')}
                   onClick={() => {
                     setOpen(false);
-                    item.onSelect();
+                    onSelect();
                   }}
                 >
-                  <i className={`ph ph-${item.icon}`} />
-                  {item.label}
+                  <Icon size={16} className={danger ? 'text-red-600' : 'text-ink-600'} />
+                  {itemLabel}
                 </button>
               </div>
             ))}

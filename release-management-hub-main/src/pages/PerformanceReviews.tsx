@@ -1,9 +1,39 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  TrendingUp, CheckCircle2, Users, MoreVertical, Sparkles, BarChart3,
+} from 'lucide-react';
+import Button from '@/components/primitives/Button';
+import Panel from '@/components/primitives/Panel';
+import Badge from '@/components/primitives/Badge';
+import Crumb from '@/components/primitives/Crumb';
+import IconButton from '@/components/primitives/IconButton';
+import Spotlight from '@/components/primitives/Spotlight';
 import { PERF, PERF_DEPTS as DEPTS } from '@/data/performance';
 import { LATEST_RELEASE } from '@/data/features';
 
 const SPOT_KEY = 'perfSpotSeen';
+
+const StatCard = ({
+  label, value, sub, subTone = 'muted', children,
+}: {
+  label: string;
+  value: string | number;
+  sub: string;
+  subTone?: 'muted' | 'up';
+  children: ReactNode;
+}) => (
+  <div className="flex items-start justify-between rounded-xl border border-ink-150 bg-white p-5 shadow-elev1">
+    <div>
+      <div className="text-13 text-ink-600">{label}</div>
+      <div className="my-1 text-32 font-bold tabular-nums">{value}</div>
+      <div className={`text-xs ${subTone === 'up' ? 'text-green-700' : 'text-ink-500'}`}>{sub}</div>
+    </div>
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+      {children}
+    </div>
+  </div>
+);
 
 const PerformanceReviews = () => {
   const navigate = useNavigate();
@@ -11,11 +41,12 @@ const PerformanceReviews = () => {
 
   // The spotlight fires the first time this session that the page is opened.
   // If the release popup is still up it waits for the next visit rather than
-  // stacking two announcements on top of each other.
+  // stacking two announcements on top of each other. That popup is detected by
+  // a data attribute rather than a class name now, and its mere presence in
+  // the DOM is enough: a closed Modal renders nothing.
   useEffect(() => {
     if (sessionStorage.getItem(SPOT_KEY) === '1') return;
-    const releasePopupOpen = document.querySelector('.spot-card.rel')?.closest('.spot-overlay')?.classList.contains('open');
-    if (releasePopupOpen) return;
+    if (document.querySelector('[data-release-popup]')) return;
     const t = window.setTimeout(() => {
       setSpotOpen(true);
       sessionStorage.setItem(SPOT_KEY, '1');
@@ -23,145 +54,152 @@ const PerformanceReviews = () => {
     return () => window.clearTimeout(t);
   }, []);
 
+  // Escape is handled by Modal, so there is no key listener here any more.
   const close = useCallback(() => setSpotOpen(false), []);
-
-  useEffect(() => {
-    if (!spotOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [spotOpen, close]);
 
   return (
     <>
-      <nav className="crumb">
-        <a href="/dashboard" onClick={(e) => { e.preventDefault(); navigate('/dashboard'); }}>Dashboard</a>
-        <i className="ph ph-caret-right" />
-        <b>Performance Reviews</b>
-      </nav>
+      <Crumb levels={[{ label: 'Dashboard', path: '/dashboard' }, { label: 'Performance Reviews' }]} />
 
-      <div className="page-head">
+      <div className="mb-5 flex flex-col gap-6 min-[861px]:flex-row min-[861px]:items-start min-[861px]:justify-between">
         <div>
-          <h1>Performance reviews</h1>
-          <p className="lede">Track progress, understand themes, and support better manager conversations.</p>
+          <h1 className="mb-1 text-xl font-semibold leading-tight tracking-[-0.01em] text-brand">
+            Performance reviews
+          </h1>
+          <p className="max-w-lede text-sm text-ink-600">
+            Track progress, understand themes, and support better manager conversations.
+          </p>
         </div>
-        <div className="head-actions">
-          <button className="btn btn-ghost">Export</button>
-          <button className="btn btn-primary">Review settings</button>
-        </div>
-      </div>
-
-      <div className="stats-row">
-        <div className="stat-card">
-          <div>
-            <div className="stat-label">Completion</div>
-            <div className="stat-value tnum">{PERF.completion}%</div>
-            <div className="stat-sub up">+12% this week</div>
-          </div>
-          <div className="stat-icon2"><i className="ph ph-trend-up" /></div>
-        </div>
-        <div className="stat-card">
-          <div>
-            <div className="stat-label">Reviews submitted</div>
-            <div className="stat-value tnum">{PERF.submitted}</div>
-            <div className="stat-sub">{PERF.remaining} remaining</div>
-          </div>
-          <div className="stat-icon2"><i className="ph ph-check-circle" /></div>
-        </div>
-        <div className="stat-card">
-          <div>
-            <div className="stat-label">People in cycle</div>
-            <div className="stat-value tnum">{PERF.people}</div>
-            <div className="stat-sub">{PERF.depts} departments</div>
-          </div>
-          <div className="stat-icon2"><i className="ph ph-users-three" /></div>
+        <div className="flex shrink-0 items-center gap-3">
+          <Button variant="secondary">Export</Button>
+          <Button>Review settings</Button>
         </div>
       </div>
 
-      <div className="main-grid">
-        <div className="panel">
-          <div className="panel-head">
+      <div className="mb-5 grid grid-cols-1 gap-4 min-[901px]:grid-cols-3">
+        <StatCard label="Completion" value={`${PERF.completion}%`} sub="+12% this week" subTone="up">
+          <TrendingUp size={20} />
+        </StatCard>
+        <StatCard label="Reviews submitted" value={PERF.submitted} sub={`${PERF.remaining} remaining`}>
+          <CheckCircle2 size={20} />
+        </StatCard>
+        <StatCard label="People in cycle" value={PERF.people} sub={`${PERF.depts} departments`}>
+          <Users size={20} />
+        </StatCard>
+      </div>
+
+      <div className="grid grid-cols-1 items-start gap-5 min-[901px]:grid-cols-[1.4fr_1fr]">
+        <Panel>
+          <div className="mb-2 flex items-start justify-between gap-3">
             <div>
-              <h2>Team review progress</h2>
-              <p className="panel-sub">Completion by department</p>
+              <h2 className="text-base font-semibold">Team review progress</h2>
+              <p className="mb-4 text-13 text-ink-600">Completion by department</p>
             </div>
-            <button className="icon-btn" title="More options"><i className="ph ph-dots-three-vertical" /></button>
+            <IconButton title="More options" aria-label="More options">
+              <MoreVertical size={16} />
+            </IconButton>
           </div>
+
           {DEPTS.map(([name, done, total]) => (
-            <div className="dept" key={name}>
-              <div className="dept-row">
-                <span className="dept-name">{name}</span>
-                <span className="dept-ct tnum">{done} of {total}</span>
+            <div key={name} className="mb-4 last:mb-0">
+              <div className="mb-2 flex items-baseline justify-between">
+                <span className="text-sm">{name}</span>
+                <span className="text-sm tabular-nums text-ink-600">{done} of {total}</span>
               </div>
-              <div className="bar-track">
-                <div className="bar-fill" style={{ width: `${Math.round((100 * done) / total)}%` }} />
+              <div className="h-2 overflow-hidden rounded-full bg-ink-100">
+                <div
+                  className="h-full rounded-full bg-brand transition-[width] duration-[600ms] ease-out"
+                  style={{ width: `${Math.round((100 * done) / total)}%` }}
+                />
               </div>
             </div>
           ))}
-        </div>
+        </Panel>
 
-        <div className="ai-panel">
-          <div className="panel ai-card" onClick={() => setSpotOpen(true)}>
-            <div className="ai-head">
-              <div className="ai-icon"><i className="ph ph-sparkle" /></div>
+        <div className="flex flex-col gap-3">
+          <Panel onClick={() => setSpotOpen(true)}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-500 text-white">
+                <Sparkles size={20} />
+              </div>
               <div>
-                <div className="ai-title">
+                <div className="flex items-center gap-2 text-base font-semibold group-hover:text-brand">
                   AI Review Insights
-                  {/* The badge is the control that reopens the announcement,
-                      so it's a real button, not decoration on a heading. */}
-                  <button
-                    className="new-badge"
+                  {/* The badge is the control that reopens the announcement, so
+                      it's a real button, not decoration on a heading. It sits
+                      inside a clickable card, hence stopPropagation. */}
+                  <span
+                    role="button"
+                    tabIndex={0}
                     title="What's new in AI Review Insights"
                     onClick={(e) => { e.stopPropagation(); setSpotOpen(true); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSpotOpen(true);
+                      }
+                    }}
+                    className="rounded-lg"
                   >
-                    <i className="ph ph-sparkle" />New
-                  </button>
+                    <Badge variant="purple" className="cursor-pointer font-semibold hover:bg-purple-200">
+                      <Sparkles size={12} />New
+                    </Badge>
+                  </span>
                 </div>
-                <div className="ai-sub">Themes from submitted reviews</div>
+                <div className="text-13 text-ink-600">Themes from submitted reviews</div>
               </div>
             </div>
-          </div>
-          <div className="insight-card">
-            <div className="insight-ovl">Strongest theme</div>
-            <div className="insight-val">Cross-team collaboration</div>
-            <div className="insight-sub">Mentioned in 31 reviews</div>
-          </div>
-          <div className="insight-card">
-            <div className="insight-ovl">Growth opportunity</div>
-            <div className="insight-val">Delegation and coaching</div>
-            <div className="insight-sub">Mentioned in 18 reviews</div>
-          </div>
-          <div className="insight-card">
-            <div className="insight-ovl">Sentiment</div>
-            <div className="insight-val">84% positive</div>
-            <div className="insight-sub">Up 6 points from last cycle</div>
-          </div>
-          <button className="btn btn-ghost btn-full">View full analysis <i className="ph ph-chart-bar" /></button>
+          </Panel>
+
+          {([
+            ['Strongest theme', 'Cross-team collaboration', 'Mentioned in 31 reviews'],
+            ['Growth opportunity', 'Delegation and coaching', 'Mentioned in 18 reviews'],
+            ['Sentiment', '84% positive', 'Up 6 points from last cycle'],
+          ] as const).map(([overline, value, sub]) => (
+            <div key={overline} className="rounded-xl border border-ink-150 bg-white p-4">
+              <div className="mb-1 text-2xs font-semibold uppercase tracking-[.04em] text-ink-500">
+                {overline}
+              </div>
+              <div className="text-15 font-semibold text-ink-900">{value}</div>
+              <div className="mt-1 text-xs text-ink-600">{sub}</div>
+            </div>
+          ))}
+
+          <Button variant="secondary" block>
+            View full analysis <BarChart3 size={18} />
+          </Button>
         </div>
       </div>
 
-      <div className={`spot-overlay${spotOpen ? ' open' : ''}`} onClick={(e) => e.target === e.currentTarget && close()}>
-        <div className="spot-card">
-          <div className="spot-hero">
-            <button className="spot-close" onClick={close} aria-label="Close"><i className="ph ph-x" /></button>
-            <div className="spot-icon"><i className="ph ph-sparkle" /></div>
-            <span className="spot-tag">New feature</span>
-            <h3>New: AI Review Insights</h3>
-            <p>Turn review responses into clear patterns and practical coaching recommendations.</p>
-          </div>
-          <div className="spot-body">
-            <div className="spot-bullets">
-              <div className="spot-bullet"><i className="ph ph-check-circle" /><span>Surface review themes automatically</span></div>
-              <div className="spot-bullet"><i className="ph ph-check-circle" /><span>Generate practical coaching recommendations</span></div>
-              <div className="spot-bullet"><i className="ph ph-check-circle" /><span>Reduce manual analysis time by up to 75%</span></div>
+      <Spotlight
+        open={spotOpen}
+        onClose={close}
+        tone="brand"
+        tag="New feature"
+        title="New: AI Review Insights"
+        intro="Turn review responses into clear patterns and practical coaching recommendations."
+        icon={<Sparkles size={20} />}
+        ctaLabel="See what's new"
+        onCta={() => {
+          close();
+          navigate(`/release-hub?month=${encodeURIComponent(LATEST_RELEASE)}`);
+        }}
+        dismissLabel="Got it, close tour"
+      >
+        <div className="mb-5 flex flex-col gap-3">
+          {[
+            'Surface review themes automatically',
+            'Generate practical coaching recommendations',
+            'Reduce manual analysis time by up to 75%',
+          ].map((bullet) => (
+            <div key={bullet} className="flex items-start gap-3 text-sm">
+              <CheckCircle2 size={18} className="mt-px shrink-0 text-green-600" />
+              <span>{bullet}</span>
             </div>
-            <button className="spot-cta" onClick={() => { close(); navigate(`/release-hub?month=${encodeURIComponent(LATEST_RELEASE)}`); }}>
-              See what's new <i className="ph ph-arrow-right" />
-            </button>
-            <button className="spot-dismiss" onClick={close}>Got it, close tour</button>
-          </div>
+          ))}
         </div>
-      </div>
+      </Spotlight>
     </>
   );
 };

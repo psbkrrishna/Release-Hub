@@ -105,7 +105,7 @@ const WhatsNewButton = () => {
   const goToRelease = () => {
     closeFloater();
     closePopup();
-    navigate(`/release-hub?month=${encodeURIComponent(LATEST_RELEASE)}`);
+    navigate(`/release-hub/releases?month=${encodeURIComponent(LATEST_RELEASE)}`);
   };
 
   const handleReset = () => {

@@ -11,7 +11,6 @@ import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import Switch from '@/components/primitives/Switch';
 import IconButton from '@/components/primitives/IconButton';
-import Crumb from '@/components/primitives/Crumb';
 import EmptyState from '@/components/primitives/EmptyState';
 import { inputCls, toolbarSelectCls, caretBackground } from '@/components/primitives/fieldStyles';
 import { useFeatureStore } from '@/components/FeatureStore';
@@ -138,11 +137,23 @@ const Index = () => {
 
   const [query, setQuery] = useState('');
   const [module, setModule] = useState('all');
-  const [month, setMonth] = useState(() => searchParams.get('month') ?? 'all');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Feature | null>(null);
+
+  /* The release month lives in the URL rather than in state. Several places
+     link here asking for one release - What's New, the release banner, a
+     feature's "View this release", the Knowledge Hub's release notes - and
+     when this page is already mounted, only the query string changes. Read
+     from state, those links quietly did nothing. */
+  const month = searchParams.get('month') ?? 'all';
+  const setMonth = (next: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === 'all') params.delete('month');
+    else params.set('month', next);
+    setSearchParams(params, { replace: true });
+  };
 
   const openRes = (label: string, url?: string) =>
     toast(url ? `${label} → ${url}` : `${label} not attached to this feature.`, 'info');
@@ -200,7 +211,7 @@ const Index = () => {
   const clearFilters = () => {
     setQuery('');
     setModule('all');
-    setMonth('all');
+    // Clears the month too - it is the only thing this page keeps in the URL.
     setSearchParams({});
     setPage(1);
   };
@@ -378,13 +389,8 @@ const Index = () => {
 
   return (
     <>
-      <Crumb
-        levels={[
-          { label: 'Dashboard', path: '/dashboard' },
-          { label: isImplementation ? 'Implementation Support Queue' : 'Release Management Hub' },
-        ]}
-      />
-
+      {/* No breadcrumb here: ReleaseHubLayout owns it, and the tab strip
+          already says which tab this is. */}
       <div className="mb-5 flex flex-col gap-6 min-[861px]:flex-row min-[861px]:items-start min-[861px]:justify-between">
         <div>
           <h1 className="mb-1 text-xl font-semibold leading-tight tracking-[-0.01em] text-brand">{title}</h1>

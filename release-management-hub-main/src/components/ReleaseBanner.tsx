@@ -46,10 +46,10 @@ const ReleaseBanner = ({
 
       <a
         className="ml-1 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded font-semibold text-purple-900 no-underline hover:underline"
-        href="/release-hub"
+        href={`/release-hub/releases?month=${encodeURIComponent(LATEST_RELEASE)}`}
         onClick={(e) => {
           e.preventDefault();
-          navigate('/release-hub');
+          navigate(`/release-hub/releases?month=${encodeURIComponent(LATEST_RELEASE)}`);
         }}
       >
         Explore <ArrowRight size={14} />

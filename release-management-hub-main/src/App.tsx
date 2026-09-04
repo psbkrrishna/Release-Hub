@@ -9,7 +9,12 @@ import Dashboard from './pages/Dashboard';
 import Index from './pages/Index';
 import FeatureDetail from './pages/FeatureDetail';
 import PerformanceReviews from './pages/PerformanceReviews';
-import KnowledgeBase from './components/KnowledgeBase';
+import ReleaseHubLayout from './pages/hub/ReleaseHubLayout';
+import HubIndexRedirect from './pages/hub/HubIndexRedirect';
+import HubHome from './pages/hub/HubHome';
+import KnowledgeHome from './pages/hub/KnowledgeHome';
+import KnowledgeSection from './pages/hub/KnowledgeSection';
+import ModuleDocs from './pages/hub/ModuleDocs';
 import UserRoleProvider from './components/UserRoleProvider';
 import FeatureStore from './components/FeatureStore';
 
@@ -31,10 +36,27 @@ const App = () => (
             <Route element={<Navigation />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
-              <Route path="release-hub" element={<Index />} />
-              <Route path="release-hub/features/:featureId" element={<FeatureDetail />} />
+
+              {/* The Release Hub: three peer tabs under one shell. Feature
+                  detail keeps the URL it has always had - the release banner,
+                  What's New and the feature table all point at it. */}
+              <Route path="release-hub" element={<ReleaseHubLayout />}>
+                <Route index element={<HubIndexRedirect />} />
+                <Route path="home" element={<HubHome />} />
+                <Route path="releases" element={<Index />} />
+                <Route path="features/:featureId" element={<FeatureDetail />} />
+                <Route path="knowledge" element={<KnowledgeHome />} />
+                <Route path="knowledge/release-notes" element={<KnowledgeSection section="release-notes" />} />
+                <Route path="knowledge/newsletters" element={<KnowledgeSection section="newsletters" />} />
+                <Route path="knowledge/videos" element={<KnowledgeSection section="videos" />} />
+                <Route path="knowledge/modules/:moduleSlug" element={<ModuleDocs />} />
+              </Route>
+
+              {/* The Knowledge Base was its own destination before the merge.
+                  Bookmarks and the left rail's old entry both land here. */}
+              <Route path="knowledge-base" element={<Navigate to="/release-hub/knowledge" replace />} />
+
               <Route path="performance-reviews" element={<PerformanceReviews />} />
-              <Route path="knowledge-base" element={<KnowledgeBase />} />
               <Route
                 path="insights"
                 element={

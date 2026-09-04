@@ -7,16 +7,20 @@ import {
   inputCls, readonlyInputCls, selectCls, textareaCls, caretBackground,
 } from '@/components/primitives/fieldStyles';
 import { useFeatureStore } from '@/components/FeatureStore';
-import { MODULES, addDays, formatDate, releaseMonthOf } from '@/data/features';
+import { MODULES, addDays, formatDate, releaseMonthOf, valueOf } from '@/data/features';
 import { FEATURE_TYPES, type Feature, type FeatureType } from '@/types/Feature';
 
-/* Every field in the pane is required. The list is declared once and drives
-   both the labels and the validation, so a new field can't be added to the
-   form and silently skip the check. */
+/* The list is declared once and drives both the labels and the validation, so
+   a new field can't be added to the form and silently skip the check. All of
+   them are required except the ones named in OPTIONAL below. */
 const FIELDS = [
   { key: 'title', label: 'Feature Title', error: 'Feature title is required.' },
   { key: 'featureTag', label: 'Feature Tag', error: 'Feature tag is required.' },
   { key: 'summary', label: 'Feature Summary', error: 'Feature summary is required.' },
+  { key: 'description', label: 'Feature Description', error: 'Feature description is required.' },
+  { key: 'value1', label: 'Value Delivered', error: 'At least one value point is required.' },
+  { key: 'value2', label: 'Value Delivered', error: '' },
+  { key: 'value3', label: 'Value Delivered', error: '' },
   { key: 'productModule', label: 'Product Module', error: 'Product module is required.' },
   { key: 'featureType', label: 'Feature Type', error: 'Feature type is required.' },
   { key: 'releaseNotes', label: 'Release Notes URL', error: 'Release notes URL is required.' },
@@ -29,10 +33,20 @@ const FIELDS = [
 type FieldKey = (typeof FIELDS)[number]['key'];
 type FormState = Record<FieldKey, string>;
 
+/* A feature needs at least one value point but not three. Kept as a set rather
+   than a flag on each entry so the FIELDS literal stays uniform. */
+const OPTIONAL: ReadonlySet<FieldKey> = new Set<FieldKey>(['value2', 'value3']);
+
+const VALUE_KEYS = ['value1', 'value2', 'value3'] as const;
+
 const EMPTY: FormState = {
   title: '',
   featureTag: 'Enhancement',
   summary: '',
+  description: '',
+  value1: '',
+  value2: '',
+  value3: '',
   productModule: MODULES[0],
   featureType: 'Default On',
   releaseNotes: '',
@@ -87,12 +101,17 @@ const CreateFeatureModal = ({
   useEffect(() => {
     if (!open) return;
     setInvalid(new Set());
+    const bullets = valueOf(feature ?? ({} as Feature));
     setForm(
       feature
         ? {
             title: feature.title,
             featureTag: feature.featureTag,
             summary: feature.summary ?? '',
+            description: feature.description ?? '',
+            value1: bullets[0] ?? '',
+            value2: bullets[1] ?? '',
+            value3: bullets[2] ?? '',
             productModule: feature.productModule,
             featureType: feature.featureType ?? 'Default On',
             releaseNotes: feature.releaseNotes ?? '',
@@ -128,13 +147,16 @@ const CreateFeatureModal = ({
   };
 
   const submit = () => {
-    const missing = FIELDS.filter((f) => !String(form[f.key] ?? '').trim()).map((f) => f.key);
+    const missing = FIELDS.filter(
+      (f) => !OPTIONAL.has(f.key) && !String(form[f.key] ?? '').trim(),
+    ).map((f) => f.key);
     if (missing.length) {
       setInvalid(new Set(missing));
       document.getElementById(`in-${missing[0]}`)?.focus();
       return;
     }
 
+    const bullets = VALUE_KEYS.map((k) => form[k].trim()).filter(Boolean);
     const type = form.featureType as FeatureType;
     // Feature Type carries enablement: Default Off ships disabled, the other
     // two ship on. There is no separate Enabled switch to disagree with it.
@@ -148,6 +170,7 @@ const CreateFeatureModal = ({
         title: form.title.trim(),
         featureTag: form.featureTag as Feature['featureTag'],
         summary: form.summary.trim(),
+        description: form.description.trim(),
         productModule: form.productModule,
         featureType: type,
         releaseNotes: form.releaseNotes.trim(),
@@ -162,7 +185,10 @@ const CreateFeatureModal = ({
         isEnabled,
         status: isEnabled ? 'Enabled' : 'Disabled',
         published: feature?.published ?? false,
-        announcementBullets: feature?.announcementBullets ?? [form.summary.split('\n')[0]].filter(Boolean),
+        // Both point at the same three lines - the feature page reads
+        // valueDelivered, the contextual popup reads announcementBullets.
+        valueDelivered: bullets,
+        announcementBullets: bullets,
         enabledCustomers: feature?.enabledCustomers ?? 0,
         activeCustomers: feature?.activeCustomers ?? 0,
         mauLast30Days: feature?.mauLast30Days ?? 0,
@@ -227,6 +253,53 @@ const CreateFeatureModal = ({
               value={form.summary}
               onChange={(e) => set('summary', e.target.value)}
             />
+          </Field>
+
+          <Field
+            id="in-description"
+            label="Feature Description"
+            span2
+            invalid={bad('description')}
+            error={errorOf('description')}
+            hint="The long-form explanation shown under “What's new” on the feature page."
+          >
+            <textarea
+              id="in-description"
+              className={textareaCls(bad('description'))}
+              placeholder="How the feature works, and what it changes for the customer."
+              value={form.description}
+              onChange={(e) => set('description', e.target.value)}
+            />
+          </Field>
+
+          {/* Three inputs rather than a free textarea: the limit is three, and
+              a field that stops at three states that better than a hint asking
+              the writer to count their own lines. */}
+          <Field
+            id="in-value1"
+            label="Value Delivered"
+            span2
+            invalid={bad('value1')}
+            error={errorOf('value1')}
+            hint="Up to three points, listed on the feature page. The first is required."
+          >
+            <div className="flex flex-col gap-2">
+              {VALUE_KEYS.map((key, i) => (
+                <input
+                  key={key}
+                  id={`in-${key}`}
+                  className={inputCls(bad(key))}
+                  placeholder={
+                    i === 0
+                      ? 'e.g. Cut review preparation from hours to minutes'
+                      : `Value point ${i + 1} (optional)`
+                  }
+                  value={form[key]}
+                  onChange={(e) => set(key, e.target.value)}
+                  aria-label={`Value delivered, point ${i + 1}`}
+                />
+              ))}
+            </div>
           </Field>
 
           <Field id="in-productModule" label="Product Module" invalid={bad('productModule')} error={errorOf('productModule')}>

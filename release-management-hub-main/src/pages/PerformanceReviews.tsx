@@ -183,7 +183,7 @@ const PerformanceReviews = () => {
         ctaLabel="See what's new"
         onCta={() => {
           close();
-          navigate(`/release-hub?month=${encodeURIComponent(LATEST_RELEASE)}`);
+          navigate(`/release-hub/releases?month=${encodeURIComponent(LATEST_RELEASE)}`);
         }}
         dismissLabel="Got it, close tour"
       >

@@ -6,10 +6,10 @@ import {
 import Button from '@/components/primitives/Button';
 import Panel from '@/components/primitives/Panel';
 import Badge from '@/components/primitives/Badge';
-import Crumb from '@/components/primitives/Crumb';
 import EmptyState from '@/components/primitives/EmptyState';
 import { useFeatureStore } from '@/components/FeatureStore';
-import { formatDate } from '@/data/features';
+import { formatDate, valueOf } from '@/data/features';
+import { moduleByName } from '@/data/knowledge';
 
 const FeatureDetail = () => {
   const { featureId } = useParams();
@@ -24,8 +24,8 @@ const FeatureDetail = () => {
         icon={<Search size={26} />}
         title="That feature isn't available"
         action={
-          <Button variant="secondary" onClick={() => navigate('/release-hub')}>
-            <ArrowRight size={18} />Back to the Release Hub
+          <Button variant="secondary" onClick={() => navigate('/release-hub/releases')}>
+            <ArrowRight size={18} />Back to Release Management
           </Button>
         }
       >
@@ -39,6 +39,7 @@ const FeatureDetail = () => {
 
   const [summary, ...rest] = (feature.summary || '').split('\n');
   const more = rest.join(' ');
+  const value = valueOf(feature);
   const inRelease = visibleFeatures.filter((f) => f.releaseMonth === feature.releaseMonth).length;
 
   const statusTag =
@@ -51,16 +52,11 @@ const FeatureDetail = () => {
      three near-identical ones. */
   const resLink = 'flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-brand no-underline hover:bg-brand-soft';
 
+  const kbModule = moduleByName(feature.productModule);
+
   return (
     <>
-      <Crumb
-        levels={[
-          { label: 'Dashboard', path: '/dashboard' },
-          { label: 'Release Hub', path: '/release-hub' },
-          { label: 'Feature Details' },
-        ]}
-      />
-
+      {/* ReleaseHubLayout owns the breadcrumb. */}
       <div className="mb-5 rounded-lg border border-brand-border bg-brand-soft p-6">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <Badge variant="solid">{feature.featureTag}</Badge>
@@ -87,19 +83,26 @@ const FeatureDetail = () => {
           <Panel>
             <h3 className="mb-3 text-base font-semibold">What's new</h3>
             <p className="mb-3 max-w-prose text-ink-600">{[summary, more].filter(Boolean).join(' ')}</p>
+            {feature.description && (
+              <p className="mb-3 max-w-prose text-ink-700">{feature.description}</p>
+            )}
 
-            <h3 className="mb-3 mt-5 text-base font-semibold">What this helps you do</h3>
-            <ul className="mb-4 flex max-w-prose list-none flex-col gap-2 p-0">
-              {(feature.announcementBullets ?? []).map((b) => (
-                <li
-                  key={b}
-                  className="flex items-start gap-3 rounded-md border border-ink-150 bg-ink-25 p-3 text-sm"
-                >
-                  <CheckCircle size={18} className="shrink-0 text-green-600" />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
+            {value.length > 0 && (
+              <>
+                <h3 className="mb-3 mt-5 text-base font-semibold">Value delivered</h3>
+                <ul className="mb-4 flex max-w-prose list-none flex-col gap-2 p-0">
+                  {value.map((b) => (
+                    <li
+                      key={b}
+                      className="flex items-start gap-3 rounded-md border border-ink-150 bg-ink-25 p-3 text-sm"
+                    >
+                      <CheckCircle size={18} className="shrink-0 text-green-600" />
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
 
             <Button
               size="lg"
@@ -146,6 +149,21 @@ const FeatureDetail = () => {
                   <ExternalLink size={14} className="ml-auto text-ink-500" />
                 </a>
               )}
+              {/* The other half of the hub: how the module works, rather than
+                  what changed in it this release. */}
+              {kbModule && (
+                <a
+                  className={resLink}
+                  href={`/release-hub/knowledge/modules/${kbModule.slug}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(`/release-hub/knowledge/modules/${kbModule.slug}`);
+                  }}
+                >
+                  <BookOpen size={18} />{feature.productModule} documentation
+                  <ArrowRight size={14} className="ml-auto text-ink-500" />
+                </a>
+              )}
             </div>
           </Panel>
 
@@ -187,7 +205,7 @@ const FeatureDetail = () => {
             <p className="mb-3 text-sm text-ink-600">{inRelease} features in this release.</p>
             <Button
               variant="secondary"
-              onClick={() => navigate(`/release-hub?month=${encodeURIComponent(feature.releaseMonth)}`)}
+              onClick={() => navigate(`/release-hub/releases?month=${encodeURIComponent(feature.releaseMonth)}`)}
             >
               View this release <ArrowRight size={18} />
             </Button>

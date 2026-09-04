@@ -19,6 +19,10 @@ type RailItem = {
   icon: ComponentType<{ size?: number | string; className?: string }>;
   label: string;
   path?: string;
+  /* Extra subtrees this entry lights up for. Release Hub and Knowledge base
+     now point into the same hub, so a plain prefix match on /release-hub would
+     light both at once - each entry claims its own subtrees instead. */
+  owns?: string[];
   isNew?: boolean;
 };
 
@@ -36,8 +40,13 @@ const topRail: RailItem[] = [
 
 const lowerRail: RailItem[] = [
   { icon: BarChart3, label: 'Analytics', path: '/insights' },
-  { icon: Rocket, label: 'Release Hub', path: '/release-hub' },
-  { icon: BookOpen, label: 'Knowledge base', path: '/knowledge-base' },
+  {
+    icon: Rocket,
+    label: 'Release Hub',
+    path: '/release-hub/home',
+    owns: ['/release-hub/releases', '/release-hub/features'],
+  },
+  { icon: BookOpen, label: 'Knowledge base', path: '/release-hub/knowledge' },
 ];
 
 const footRail: RailItem[] = [
@@ -72,10 +81,14 @@ const Navigation = () => {
   const topOffset = bannerDismissed ? 'top-topbar' : 'top-shell-top';
   const shellPadTop = bannerDismissed ? 'pt-topbar' : 'pt-shell-top';
 
-  const isActive = (path?: string) => {
+  /* An entry is active on its own page, anywhere beneath it, or on any subtree
+     it explicitly claims. Release Hub claims the hub's other tabs but not
+     /release-hub/knowledge, which is Knowledge base's - so the two entries
+     pointing into one hub still light up one at a time. */
+  const isActive = ({ path, owns }: RailItem) => {
     if (!path) return false;
-    if (path === '/release-hub') return location.pathname.startsWith('/release-hub');
-    return location.pathname === path;
+    const under = (p: string) => location.pathname === p || location.pathname.startsWith(`${p}/`);
+    return under(path) || (owns ?? []).some(under);
   };
 
   const dismissBanner = () => {
@@ -83,8 +96,9 @@ const Navigation = () => {
     setBannerDismissed(true);
   };
 
-  const railButton = ({ icon: Icon, label, path, isNew }: RailItem) => {
-    const active = isActive(path);
+  const railButton = (item: RailItem) => {
+    const { icon: Icon, label, path, isNew } = item;
+    const active = isActive(item);
     return (
       <button
         key={label}

@@ -7,6 +7,9 @@ export interface Feature {
   id: string;
   title: string;
   summary?: string; // New field for 2-line summary
+  /** The long-form explanation shown under "What's new" on the feature page.
+   *  The summary says what it is in a line; this says how it works. */
+  description?: string;
   productModule: string;
   releaseNotes: string;
   demoVideo: string;
@@ -37,8 +40,15 @@ export interface Feature {
   dauLast30DayAvg?: number; // Daily Active Users average over last 30 days
   releaseId?: string;
   productRoute?: string;
+  /** What the customer gets out of it - at most three bullets, shown as
+   *  "Value delivered" on the feature page. Seed rows that predate this field
+   *  fall back to announcementBullets; read both through valueOf(). */
+  valueDelivered?: string[];
   announcementBullets?: string[];
 }
+
+/** The three value bullets a feature is allowed. */
+export const MAX_VALUE_BULLETS = 3;
 
 /** The seed rows as originally authored. data/features.ts applies the fields
  *  the redesign added - publication state, release month, and the new Feature

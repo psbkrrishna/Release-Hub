@@ -19,10 +19,6 @@ type RailItem = {
   icon: ComponentType<{ size?: number | string; className?: string }>;
   label: string;
   path?: string;
-  /* Extra subtrees this entry lights up for. Release Hub and Knowledge base
-     now point into the same hub, so a plain prefix match on /release-hub would
-     light both at once - each entry claims its own subtrees instead. */
-  owns?: string[];
   isNew?: boolean;
 };
 
@@ -38,15 +34,12 @@ const topRail: RailItem[] = [
   { icon: Sparkles, label: 'AI tools' },
 ];
 
+/* One entry for the whole hub. The Knowledge Hub used to have its own rail
+   entry, which made switching to that tab look like leaving for a different
+   destination - it is a tab within the Feature Hub, so the rail stays put. */
 const lowerRail: RailItem[] = [
   { icon: BarChart3, label: 'Analytics', path: '/insights' },
-  {
-    icon: Rocket,
-    label: 'Release Hub',
-    path: '/release-hub/home',
-    owns: ['/release-hub/releases', '/release-hub/features'],
-  },
-  { icon: BookOpen, label: 'Knowledge base', path: '/release-hub/knowledge' },
+  { icon: Rocket, label: 'Feature Hub', path: '/release-hub' },
 ];
 
 const footRail: RailItem[] = [
@@ -74,21 +67,26 @@ const Navigation = () => {
     () => localStorage.getItem('annDismissed') === '1',
   );
 
+  /* The announcement is redundant inside the Feature Hub - that whole
+     destination is the release, and its Overview leads with the same news. It
+     stays on every other page, where it is the way in. */
+  const onFeatureHub = location.pathname.startsWith('/release-hub');
+  const showBanner = !bannerDismissed && !onFeatureHub;
+
   /* The banner's height used to be a CSS variable so the shell and the
      assistant could both react to it. With no stylesheet to hold that
      variable, the offset is computed here and passed down as classes - one
-     place, still only stated once. */
-  const topOffset = bannerDismissed ? 'top-topbar' : 'top-shell-top';
-  const shellPadTop = bannerDismissed ? 'pt-topbar' : 'pt-shell-top';
+     place, still only stated once. Keyed to whether the banner is actually
+     showing, not just whether it was dismissed, or the hub would reserve
+     space for a banner it never renders. */
+  const topOffset = showBanner ? 'top-shell-top' : 'top-topbar';
+  const shellPadTop = showBanner ? 'pt-shell-top' : 'pt-topbar';
 
-  /* An entry is active on its own page, anywhere beneath it, or on any subtree
-     it explicitly claims. Release Hub claims the hub's other tabs but not
-     /release-hub/knowledge, which is Knowledge base's - so the two entries
-     pointing into one hub still light up one at a time. */
-  const isActive = ({ path, owns }: RailItem) => {
+  /* Active on its own page and anywhere beneath it, so every tab of the
+     Feature Hub keeps its one rail entry lit. */
+  const isActive = ({ path }: RailItem) => {
     if (!path) return false;
-    const under = (p: string) => location.pathname === p || location.pathname.startsWith(`${p}/`);
-    return under(path) || (owns ?? []).some(under);
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
   const dismissBanner = () => {
@@ -193,7 +191,7 @@ const Navigation = () => {
         </div>
       </header>
 
-      {!bannerDismissed && <ReleaseBanner railCollapsed={railCollapsed} onDismiss={dismissBanner} />}
+      {showBanner && <ReleaseBanner railCollapsed={railCollapsed} onDismiss={dismissBanner} />}
 
       <aside
         className={[

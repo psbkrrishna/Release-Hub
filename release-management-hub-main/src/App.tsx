@@ -11,7 +11,7 @@ import FeatureDetail from './pages/FeatureDetail';
 import PerformanceReviews from './pages/PerformanceReviews';
 import ReleaseHubLayout from './pages/hub/ReleaseHubLayout';
 import HubIndexRedirect from './pages/hub/HubIndexRedirect';
-import HubHome from './pages/hub/HubHome';
+import Overview from './pages/hub/Overview';
 import KnowledgeHome from './pages/hub/KnowledgeHome';
 import KnowledgeSection from './pages/hub/KnowledgeSection';
 import ModuleDocs from './pages/hub/ModuleDocs';
@@ -42,7 +42,9 @@ const App = () => (
                   What's New and the feature table all point at it. */}
               <Route path="release-hub" element={<ReleaseHubLayout />}>
                 <Route index element={<HubIndexRedirect />} />
-                <Route path="home" element={<HubHome />} />
+                <Route path="overview" element={<Overview />} />
+                {/* The first tab shipped as "home" before it was renamed. */}
+                <Route path="home" element={<Navigate to="/release-hub/overview" replace />} />
                 <Route path="releases" element={<Index />} />
                 <Route path="features/:featureId" element={<FeatureDetail />} />
                 <Route path="knowledge" element={<KnowledgeHome />} />

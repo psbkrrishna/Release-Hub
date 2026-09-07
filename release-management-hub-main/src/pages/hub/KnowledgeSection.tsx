@@ -96,7 +96,9 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
     <>
       <div className="mb-5 flex flex-col gap-4 min-[861px]:flex-row min-[861px]:items-start min-[861px]:justify-between">
         <div>
-          <h1 className="mb-1 text-xl font-semibold leading-tight tracking-[-0.01em] text-brand">{title}</h1>
+          {/* h2, not h1: the layout owns the page title. Ink rather than brand
+              so it reads as subordinate to it. */}
+          <h2 className="mb-1 text-lg font-semibold leading-tight text-ink-900">{title}</h2>
           <p className="max-w-lede text-sm text-ink-600">{lede}</p>
         </div>
         {showFilter && (

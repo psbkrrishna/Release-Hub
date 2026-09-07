@@ -1,10 +1,12 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Search, Filter, Calendar, Plus, BookOpen, Play, FileText, AlertCircle, History,
+  Search, Plus, BookOpen, Play, FileText, AlertCircle, History, X,
   Headset, Check, ChevronLeft, ChevronRight, ArrowRight, Pencil, Rocket, Trash2,
 } from 'lucide-react';
 import CreateFeatureModal from '@/components/CreateFeatureModal';
+import HubHeader from '@/components/hub/HubHeader';
+import ColumnFilter from '@/components/hub/ColumnFilter';
 import RowMenu, { type RowMenuItem } from '@/components/hub/RowMenu';
 import SummaryCell from '@/components/hub/SummaryCell';
 import Button from '@/components/primitives/Button';
@@ -12,7 +14,7 @@ import Badge from '@/components/primitives/Badge';
 import Switch from '@/components/primitives/Switch';
 import IconButton from '@/components/primitives/IconButton';
 import EmptyState from '@/components/primitives/EmptyState';
-import { inputCls, toolbarSelectCls, caretBackground } from '@/components/primitives/fieldStyles';
+import { caretBackground } from '@/components/primitives/fieldStyles';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { MODULES, formatDate, sortReleaseMonths, supportQueue } from '@/data/features';
 import type { Feature } from '@/types/Feature';
@@ -30,7 +32,10 @@ import type { Feature } from '@/types/Feature';
 const TD = 'border-b border-ink-150 p-4 align-top text-sm';
 const TD_MID = `${TD} align-middle`;
 const TD_NUM = `${TD_MID} whitespace-nowrap text-right tabular-nums`;
-const TH = 'whitespace-nowrap bg-ink-50 px-4 py-3 text-left text-xs font-medium text-ink-600';
+const TH = 'whitespace-nowrap bg-ink-50 px-4 py-2.5 text-left text-xs font-medium text-ink-600';
+/* Label and its filter button on one baseline. -my-1 keeps the 24px button
+   from growing the header band. */
+const TH_ROW = 'flex items-center gap-1.5 -my-1';
 
 /* A sticky cell needs its own background or the scrolling content shows
    through it - which in turn means the row hover has to be restated on it,
@@ -135,7 +140,10 @@ const Index = () => {
   const store = useFeatureStore();
   const { features, visibleFeatures, isCreator, isImplementation, publish, remove, toast } = store;
 
-  const [query, setQuery] = useState('');
+  /* One filter per column, named for the column it acts on. `query` used to
+     match against seven fields at once, which made a hit hard to explain. */
+  const [name, setName] = useState('');
+  const [customer, setCustomer] = useState('');
   const [module, setModule] = useState('all');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -163,15 +171,16 @@ const Index = () => {
     [visibleFeatures],
   );
 
+  /** Feature name or id - the two things the name column shows. */
+  const nameMatches = (f: Feature) => {
+    const q = name.trim().toLowerCase();
+    return !q || `${f.title} ${f.id}`.toLowerCase().includes(q);
+  };
+
   const matches = (f: Feature) => {
     if (module !== 'all' && f.productModule !== module) return false;
     if (month !== 'all' && f.releaseMonth !== month) return false;
-    const q = query.trim().toLowerCase();
-    if (!q) return true;
-    return [f.title, f.id, f.summary, f.productModule, f.featureTag, f.featureType, f.releaseMonth]
-      .join(' ')
-      .toLowerCase()
-      .includes(q);
+    return nameMatches(f);
   };
 
   const featureRows = useMemo(() => {
@@ -180,7 +189,7 @@ const Index = () => {
     // rows below it are already out of their hands.
     return isCreator ? [...list.filter((f) => !f.published), ...list.filter((f) => f.published)] : list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleFeatures, module, month, query, isCreator]);
+  }, [visibleFeatures, module, month, name, isCreator]);
 
   const queueRows = useMemo(
     () =>
@@ -188,12 +197,15 @@ const Index = () => {
         const f = features.find((x) => x.id === row.featureId);
         if (!f || !f.published) return false;
         if (module !== 'all' && f.productModule !== module) return false;
+        // The queue has no release-month column, but a ?month= link still
+        // scopes it; "Clear filters" is the way out.
         if (month !== 'all' && f.releaseMonth !== month) return false;
-        const q = query.trim().toLowerCase();
-        if (!q) return true;
-        return [row.customer, f.title, f.id, f.productModule].join(' ').toLowerCase().includes(q);
+        const c = customer.trim().toLowerCase();
+        if (c && !row.customer.toLowerCase().includes(c)) return false;
+        return nameMatches(f);
       }),
-    [features, module, month, query],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [features, module, month, name, customer],
   );
 
   const list: Array<Feature | (typeof supportQueue)[number]> = isImplementation ? queueRows : featureRows;
@@ -209,12 +221,67 @@ const Index = () => {
   };
 
   const clearFilters = () => {
-    setQuery('');
+    setName('');
+    setCustomer('');
     setModule('all');
     // Clears the month too - it is the only thing this page keeps in the URL.
     setSearchParams({});
     setPage(1);
   };
+
+  /* Both tables carry these two, so they are built once. */
+  const moduleFilterControl = (
+    <ColumnFilter
+      kind="select"
+      label="Product module"
+      options={MODULES}
+      value={module}
+      onChange={(v) => setFilter(() => setModule(v))}
+    />
+  );
+
+  const nameFilterControl = (
+    <ColumnFilter
+      kind="text"
+      label="Feature name"
+      placeholder="Name or ID contains…"
+      value={name}
+      onChange={(v) => setFilter(() => setName(v))}
+    />
+  );
+
+  /* What is currently narrowing the table, as removable chips. Without this a
+     filter set from a column header is easy to forget about - especially the
+     month, which can arrive from a link rather than from a click. */
+  const activeFilters: Array<{ label: string; value: string; clear: () => void }> = [];
+  if (month !== 'all') {
+    activeFilters.push({
+      label: 'Release month',
+      value: month,
+      clear: () => setFilter(() => setMonth('all')),
+    });
+  }
+  if (name.trim()) {
+    activeFilters.push({
+      label: 'Feature name',
+      value: name.trim(),
+      clear: () => setFilter(() => setName('')),
+    });
+  }
+  if (module !== 'all') {
+    activeFilters.push({
+      label: 'Product module',
+      value: module,
+      clear: () => setFilter(() => setModule('all')),
+    });
+  }
+  if (isImplementation && customer.trim()) {
+    activeFilters.push({
+      label: 'Customer',
+      value: customer.trim(),
+      clear: () => setFilter(() => setCustomer('')),
+    });
+  }
 
   // Creator: + Feature Type, + actions. Other personas have no row actions,
   // so they carry no actions column at all.
@@ -224,12 +291,25 @@ const Index = () => {
      second one. */
   const c1 = isImplementation ? 150 : 116;
 
-  const publishedCount = features.filter((f) => f.published).length;
-  const enabledCount = features.filter((f) => f.published && f.isEnabled).length;
-  const draftCount = features.filter((f) => !f.published).length;
-  const utilisation = publishedCount ? Math.round((100 * enabledCount) / publishedCount) : 0;
+  /* The count chips above the table - Unpublished, Published Features,
+     Enabled Features, Platform Utilization - are archived until their UX is
+     settled. Restoring them means putting a StatChip row back above the table;
+     the counts themselves were:
+       published   = features.filter(f => f.published).length
+       enabled     = features.filter(f => f.published && f.isEnabled).length
+       drafts      = features.filter(f => !f.published).length
+       utilisation = Math.round((100 * enabled) / published)
+       queue       = supportQueue counts by status
+     The implementation queue keeps its two, which are triage numbers rather
+     than a dashboard. */
   const supportCount = supportQueue.filter((r) => r.status === 'support').length;
   const queueEnabled = supportQueue.filter((r) => r.status === 'enabled').length;
+
+  const lede = isImplementation
+    ? 'Every customer awaiting enablement support for a released feature.'
+    : isCreator
+      ? 'Every feature and enhancement across releases, published and still in progress.'
+      : 'Every released feature, and which of them are switched on for your organization.';
 
   const menuFor = (f: Feature): RowMenuItem[] =>
     f.published
@@ -338,11 +418,14 @@ const Index = () => {
       }
       body.push(
         <tr key={f.id} className="group hover:bg-[#F9FAFB]">
+          {/* The month is what the filter and the release cards speak in; the
+              exact date is a detail, so it waits on the tooltip. */}
           <td
-            className={`${TD_MID} sticky left-0 z-[2] whitespace-nowrap tabular-nums text-ink-700 ${STICKY_BG}`}
+            className={`${TD_MID} sticky left-0 z-[2] whitespace-nowrap text-ink-700 ${STICKY_BG}`}
             style={{ width: c1, minWidth: c1 }}
+            title={`Released ${formatDate(f.prodEnablementDate)}`}
           >
-            {formatDate(f.prodEnablementDate)}
+            {f.releaseMonth}
           </td>
           <td className={`${TD} sticky z-[2] min-w-[220px] ${STICKY_BG} ${SEAM_R}`} style={{ left: c1 }}>
             <button
@@ -385,89 +468,67 @@ const Index = () => {
     });
   }
 
-  const title = isImplementation ? 'Implementation Support Queue' : 'Release Management Suite';
-
   return (
     <>
-      {/* No breadcrumb here: ReleaseHubLayout owns it, and the tab strip
-          already says which tab this is. */}
-      <div className="mb-5 flex flex-col gap-6 min-[861px]:flex-row min-[861px]:items-start min-[861px]:justify-between">
-        <div>
-          <h1 className="mb-1 text-xl font-semibold leading-tight tracking-[-0.01em] text-brand">{title}</h1>
-          {/* The customer-facing hub spans several releases now, so it carries
-              no single-release strapline; the month filter states the scope. */}
-          {isImplementation && (
-            <p className="max-w-lede text-sm text-ink-600">
-              Every customer awaiting enablement support for a released feature.
-            </p>
-          )}
-        </div>
-        {isCreator && (
-          <div className="flex shrink-0 items-center gap-3">
+      {/* No page title and no breadcrumb here: the layout owns both, and the
+          tab strip already says "Release Hub". The count chips that used to
+          sit under this are archived - see the note by publishedCount. */}
+      <HubHeader
+        lede={lede}
+        action={
+          isCreator ? (
             <Button size="lg" onClick={() => { setEditing(null); setModalOpen(true); }}>
               <Plus size={18} />Create Feature
             </Button>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative min-w-[240px] max-w-[520px] flex-1">
-          <input
-            className={`${inputCls()} pl-10`}
-            placeholder={isImplementation ? 'Search customers or features…' : 'Search features…'}
-            value={query}
-            onChange={(e) => setFilter(() => setQuery(e.target.value))}
-          />
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+      {/* The queue's two counts stay: they are triage numbers for the work in
+          front of this role, not the dashboard-style totals that were
+          archived. */}
+      {isImplementation && (
+        <div className="mb-4 flex flex-wrap gap-3">
+          <StatChip n={supportCount} label="Support Required" tone="amber" />
+          <StatChip n={queueEnabled} label="Enabled" tone="green" />
         </div>
-
-        <div className="relative inline-flex items-center">
-          <Filter size={16} className="pointer-events-none absolute left-3 z-[1] text-ink-600" />
-          <select
-            className={toolbarSelectCls}
-            style={caretBackground}
-            aria-label="Filter by product module"
-            value={module}
-            onChange={(e) => setFilter(() => setModule(e.target.value))}
-          >
-            <option value="all">All Modules</option>
-            {MODULES.map((m) => <option key={m}>{m}</option>)}
-          </select>
-        </div>
-
-        <div className="relative inline-flex items-center">
-          <Calendar size={16} className="pointer-events-none absolute left-3 z-[1] text-ink-600" />
-          <select
-            className={toolbarSelectCls}
-            style={caretBackground}
-            aria-label="Filter by release month"
-            value={month}
-            onChange={(e) => setFilter(() => setMonth(e.target.value))}
-          >
-            <option value="all">All Release Months</option>
-            {releaseMonths.map((m) => <option key={m}>{m}</option>)}
-          </select>
-        </div>
-
-        <div className="flex flex-wrap gap-3 min-[861px]:ml-auto">
-          {isImplementation ? (
-            <>
-              <StatChip n={supportCount} label="Support Required" tone="amber" />
-              <StatChip n={queueEnabled} label="Enabled" tone="green" />
-            </>
-          ) : (
-            <>
-              {isCreator && <StatChip n={draftCount} label="Unpublished" tone="amber" />}
-              <StatChip n={publishedCount} label="Published Features" tone="brand" />
-              <StatChip n={enabledCount} label="Enabled Features" tone="green" />
-              <StatChip n={`${utilisation}%`} label="Platform Utilization" tone="brand" />
-            </>
-          )}
-        </div>
-      </div>
+      )}
 
       <div className="overflow-hidden rounded-xl border border-ink-150 bg-white shadow-elev1">
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-ink-150 bg-ink-25 px-4 py-2.5">
+            <span className="text-xs font-medium uppercase tracking-[.04em] text-ink-500">
+              Filtered by
+            </span>
+            {activeFilters.map((f) => (
+              <span
+                key={f.label}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-soft py-1 pl-2 pr-1 text-xs font-medium text-brand-text"
+              >
+                <span className="text-brand">{f.label}:</span>
+                <span className="max-w-[220px] truncate font-semibold">{f.value}</span>
+                <button
+                  type="button"
+                  onClick={f.clear}
+                  aria-label={`Remove ${f.label} filter`}
+                  className="flex h-4 w-4 items-center justify-center rounded text-brand transition-colors hover:bg-brand-softhover"
+                >
+                  <X size={11} />
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="ml-1 rounded text-13 font-semibold text-brand hover:underline"
+            >
+              Clear all
+            </button>
+            <span className="ml-auto text-13 tabular-nums text-ink-600">
+              {list.length} {list.length === 1 ? 'result' : 'results'}
+            </span>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table
             className={[
@@ -475,23 +536,62 @@ const Index = () => {
               isCreator ? 'min-w-[1680px]' : isImplementation ? 'min-w-[1180px]' : '',
             ].join(' ')}
           >
+            {/* One header row. Filterable columns carry a funnel button next
+                to their label, which both offers the filter and shows whether
+                one is set - the bare inputs in a second row did neither. */}
             <thead>
               {isImplementation ? (
                 <tr>
-                  <th className={`${TH} sticky left-0 z-[4]`} style={{ width: c1, minWidth: c1 }}>Customer</th>
-                  <th className={`${TH} sticky z-[4] ${SEAM_R}`} style={{ left: c1 }}>Feature</th>
+                  <th className={`${TH} sticky left-0 z-[4]`} style={{ width: c1, minWidth: c1 }}>
+                    <span className={TH_ROW}>
+                      Customer
+                      <ColumnFilter
+                        kind="text"
+                        label="Customer"
+                        placeholder="Customer contains…"
+                        value={customer}
+                        onChange={(v) => setFilter(() => setCustomer(v))}
+                      />
+                    </span>
+                  </th>
+                  <th className={`${TH} sticky z-[4] ${SEAM_R}`} style={{ left: c1 }}>
+                    <span className={TH_ROW}>
+                      Feature
+                      {nameFilterControl}
+                    </span>
+                  </th>
                   <th className={TH}>Summary</th>
-                  <th className={TH}>Module</th>
+                  <th className={TH}>
+                    <span className={TH_ROW}>Module{moduleFilterControl}</span>
+                  </th>
                   <th className={TH}>Release Content</th>
                   <th className={TH}>Config Doc</th>
                   <th className={TH}>Status</th>
                 </tr>
               ) : (
                 <tr>
-                  <th className={`${TH} sticky left-0 z-[4]`} style={{ width: c1, minWidth: c1 }}>Release Date</th>
-                  <th className={`${TH} sticky z-[4] ${SEAM_R}`} style={{ left: c1 }}>Feature Name</th>
+                  <th className={`${TH} sticky left-0 z-[4]`} style={{ width: c1, minWidth: c1 }}>
+                    <span className={TH_ROW}>
+                      Release Month
+                      <ColumnFilter
+                        kind="select"
+                        label="Release month"
+                        options={releaseMonths}
+                        value={month}
+                        onChange={(v) => setFilter(() => setMonth(v))}
+                      />
+                    </span>
+                  </th>
+                  <th className={`${TH} sticky z-[4] ${SEAM_R}`} style={{ left: c1 }}>
+                    <span className={TH_ROW}>
+                      Feature Name
+                      {nameFilterControl}
+                    </span>
+                  </th>
                   <th className={TH}>Summary</th>
-                  <th className={TH}>Product Module</th>
+                  <th className={TH}>
+                    <span className={TH_ROW}>Product Module{moduleFilterControl}</span>
+                  </th>
                   {isCreator && <th className={TH}>Feature Type</th>}
                   <th className={`${TH}${isCreator ? ' border-r border-r-ink-200' : ''}`}>Release Content</th>
                   {isCreator ? (

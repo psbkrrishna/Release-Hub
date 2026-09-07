@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FileText, Play, Mail, ArrowRight, Clock, Rocket } from 'lucide-react';
 import Panel from '@/components/primitives/Panel';
 import Badge from '@/components/primitives/Badge';
+import HubHeader from '@/components/hub/HubHeader';
 import { moduleIcon, TONE_TINT } from '@/components/hub/moduleVisuals';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { KB_MODULES, plural, releaseNoteGroups, sortedNewsletters } from '@/data/knowledge';
@@ -62,15 +63,10 @@ const KnowledgeHome = () => {
 
   return (
     <>
-      <div className="mb-5">
-        <h1 className="mb-1 text-xl font-semibold leading-tight tracking-[-0.01em] text-brand">
-          Knowledge Hub
-        </h1>
-        <p className="max-w-lede text-sm text-ink-600">
-          Module documentation, release notes, newsletters and training videos — everything that
-          explains how the platform works.
-        </p>
-      </div>
+      {/* No heading: the layout's page title and the active tab already say
+          "Knowledge Hub". The lede still earns its place - it says what is
+          in here, which neither of those does. */}
+      <HubHeader lede="Module documentation, release notes, newsletters and training videos — everything that explains how the platform works." />
 
       <div className="mb-8 grid grid-cols-1 gap-5 min-[901px]:grid-cols-3">
         {entries.map(({ key, icon: Icon, tint, title, sub, body, meta, path }) => (

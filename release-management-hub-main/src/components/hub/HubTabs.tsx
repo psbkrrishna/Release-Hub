@@ -9,22 +9,22 @@ import { House, Rocket, BookOpen } from 'lucide-react';
    The breadcrumb only names a level deeper than a tab root.
    --------------------------------------------------------------------------- */
 
-export type HubTab = 'home' | 'releases' | 'knowledge';
+export type HubTab = 'overview' | 'releases' | 'knowledge';
 
 export const HUB_TABS = [
-  { key: 'home', label: 'Home', icon: House, path: '/release-hub/home' },
-  { key: 'releases', label: 'Release Management', icon: Rocket, path: '/release-hub/releases' },
+  { key: 'overview', label: 'Overview', icon: House, path: '/release-hub/overview' },
+  { key: 'releases', label: 'Release Hub', icon: Rocket, path: '/release-hub/releases' },
   { key: 'knowledge', label: 'Knowledge Hub', icon: BookOpen, path: '/release-hub/knowledge' },
 ] as const;
 
-/** Feature detail has no tab of its own - it is a leaf of Release Management,
+/** Feature detail has no tab of its own - it is a leaf of the Release Hub tab,
  *  and reads as one. */
 export const hubTabOf = (pathname: string): HubTab => {
   if (pathname.startsWith('/release-hub/knowledge')) return 'knowledge';
   if (pathname.startsWith('/release-hub/releases') || pathname.startsWith('/release-hub/features')) {
     return 'releases';
   }
-  return 'home';
+  return 'overview';
 };
 
 const HubTabs = () => {
@@ -40,7 +40,7 @@ const HubTabs = () => {
 
        It needs its own scroller at all because the creator's feature table is
        1680px wide; without one the strip would ride that horizontal scroll. */
-    <div className="mb-5 border-b border-ink-150">
+    <div className="mb-4 border-b border-ink-150">
       <nav aria-label="Release Hub sections" className="-mb-px overflow-x-auto">
         <div className="flex min-w-max gap-1">
           {HUB_TABS.map(({ key, label, icon: Icon, path }) => {

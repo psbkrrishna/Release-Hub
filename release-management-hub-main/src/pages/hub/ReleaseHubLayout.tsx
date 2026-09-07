@@ -4,17 +4,18 @@ import HubTabs, { HUB_TABS, hubTabOf } from '@/components/hub/HubTabs';
 import { moduleBySlug } from '@/data/knowledge';
 
 /* ---------------------------------------------------------------------------
-   The Release Hub shell: breadcrumb, tab strip, and whichever tab is open.
+   The Feature Hub shell: page title, tab strip, and whichever tab is open.
 
-   The three tabs are peers, so at a tab root the breadcrumb stops at "Release
-   Hub" rather than repeating what the strip already says. Only a page deeper
-   than a tab root adds levels - and then the tab becomes a link, which is the
-   way back up from a module or a feature.
+   The breadcrumb is deliberately absent at a tab root. Arriving by tab needs
+   no trail - the title says where you are and the strip says which tab - so a
+   crumb reading "Dashboard > Feature Hub" would only restate the two lines
+   directly above it. It appears only on pages below a tab root, where it is
+   doing real work: naming the current page and offering the way back up.
    --------------------------------------------------------------------------- */
 
 /** The label for a page below a tab root, or '' when we are at one. */
 const leafOf = (pathname: string): string => {
-  if (pathname.startsWith('/release-hub/features/')) return 'Feature Details';
+  if (pathname.startsWith('/release-hub/features/')) return 'Feature details';
 
   const kb = pathname.match(/^\/release-hub\/knowledge\/(.+)$/)?.[1];
   if (!kb) return '';
@@ -28,29 +29,26 @@ const leafOf = (pathname: string): string => {
   return slug ? moduleBySlug(slug)?.name ?? 'Module documentation' : '';
 };
 
-const crumbFor = (pathname: string): CrumbLevel[] => {
-  const dashboard: CrumbLevel = { label: 'Dashboard', path: '/dashboard' };
+/** Scoped to the hub: the tab, then the page. The app-level trail back to the
+ *  Dashboard is the left rail's job, not this. */
+const crumbFor = (pathname: string): CrumbLevel[] | null => {
   const leaf = leafOf(pathname);
-  if (!leaf) return [dashboard, { label: 'Release Hub' }];
-
+  if (!leaf) return null;
   const tab = HUB_TABS.find((t) => t.key === hubTabOf(pathname))!;
-  return [
-    dashboard,
-    // Points at /release-hub, not at a tab, so this link keeps working if the
-    // hub's default tab ever changes.
-    { label: 'Release Hub', path: '/release-hub' },
-    { label: tab.label, path: tab.path },
-    { label: leaf },
-  ];
+  return [{ label: tab.label, path: tab.path }, { label: leaf }];
 };
 
 const ReleaseHubLayout = () => {
   const { pathname } = useLocation();
+  const crumb = crumbFor(pathname);
 
   return (
     <>
-      <Crumb levels={crumbFor(pathname)} />
+      <h1 className="mb-2 text-xl font-semibold leading-tight tracking-[-0.01em] text-brand">
+        Feature Hub
+      </h1>
       <HubTabs />
+      {crumb && <Crumb levels={crumb} />}
       <Outlet />
     </>
   );

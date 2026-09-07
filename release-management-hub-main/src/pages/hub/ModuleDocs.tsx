@@ -58,7 +58,8 @@ const ModuleDocs = () => {
             <Icon size={22} />
           </span>
           <div>
-            <h1 className="text-22 font-semibold leading-tight tracking-[-0.01em]">{module.name}</h1>
+            {/* h2: the layout owns the page's h1. */}
+            <h2 className="text-22 font-semibold leading-tight tracking-[-0.01em]">{module.name}</h2>
             <div className="mt-1 flex flex-wrap items-center gap-3 text-13 text-ink-600">
               <span className="flex items-center gap-1"><FileText size={13} />{plural(module.docs.length, 'guide')}</span>
               <span className="flex items-center gap-1"><Play size={13} />{plural(module.videos.length, 'video')}</span>

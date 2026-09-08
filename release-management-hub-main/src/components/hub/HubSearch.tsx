@@ -36,13 +36,25 @@ interface Hit {
 
 const MAX_HITS = 8;
 
-const HubSearch = ({ className = '' }: { className?: string }) => {
+const HubSearch = ({
+  className = '',
+  variant = 'default',
+  suggestions,
+}: {
+  className?: string;
+  /** `hero` is the Overview's large field; `default` is the toolbar size the
+   *  other tabs use. */
+  variant?: 'default' | 'hero';
+  /** Example queries offered under a hero field. Clicking one runs it. */
+  suggestions?: string[];
+}) => {
   const navigate = useNavigate();
   const { visibleFeatures } = useFeatureStore();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   /* Drafts are excluded by reading visibleFeatures, so search cannot be used
      to discover an unpublished feature by guessing its name. */
@@ -165,13 +177,28 @@ const HubSearch = ({ className = '' }: { className?: string }) => {
   };
 
   const showPanel = open && query.trim().length >= 2;
+  const hero = variant === 'hero';
 
   return (
     /* No margin of its own - HubHeader owns the spacing, so the search sits
-       the same distance from the lede on every tab. */
-    <div ref={wrap} className={`relative ${className}`}>
+       the same distance from the lede on every tab.
+
+       The field, its two icons and the results panel share an inner relative
+       box rather than sitting directly in this one. They are positioned
+       against the input, and once the hero variant added suggestion chips
+       below it, centring them on the outer box put the magnifier under the
+       field instead of inside it. */
+    <div ref={wrap} className={className}>
+      <div className="relative">
       <input
-        className="h-11 w-full rounded-xl border border-ink-150 bg-white pl-11 pr-10 text-15 text-ink-900 shadow-elev1 outline-none placeholder:text-ink-500 focus:border-brand-border"
+        ref={inputRef}
+        className={[
+          'w-full rounded-xl border bg-white text-ink-900 outline-none placeholder:text-ink-500 focus:border-brand-border',
+          /* 46px is the reference design's field height. */
+          hero
+            ? 'h-[46px] border-ink-150 pl-12 pr-12 text-base shadow-elev1'
+            : 'h-11 border-ink-150 pl-11 pr-10 text-15 shadow-elev1',
+        ].join(' ')}
         placeholder="Search features, modules and documentation…"
         value={query}
         onChange={(e) => {
@@ -185,14 +212,23 @@ const HubSearch = ({ className = '' }: { className?: string }) => {
         aria-expanded={showPanel}
         aria-controls="hub-search-results"
       />
-      <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-500" />
+      <Search
+        size={hero ? 20 : 18}
+        className={[
+          'pointer-events-none absolute top-1/2 -translate-y-1/2 text-ink-500',
+          hero ? 'left-4' : 'left-4',
+        ].join(' ')}
+      />
       {query && (
         <button
           onClick={() => { setQuery(''); setOpen(false); }}
-          className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-900"
+          className={[
+            'absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-900',
+            hero ? 'right-4 h-7 w-7' : 'right-3 h-6 w-6',
+          ].join(' ')}
           aria-label="Clear search"
         >
-          <X size={15} />
+          <X size={hero ? 17 : 15} />
         </button>
       )}
 
@@ -235,6 +271,30 @@ const HubSearch = ({ className = '' }: { className?: string }) => {
               Nothing matches “{query.trim()}”. Try a module, a feature name, or a topic.
             </div>
           )}
+        </div>
+      )}
+      </div>
+
+      {/* Example queries. They run the search rather than navigating, so the
+          reader sees what the field can do instead of being told. */}
+      {hero && suggestions && suggestions.length > 0 && (
+        /* 28px below the field, matching the reference design. */
+        <div className="mt-7 flex flex-wrap items-center gap-3">
+          <span className="mr-1 text-sm text-ink-600">Try searching for</span>
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setQuery(s);
+                setOpen(true);
+                inputRef.current?.focus();
+              }}
+              className="rounded-lg border border-warm-200 bg-white/70 px-3 py-1 text-sm text-ink-700 transition-colors hover:border-brand-border hover:bg-white hover:text-brand-text"
+            >
+              {s}
+            </button>
+          ))}
         </div>
       )}
     </div>

@@ -48,6 +48,13 @@ export default {
         /* Release news. Production defines purple.1000/1100/1200 only; the
            border and hover steps are derived from those three. */
         purple: { 50: "#FCEBFF", 200: "#EDC7F4", 500: "#BC3AD2", 600: "#A32EB8", 900: "#3A0143" },
+        /* Two surface tints the Overview introduces, and the only place they
+           are used: the warm ground behind the search hero, and the lilac one
+           behind the latest-release band. Both are backgrounds only - no text,
+           border or icon takes its colour from here, so they extend the
+           palette without competing with brand blue or release purple. */
+        warm: { 50: "#FDF7EF", 100: "#FAEEDE", 200: "#F3E2CC" },
+        lilac: { 50: "#F5F1FD", 100: "#ECE4FB", 200: "#DCD0F6" },
       },
       fontFamily: {
         sans: ["'Source Sans 3'", "ui-sans-serif", "system-ui", "sans-serif"],
@@ -59,7 +66,10 @@ export default {
         "15": ["15px", "20px"],
         "22": ["22px", "28px"],
         "26": ["26px", "32px"],
+        "30": ["30px", "36px"],
         "32": ["32px", "1.15"],
+        /* The Overview's search headline, the largest type in the app. */
+        "44": ["44px", "1.08"],
       },
       spacing: {
         /* Named for what they measure in the shell, so the several places that

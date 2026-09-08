@@ -14,7 +14,12 @@ export type HubTab = 'overview' | 'releases' | 'knowledge';
 export const HUB_TABS = [
   { key: 'overview', label: 'Overview', icon: House, path: '/release-hub/overview' },
   { key: 'releases', label: 'Release Hub', icon: Rocket, path: '/release-hub/releases' },
-  { key: 'knowledge', label: 'Knowledge Hub', icon: BookOpen, path: '/release-hub/knowledge' },
+  {
+    key: 'knowledge',
+    label: 'Product & Feature Documentation',
+    icon: BookOpen,
+    path: '/release-hub/knowledge',
+  },
 ] as const;
 
 /** Feature detail has no tab of its own - it is a leaf of the Release Hub tab,

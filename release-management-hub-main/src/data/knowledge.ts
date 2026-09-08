@@ -254,6 +254,123 @@ export const releaseNoteGroups = (features: Feature[]): ReleaseNoteGroup[] => {
   });
 };
 
+/* ---------------------------------------------------------------------------
+   Release pitches: the customer-facing framing of a release, for the Overview.
+
+   Written per release rather than derived, because "Make faster, data-driven
+   decisions" is not something you can compute from a feature title. Any month
+   without an entry falls back to its features, so a release nobody has written
+   copy for - a draft month a creator is looking at, say - still reads properly
+   instead of leaving a gap.
+   --------------------------------------------------------------------------- */
+
+export type PitchIcon = 'insight' | 'people' | 'controls';
+
+export interface ReleasePitch {
+  /** One sentence under the release name. */
+  headline: string;
+  /** Each benefit names the feature that delivers it, so the line can be
+   *  opened. The Overview drops the link if that feature is not visible to the
+   *  signed-in role rather than offering a dead end. */
+  highlights: Array<{ title: string; sub: string; icon: PitchIcon; featureId: string }>;
+}
+
+const PITCHES: Record<string, ReleasePitch> = {
+  'July 2026': {
+    headline:
+      'Smarter performance insights, easier candidate sourcing, and more flexibility for your teams.',
+    highlights: [
+      {
+        title: 'Make faster, data-driven decisions',
+        sub: 'New analytics and reporting capabilities',
+        icon: 'insight',
+        featureId: 'FEAT-001',
+      },
+      {
+        title: 'Save time in hiring',
+        sub: 'Enhanced sourcing with LinkedIn integration',
+        icon: 'people',
+        featureId: 'FEAT-002',
+      },
+      {
+        title: 'More flexibility for your teams',
+        sub: 'Custom reports and workflow improvements',
+        icon: 'controls',
+        featureId: 'FEAT-011',
+      },
+    ],
+  },
+  'June 2026': {
+    headline:
+      'Scheduling that respects every calendar, retention you can defend, and goals that survive the cascade.',
+    highlights: [
+      {
+        title: 'Stop interview invites colliding',
+        sub: 'Panel availability read before slots are offered',
+        icon: 'people',
+        featureId: 'FEAT-013',
+      },
+      {
+        title: 'Keep documents only as long as you should',
+        sub: 'Retention policies with legal holds and an audit log',
+        icon: 'controls',
+        featureId: 'FEAT-014',
+      },
+      {
+        title: 'See where a goal stopped travelling',
+        sub: 'Cascade templates with org-wide coverage reporting',
+        icon: 'insight',
+        featureId: 'FEAT-015',
+      },
+    ],
+  },
+  'May 2026': {
+    headline:
+      'Fewer surprises at the payroll cut-off, and feedback that reaches the people who need it.',
+    highlights: [
+      {
+        title: 'Approve timesheets before the deadline',
+        sub: 'Reminders timed to the cut-off, with escalation',
+        icon: 'controls',
+        featureId: 'FEAT-016',
+      },
+      {
+        title: 'Read one digest instead of five scorecards',
+        sub: 'Interviewer notes collected, disagreement flagged',
+        icon: 'people',
+        featureId: 'FEAT-017',
+      },
+      {
+        title: 'Spot turnover risk by team',
+        sub: 'Predictive analytics on the signals you already hold',
+        icon: 'insight',
+        featureId: 'FEAT-007',
+      },
+    ],
+  },
+};
+
+/** The pitch for a release, or one built from its own features. */
+export const releasePitch = (group: ReleaseNoteGroup): ReleasePitch => {
+  const written = PITCHES[group.month];
+  if (written) return written;
+
+  const parts: string[] = [];
+  if (group.newCount) parts.push(plural(group.newCount, 'new feature'));
+  if (group.enhancementCount) parts.push(plural(group.enhancementCount, 'enhancement'));
+  const icons: PitchIcon[] = ['insight', 'people', 'controls'];
+
+  return {
+    headline: `${parts.join(' and ')} across ${group.modules.slice(0, 3).join(', ')}.`,
+    highlights: group.features.slice(0, 3).map((f, i) => ({
+      title: f.title,
+      sub: `${f.featureTag} · ${f.productModule}`,
+      icon: icons[i % icons.length],
+      featureId: f.id,
+    })),
+  };
+};
+
 /** "July 2026" -> "2026-07-01", for sorting a month against an ISO date. */
 export const monthToIso = (month: string): string => {
   const [name, year] = month.split(' ');

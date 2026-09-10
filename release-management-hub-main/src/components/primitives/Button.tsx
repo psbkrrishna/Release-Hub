@@ -1,57 +1,98 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+﻿import { useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react';
+import { CONTROL, RADIUS, SPACE, T, TYPE, sx } from '@/styles/zerra';
 
-/* Replaces the .btn / .btn-primary / .btn-ghost rules from zerra.css, including
-   the production-alignment overrides that landed on top of them: 16px text,
-   8px radius, always bordered, and a `secondary` variant that is an outlined
-   blue inverting on hover (production has no grey ghost button). */
+/* ---------------------------------------------------------------------------
+   Zerra button. Height 36px, radius 8px, 14px/600, 8px gap to its icon.
 
-type Variant = 'primary' | 'secondary' | 'danger';
-type Size = 'md' | 'lg';
+   `size` is gone: the guidelines give one button height, so a second one was
+   only ever a way to break the control rhythm. Callers that asked for the
+   large size now get the 36px control, and `compact` gives the 28px in-row
+   variant the guidelines do define.
 
-const VARIANT: Record<Variant, string> = {
-  primary: 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700',
-  secondary: 'bg-transparent border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white',
-  danger: 'bg-red-600 border-red-600 text-white hover:bg-red-700 hover:border-red-700',
+   Hover is state rather than a CSS pseudo-class, because inline styles cannot
+   express :hover and the ruleset allows no stylesheet to hold it.
+   --------------------------------------------------------------------------- */
+
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+
+const REST: Record<Variant, CSSProperties> = {
+  primary: { background: T.brandSolid, color: '#FFFFFF', borderColor: 'transparent' },
+  secondary: { background: T.card, color: T.tx2, borderColor: T.bd2 },
+  ghost: { background: 'transparent', color: T.tx2, borderColor: 'transparent' },
+  danger: { background: T.dangSolid, color: '#FFFFFF', borderColor: 'transparent' },
 };
 
-const SIZE: Record<Size, string> = {
-  md: 'h-9 px-4',
-  lg: 'h-10 px-5',
+const HOVER: Record<Variant, CSSProperties> = {
+  primary: { background: T.brandSolidHover },
+  secondary: { background: T.su2 },
+  ghost: { background: T.su2 },
+  danger: { background: T.dangText },
 };
 
-interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'style'> {
   variant?: Variant;
-  size?: Size;
-  /** Stretch to the container and centre the label (the old .btn-full). */
+  /** The 28px in-row button. */
+  compact?: boolean;
+  /** Stretch to the container and centre the label. */
   block?: boolean;
   children?: ReactNode;
+  style?: CSSProperties;
 }
 
 const Button = ({
   variant = 'primary',
-  size = 'md',
+  compact = false,
   block = false,
-  className = '',
+  disabled,
   children,
+  style,
+  onMouseEnter,
+  onMouseLeave,
   ...rest
-}: Props) => (
-  <button
-    className={[
-      'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border',
-      'text-base font-medium leading-none transition-colors',
-      'active:scale-[.97] motion-reduce:active:scale-100',
-      /* Disabled is a flat grey rather than a dimmed brand colour, matching
-         production's Button - a faded primary still reads as pressable. */
-      'disabled:pointer-events-none disabled:border-transparent disabled:bg-[#E9E9E9] disabled:text-ink-600 disabled:shadow-none',
-      VARIANT[variant],
-      SIZE[size],
-      block ? 'w-full' : '',
-      className,
-    ].join(' ')}
-    {...rest}
-  >
-    {children}
-  </button>
-);
+}: Props) => {
+  const [hover, setHover] = useState(false);
+
+  return (
+    <button
+      disabled={disabled}
+      onMouseEnter={(e) => { setHover(true); onMouseEnter?.(e); }}
+      onMouseLeave={(e) => { setHover(false); onMouseLeave?.(e); }}
+      style={sx(
+        {
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: SPACE.x2,
+          height: compact ? CONTROL.compact : CONTROL.default,
+          padding: `0 ${variant === 'primary' ? SPACE.x5 : SPACE.x4}px`,
+          borderRadius: RADIUS.control,
+          /* Longhand, not the `border` shorthand - the variants below set
+             borderColor, and React warns if both are set across a rerender. */
+          borderWidth: 1,
+          borderStyle: 'solid',
+          whiteSpace: 'nowrap',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          transition: 'background 120ms ease, color 120ms ease',
+          width: block ? '100%' : undefined,
+          ...TYPE.button,
+        },
+        REST[variant],
+        hover && !disabled && HOVER[variant],
+        /* Disabled is a flat grey, not a dimmed brand colour - a faded primary
+           still reads as pressable. Kept visible at 0.4 rather than hidden. */
+        disabled && {
+          background: T.su2,
+          color: T.tx4,
+          borderColor: 'transparent',
+          opacity: 0.4,
+        },
+        style,
+      )}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+};
 
 export default Button;

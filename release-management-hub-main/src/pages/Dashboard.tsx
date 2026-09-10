@@ -66,7 +66,7 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <Button size="lg" onClick={() => navigate('/performance-reviews')}>
+          <Button onClick={() => navigate('/performance-reviews')}>
             Open performance reviews
           </Button>
         </div>
@@ -99,7 +99,7 @@ const Dashboard = () => {
               <h2 className="text-base font-semibold">Performance review cycle</h2>
               <div className="mt-0.5 text-13 text-ink-600">Mid-year review · July 1–31</div>
             </div>
-            <Badge variant="green" className="shrink-0 font-semibold">On track</Badge>
+            <Badge variant="success" style={{ flexShrink: 0 }}>On track</Badge>
           </div>
 
           <div className="mb-2 flex items-baseline justify-between text-sm">

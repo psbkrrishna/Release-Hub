@@ -63,6 +63,7 @@ const RowMenu = ({ label, items }: { label: string; items: RowMenuItem[] }) => {
         ref={btnRef}
         aria-haspopup="true"
         aria-expanded={open}
+        title={`Actions for ${label}`}
         aria-label={`Actions for ${label}`}
         onClick={(e) => {
           e.stopPropagation();

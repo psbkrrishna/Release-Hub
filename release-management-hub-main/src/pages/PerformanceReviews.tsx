@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+﻿import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp, CheckCircle2, Users, MoreVertical, Sparkles, BarChart3,
@@ -142,7 +142,7 @@ const PerformanceReviews = () => {
                     }}
                     className="rounded-lg"
                   >
-                    <Badge variant="purple" className="cursor-pointer font-semibold hover:bg-purple-200">
+                    <Badge variant="new" style={{ cursor: 'pointer' }}>
                       <Sparkles size={12} />New
                     </Badge>
                   </span>

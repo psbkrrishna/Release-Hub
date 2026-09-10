@@ -1,58 +1,99 @@
-/* The input/select styling that zerra.css applied through `.fld input`,
-   `.search input`, `select.sel`, `.tfoot select` and `.kb-foot input`.
+import type { CSSProperties } from 'react';
+import { CONTROL, FOCUS_RING, RADIUS, SPACE, T, TYPE, sx } from '@/styles/zerra';
 
-   Exported as strings rather than components because these get spread across
-   native <input>/<select>/<textarea> elements that each need their own props,
-   and wrapping them in components would only add a layer to unwrap again.
+/* ---------------------------------------------------------------------------
+   Input, select and textarea styling as style objects.
 
-   Production signals focus by darkening the border rather than ringing it, so
-   :focus does exactly that; the brand ring is kept for :focus-visible only,
-   which is what a keyboard user gets. */
+   Zerra spec: 36px tall, 8px radius, 1px --bd2 border on --card, 14px/400,
+   0 12px padding. A left icon takes padding-left to 32; a select takes
+   padding-right for its caret. Focus is --brand plus the 3px ring.
 
-const BASE =
-  'w-full rounded-lg border bg-white text-base text-ink-900 outline-none transition-colors ' +
-  'border-[#D4D4D8] placeholder:text-[#999] ' +
-  'hover:border-[#A1A1AA] focus:border-[#A1A1AA] ' +
-  'focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand';
+   Style objects rather than class strings, since the app styles inline. The
+   `focused` and `invalid` flags are passed by the caller because inline styles
+   cannot express :focus or :invalid on their own.
+   --------------------------------------------------------------------------- */
 
-const INVALID =
-  'w-full rounded-lg border bg-white text-base text-ink-900 outline-none transition-colors ' +
-  'border-red-600 placeholder:text-[#999] hover:border-red-600 focus:border-red-600 ' +
-  'focus-visible:border-red-600 focus-visible:ring-2 focus-visible:ring-red-600';
+interface FieldOpts {
+  invalid?: boolean;
+  focused?: boolean;
+  /** Room for a 14-16px leading icon. */
+  leadingIcon?: boolean;
+}
 
-/** Single-line input, 40px tall. */
-export const inputCls = (invalid = false) =>
-  `${invalid ? INVALID : BASE} h-10 px-3`;
+const base = ({ invalid, focused, leadingIcon }: FieldOpts = {}): CSSProperties =>
+  sx(
+    {
+      width: '100%',
+      height: CONTROL.default,
+      borderRadius: RADIUS.control,
+      borderWidth: 1,
+      borderStyle: 'solid',
+      borderColor: invalid ? T.dangBorder : T.bd2,
+      background: T.card,
+      color: T.tx,
+      outline: 'none',
+      transition: 'border-color 120ms ease, box-shadow 120ms ease',
+      paddingLeft: leadingIcon ? SPACE.x8 : SPACE.x3,
+      paddingRight: SPACE.x3,
+      ...TYPE.input,
+    },
+    focused && {
+      borderColor: invalid ? T.dang : T.brand,
+      boxShadow: invalid ? `0 0 0 3px ${T.dangSoft}` : FOCUS_RING,
+    },
+    /* A failed field also shakes once - the guidelines pair shakeX with the
+       danger border. */
+    invalid && { animation: 'shakeX 200ms ease' },
+  );
 
-/** Read-only input - flat grey, clearly not editable. */
-export const readonlyInputCls = 'h-10 w-full rounded-lg border border-[#D4D4D8] bg-ink-50 px-3 text-base text-ink-600 outline-none';
+export const inputStyle = base;
 
-/** Textarea; taller, resizable vertically only. */
-export const textareaCls = (invalid = false) =>
-  `${invalid ? INVALID : BASE} min-h-[88px] resize-y p-3 leading-normal`;
+/** Read-only: flat, clearly not editable. */
+export const readonlyInputStyle: CSSProperties = {
+  width: '100%',
+  height: CONTROL.default,
+  borderRadius: RADIUS.control,
+  border: `1px solid ${T.bd2}`,
+  background: T.su2,
+  color: T.tx4,
+  padding: `0 ${SPACE.x3}px`,
+  outline: 'none',
+  ...TYPE.input,
+};
 
-/* Native selects need appearance-none plus a background caret, since a
-   styled-open dropdown is the one thing plain markup can't do. Inlined as a
-   data URI so there is no asset to lose. */
-const CARET = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 256 256' fill='%236B6B6B'><path d='M213.66 101.66l-80 80a8 8 0 0 1-11.32 0l-80-80A8 8 0 0 1 53.66 90.34L128 164.69l74.34-74.35a8 8 0 0 1 11.32 11.32z'/></svg>")`;
+/** Textarea: same treatment, taller, vertical resize only. */
+export const textareaStyle = (opts: FieldOpts = {}): CSSProperties =>
+  sx(base(opts), {
+    height: 'auto',
+    minHeight: 88,
+    padding: SPACE.x3,
+    resize: 'vertical',
+    lineHeight: 1.5,
+  });
 
-export const caretBackground = {
-  backgroundImage: CARET,
-  backgroundRepeat: 'no-repeat' as const,
+/* A native select needs its own caret drawn in, since a styled-open dropdown
+   is the one thing plain markup cannot do. Inlined as a data URI so there is
+   no asset to lose. The glyph is Phosphor's caret-down, matching the icon set. */
+const caret = (fill: string) =>
+  `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 256 256' fill='${fill}'><path d='M213.66 101.66l-80 80a8 8 0 0 1-11.32 0l-80-80A8 8 0 0 1 53.66 90.34L128 164.69l74.34-74.35a8 8 0 0 1 11.32 11.32z'/></svg>")`;
+
+export const caretBackground: CSSProperties = {
+  backgroundImage: caret('%235C5C63'),
+  backgroundRepeat: 'no-repeat',
   backgroundPosition: 'right 12px center',
 };
 
-/** A caret in white, for the role picker sitting on the blue top bar. */
-export const caretBackgroundLight = {
-  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 256 256' fill='white'><path d='M213.66 101.66l-80 80a8 8 0 0 1-11.32 0l-80-80A8 8 0 0 1 53.66 90.34L128 164.69l74.34-74.35a8 8 0 0 1 11.32 11.32z'/></svg>")`,
-  backgroundRepeat: 'no-repeat' as const,
+/** A caret in white, for the role picker sitting on the brand top bar. */
+export const caretBackgroundLight: CSSProperties = {
+  backgroundImage: caret('white'),
+  backgroundRepeat: 'no-repeat',
   backgroundPosition: 'right 8px center',
 };
 
-/** Select in a form: 40px, 6px radius, room on the right for the caret. */
-export const selectCls = (invalid = false) =>
-  `${invalid ? INVALID : BASE} h-10 appearance-none rounded-md pl-3 pr-8`;
-
-/** Select in the hub toolbar: same, plus room on the left for a leading icon. */
-export const toolbarSelectCls =
-  `${BASE} h-10 min-w-[172px] cursor-pointer appearance-none rounded-md pl-10 pr-8`;
+/** Select: the field plus room on the right for its caret. */
+export const selectStyle = (opts: FieldOpts = {}): CSSProperties =>
+  sx(base(opts), caretBackground, {
+    appearance: 'none',
+    cursor: 'pointer',
+    paddingRight: SPACE.x8,
+  });

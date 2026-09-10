@@ -161,6 +161,7 @@ const WhatsNewButton = () => {
             </div>
             <IconButton
               onClick={closeFloater}
+              title="Close What's New"
               aria-label="Close What's New"
               className="ml-auto text-ink-500 hover:!bg-[rgba(188,58,210,.10)] hover:!text-purple-900"
             >

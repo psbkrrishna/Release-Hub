@@ -6,7 +6,7 @@ import { useFeatureStore } from '@/components/FeatureStore';
 import { KB_MODULES, sortedNewsletters } from '@/data/knowledge';
 
 /* ---------------------------------------------------------------------------
-   One search across both halves of the hub: features, modules, guides, videos
+   One search across both halves of the hub: features, modules, documents, videos
    and newsletters. It is the thing on the Overview that works regardless of
    whether a release just shipped, which is why it sits at the top.
 
@@ -14,12 +14,12 @@ import { KB_MODULES, sortedNewsletters } from '@/data/knowledge';
    than calling anything - no debounce needed, and results appear as you type.
    --------------------------------------------------------------------------- */
 
-type Kind = 'Feature' | 'Module' | 'Guide' | 'Video' | 'Newsletter';
+type Kind = 'Feature' | 'Module' | 'Document' | 'Video' | 'Newsletter';
 
 const KIND_ICON: Record<Kind, ComponentType<{ size?: number | string; className?: string }>> = {
   Feature: Rocket,
   Module: BookOpen,
-  Guide: FileText,
+  Document: FileText,
   Video: Play,
   Newsletter: Mail,
 };
@@ -83,12 +83,12 @@ const HubSearch = ({
         path: `/release-hub/knowledge/modules/${m.slug}`,
         haystack: `${m.name} ${m.blurb}`.toLowerCase(),
       });
-      // A guide or video leads to the module page that lists it, which is
+      // A document or video leads to the module page that lists it, which is
       // more use than a bare link to the file.
       m.docs.forEach((d) =>
         hits.push({
           key: d.id,
-          kind: 'Guide',
+          kind: 'Document',
           title: d.title,
           sub: m.name,
           path: `/release-hub/knowledge/modules/${m.slug}`,

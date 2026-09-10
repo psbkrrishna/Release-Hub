@@ -4,7 +4,7 @@ import Modal from '@/components/primitives/Modal';
 import Button from '@/components/primitives/Button';
 import IconButton from '@/components/primitives/IconButton';
 import {
-  inputCls, readonlyInputCls, selectCls, textareaCls, caretBackground,
+  inputStyle, readonlyInputStyle, selectStyle, textareaStyle,
 } from '@/components/primitives/fieldStyles';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { MODULES, addDays, formatDate, releaseMonthOf, valueOf } from '@/data/features';
@@ -208,7 +208,7 @@ const CreateFeatureModal = ({
         <h3 id={titleId} className="text-lg font-semibold">
           {feature ? 'Edit feature' : 'New feature'}
         </h3>
-        <IconButton onClick={onClose} aria-label="Close">
+        <IconButton onClick={onClose} title="Close" aria-label="Close">
           <X size={16} />
         </IconButton>
       </div>
@@ -218,7 +218,7 @@ const CreateFeatureModal = ({
           <Field id="in-title" label="Feature Title" invalid={bad('title')} error={errorOf('title')}>
             <input
               id="in-title"
-              className={inputCls(bad('title'))}
+              style={inputStyle({ invalid: bad('title') })}
               placeholder="e.g. Skills Gap Analysis"
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
@@ -228,8 +228,7 @@ const CreateFeatureModal = ({
           <Field id="in-featureTag" label="Feature Tag" invalid={bad('featureTag')} error={errorOf('featureTag')}>
             <select
               id="in-featureTag"
-              className={selectCls(bad('featureTag'))}
-              style={caretBackground}
+              style={selectStyle({ invalid: bad('featureTag') })}
               value={form.featureTag}
               onChange={(e) => set('featureTag', e.target.value)}
             >
@@ -248,7 +247,7 @@ const CreateFeatureModal = ({
           >
             <textarea
               id="in-summary"
-              className={textareaCls(bad('summary'))}
+              style={textareaStyle({ invalid: bad('summary') })}
               placeholder="First line is the summary shown in the table. Any further lines appear under Show more."
               value={form.summary}
               onChange={(e) => set('summary', e.target.value)}
@@ -265,7 +264,7 @@ const CreateFeatureModal = ({
           >
             <textarea
               id="in-description"
-              className={textareaCls(bad('description'))}
+              style={textareaStyle({ invalid: bad('description') })}
               placeholder="How the feature works, and what it changes for the customer."
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
@@ -288,7 +287,7 @@ const CreateFeatureModal = ({
                 <input
                   key={key}
                   id={`in-${key}`}
-                  className={inputCls(bad(key))}
+                  style={inputStyle({ invalid: bad(key) })}
                   placeholder={
                     i === 0
                       ? 'e.g. Cut review preparation from hours to minutes'
@@ -305,8 +304,7 @@ const CreateFeatureModal = ({
           <Field id="in-productModule" label="Product Module" invalid={bad('productModule')} error={errorOf('productModule')}>
             <select
               id="in-productModule"
-              className={selectCls(bad('productModule'))}
-              style={caretBackground}
+              style={selectStyle({ invalid: bad('productModule') })}
               value={form.productModule}
               onChange={(e) => set('productModule', e.target.value)}
             >
@@ -323,8 +321,7 @@ const CreateFeatureModal = ({
           >
             <select
               id="in-featureType"
-              className={selectCls(bad('featureType'))}
-              style={caretBackground}
+              style={selectStyle({ invalid: bad('featureType') })}
               value={form.featureType}
               onChange={(e) => set('featureType', e.target.value)}
             >
@@ -335,7 +332,7 @@ const CreateFeatureModal = ({
           <Field id="in-releaseNotes" label="Release Notes URL" invalid={bad('releaseNotes')} error={errorOf('releaseNotes')}>
             <input
               id="in-releaseNotes"
-              className={inputCls(bad('releaseNotes'))}
+              style={inputStyle({ invalid: bad('releaseNotes') })}
               placeholder="https://"
               value={form.releaseNotes}
               onChange={(e) => set('releaseNotes', e.target.value)}
@@ -345,7 +342,7 @@ const CreateFeatureModal = ({
           <Field id="in-demoVideo" label="Demo Video URL" invalid={bad('demoVideo')} error={errorOf('demoVideo')}>
             <input
               id="in-demoVideo"
-              className={inputCls(bad('demoVideo'))}
+              style={inputStyle({ invalid: bad('demoVideo') })}
               placeholder="https://"
               value={form.demoVideo}
               onChange={(e) => set('demoVideo', e.target.value)}
@@ -361,7 +358,7 @@ const CreateFeatureModal = ({
             <input
               id="in-prodEnablementDate"
               type="date"
-              className={inputCls(bad('prodEnablementDate'))}
+              style={inputStyle({ invalid: bad('prodEnablementDate') })}
               value={form.prodEnablementDate}
               onChange={(e) => set('prodEnablementDate', e.target.value)}
             />
@@ -373,13 +370,13 @@ const CreateFeatureModal = ({
             required={false}
             hint="Auto-calculated as Production Enablement Date + 90 days."
           >
-            <input id="in-deferrable" className={readonlyInputCls} readOnly value={deferrable} />
+            <input id="in-deferrable" style={readonlyInputStyle} readOnly value={deferrable} />
           </Field>
 
           <Field id="in-productGate" label="Feature Flag (Internal)" invalid={bad('productGate')} error={errorOf('productGate')}>
             <input
               id="in-productGate"
-              className={inputCls(bad('productGate'))}
+              style={inputStyle({ invalid: bad('productGate') })}
               placeholder="module.area.flag_name"
               value={form.productGate}
               onChange={(e) => set('productGate', e.target.value)}
@@ -394,7 +391,7 @@ const CreateFeatureModal = ({
           >
             <input
               id="in-configurationDoc"
-              className={inputCls(bad('configurationDoc'))}
+              style={inputStyle({ invalid: bad('configurationDoc') })}
               placeholder="https://"
               value={form.configurationDoc}
               onChange={(e) => set('configurationDoc', e.target.value)}

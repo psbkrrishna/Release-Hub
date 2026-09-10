@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import { useFeatureStore } from '@/components/FeatureStore';
-import { inputCls } from '@/components/primitives/fieldStyles';
+import { inputStyle } from '@/components/primitives/fieldStyles';
 
 const SUGGESTIONS = [
   'Which features need my CSM?',
@@ -94,7 +94,7 @@ const Chatbot = () => {
       </div>
       <div className="flex items-end gap-2 border-t border-ink-150 p-3">
         <input
-          className={`${inputCls()} flex-1`}
+          style={{ ...inputStyle(), flex: 1 }}
           value={draft}
           placeholder="Ask a question…"
           onChange={(e) => setDraft(e.target.value)}

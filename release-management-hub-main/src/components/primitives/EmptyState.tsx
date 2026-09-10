@@ -1,7 +1,12 @@
 import type { ReactNode } from 'react';
+import { SPACE, T, sx } from '@/styles/zerra';
 
-/* Replaces .empty / .empty .ico. Used by the Insights placeholder, the hub's
-   no-results state and the feature-not-found state. */
+/* ---------------------------------------------------------------------------
+   Zerra empty state: a 28-32px --tx4 icon, one 14px/600 line, a 13px --tx3
+   explanation, and one primary action. No illustration - the guidelines are
+   explicit, and the tinted tile this used to sit the icon in was decoration
+   doing no work.
+   --------------------------------------------------------------------------- */
 
 const EmptyState = ({
   icon,
@@ -14,13 +19,20 @@ const EmptyState = ({
   children?: ReactNode;
   action?: ReactNode;
 }) => (
-  <div className="px-5 py-12 text-center">
-    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-ink-50 text-ink-500">
-      {icon}
-    </div>
-    <h4 className="mb-1 text-lg font-semibold text-ink-900">{title}</h4>
-    {children && <p className="mx-auto mb-4 max-w-empty text-ink-600">{children}</p>}
-    {action}
+  <div style={{ padding: `${SPACE.x10}px ${SPACE.x5}px`, textAlign: 'center' }}>
+    <div style={{ color: T.tx4, marginBottom: SPACE.x3 }}>{icon}</div>
+    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: T.tx }}>{title}</h4>
+    {children && (
+      <p
+        style={sx(
+          { margin: `${SPACE.x1}px auto 0`, maxWidth: '44ch', fontSize: 13, lineHeight: 1.4 },
+          { color: T.tx3 },
+        )}
+      >
+        {children}
+      </p>
+    )}
+    {action && <div style={{ marginTop: SPACE.x4 }}>{action}</div>}
   </div>
 );
 

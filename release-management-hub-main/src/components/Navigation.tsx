@@ -218,7 +218,10 @@ const Navigation = () => {
           kbOpen ? 'min-[1181px]:pr-kb' : '',
         ].join(' ')}
       >
-        <main className="px-4 pb-12 pt-4 min-[861px]:px-6 min-[861px]:pt-5">
+        {/* 16px on every side, the same at every width. It used to grow to
+            24px horizontally and drop 48px at the bottom, which is what made
+            the page read as unevenly padded. */}
+        <main style={{ padding: 16, background: 'var(--bg)', minHeight: 'calc(100vh - 56px)' }}>
           <Outlet />
         </main>
       </div>
@@ -241,8 +244,9 @@ const Navigation = () => {
             </div>
             <IconButton
               tone="onBrand"
-              className="ml-auto rounded-lg"
+              style={{ marginLeft: 'auto' }}
               onClick={() => setKbOpen(false)}
+              title="Close assistant"
               aria-label="Close assistant"
             >
               <X size={16} />

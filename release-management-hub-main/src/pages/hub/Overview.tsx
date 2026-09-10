@@ -4,6 +4,7 @@ import {
   Rocket, ArrowRight, BookOpen, FileText, Mail, Play, BarChart3, Users, SlidersHorizontal,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
+import Button from '@/components/primitives/Button';
 import HubSearch from '@/components/hub/HubSearch';
 import { SearchHeroArt, ReleaseGiftArt } from '@/components/hub/illustrations';
 import { useFeatureStore } from '@/components/FeatureStore';
@@ -37,7 +38,7 @@ const QUICK_LINKS = [
     icon: BookOpen,
     tint: 'bg-brand-soft text-brand',
     title: 'Product & Feature Documentation',
-    sub: 'Step-by-step guides, how-tos and feature documentation.',
+    sub: 'Step-by-step guides and how-tos.',
     path: '/release-hub/knowledge',
   },
   {
@@ -102,8 +103,10 @@ const Overview = () => {
           </div>
 
           {/* Decorative, and the first thing to go when the column narrows.
-              Bleeds to the panel's bottom edge, as in the design. */}
-          <SearchHeroArt className="mr-5 hidden h-[282px] w-[540px] shrink-0 self-end min-[1181px]:block" />
+              Bleeds to the panel's bottom edge, as in the design.
+              540x264 is the asset's own 1792/877, so contain neither crops it
+              nor leaves a cream band above and below it. */}
+          <SearchHeroArt className="mr-5 hidden h-[264px] w-[540px] shrink-0 self-end min-[1181px]:block" />
         </div>
       </section>
 
@@ -114,30 +117,23 @@ const Overview = () => {
               band's height is set by the copy (170 + 25 + 30 = 225) and the
               taller illustration overflows that padding instead of inflating
               the band - which is how the design has it. */}
-          <div className="flex items-center gap-12 px-6 min-[861px]:pl-[51px] min-[861px]:pr-[45px]">
-            <div className="grid min-w-0 flex-1 grid-cols-1 gap-y-6 pb-[30px] pt-[25px] min-[901px]:grid-cols-[minmax(0,1.72fr)_1px_minmax(0,1fr)] min-[901px]:gap-x-8">
-              {/* The rocket sits in its own gutter, so the eyebrow, title,
-                  copy and button all share one left edge. */}
-              <div className="flex min-w-0 gap-[18px]">
-                <Rocket size={26} className="mt-1 shrink-0 text-purple-500" />
-                <div className="min-w-0">
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-[.1em] text-ink-600">
-                    Latest release
-                  </p>
-                  <h2 className="mb-2 text-30 font-bold leading-tight tracking-[-0.01em] text-blue-900">
-                    {latest.month} Release
-                  </h2>
-                  <p className="mb-6 max-w-[500px] text-15 text-ink-700">{pitch.headline}</p>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate(`/release-hub/releases?month=${encodeURIComponent(latest.month)}`)
-                    }
-                    className="inline-flex h-[41px] items-center gap-2 rounded-lg bg-purple-900 px-6 text-base font-medium text-white transition-colors hover:bg-[#2A0031] active:scale-[.97] motion-reduce:active:scale-100"
-                  >
-                    Explore what&apos;s new <ArrowRight size={18} />
-                  </button>
-                </div>
+          {/* Uniform 24px on every side, and the illustration is inside that
+              padding rather than bleeding past it. */}
+          <div className="flex items-center gap-8 p-6">
+            <div className="grid min-w-0 flex-1 grid-cols-1 gap-y-6 min-[901px]:grid-cols-[minmax(0,1.72fr)_1px_minmax(0,1fr)] min-[901px]:gap-x-6">
+              {/* No rocket: the band is already the release's own surface, and
+                  the eyebrow says what it is. */}
+              <div className="min-w-0">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[.1em] text-ink-600">
+                  Latest release
+                </p>
+                <h2 className="mb-2 text-22 font-bold leading-tight tracking-[-0.01em] text-ink-900">
+                  {latest.month} Release
+                </h2>
+                <p className="mb-4 max-w-[460px] text-sm text-ink-700">{pitch.headline}</p>
+                <Button onClick={() => navigate(`/release-hub/releases?month=${encodeURIComponent(latest.month)}`)}>
+                  Explore what&apos;s new <ArrowRight size={16} />
+                </Button>
               </div>
 
               {/* Hairline between the pitch and what it delivers. */}
@@ -195,7 +191,8 @@ const Overview = () => {
               </ul>
             </div>
 
-            <ReleaseGiftArt className="hidden h-[195px] w-[235px] shrink-0 min-[1181px]:block" />
+            {/* 240x150 is the asset's own 1586/992, for the same reason. */}
+            <ReleaseGiftArt className="hidden h-[150px] w-[240px] shrink-0 min-[1181px]:block" />
           </div>
         </section>
       )}
@@ -208,25 +205,25 @@ const Overview = () => {
 
       <div className="grid grid-cols-1 gap-[18px] min-[601px]:grid-cols-2 min-[1181px]:grid-cols-4">
         {QUICK_LINKS.map(({ icon: Icon, tint, title, sub, path }) => (
-          /* Icon, then text, then the arrow - one row, as the design has them.
-             Stacking the icon above the title doubled the card height. */
+          /* 12px on every side, and both lines truncate rather than wrap - a
+             quick link that grows to three lines stops being quick. */
           <button
             key={path}
             type="button"
             onClick={() => navigate(path)}
-            className="group flex h-full items-center gap-5 rounded-xl border border-ink-150 bg-white p-6 text-left shadow-elev1 transition-colors hover:border-brand-border hover:bg-brand-soft"
+            className="group flex items-center gap-3 rounded-lg border border-ink-150 bg-white p-3 text-left shadow-elev1 transition-colors hover:border-brand-border hover:bg-brand-soft"
           >
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tint}`}>
-              <Icon size={18} />
+            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${tint}`}>
+              <Icon size={16} />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold text-ink-900 group-hover:text-brand-text">
+              <span className="block truncate text-sm font-semibold text-ink-900 group-hover:text-brand-text">
                 {title}
               </span>
-              <span className="mt-0.5 block text-13 text-ink-600">{sub}</span>
+              <span className="block truncate text-13 text-ink-600">{sub}</span>
             </span>
             <ArrowRight
-              size={18}
+              size={16}
               className="shrink-0 text-ink-400 transition-colors group-hover:text-brand"
             />
           </button>

@@ -7,7 +7,7 @@ import Panel from '@/components/primitives/Panel';
 import Badge from '@/components/primitives/Badge';
 import IconButton from '@/components/primitives/IconButton';
 import EmptyState from '@/components/primitives/EmptyState';
-import { toolbarSelectCls, caretBackground } from '@/components/primitives/fieldStyles';
+import { selectStyle } from '@/components/primitives/fieldStyles';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { KB_MODULES, moduleByName, plural, releaseNoteGroups, sortedNewsletters } from '@/data/knowledge';
 import { formatDate } from '@/data/features';
@@ -102,19 +102,15 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
           <p className="max-w-lede text-sm text-ink-600">{lede}</p>
         </div>
         {showFilter && (
-          <div className="relative inline-flex shrink-0 items-center">
-            <Filter size={16} className="pointer-events-none absolute left-3 z-[1] text-ink-600" />
-            <select
-              className={toolbarSelectCls}
-              style={caretBackground}
-              aria-label="Filter by product module"
-              value={module}
-              onChange={(e) => setModule(e.target.value)}
-            >
-              <option value="all">All Modules</option>
-              {KB_MODULES.map((m) => <option key={m.slug}>{m.name}</option>)}
-            </select>
-          </div>
+          <select
+            style={{ ...selectStyle(), width: 'auto', minWidth: 180, flexShrink: 0 }}
+            aria-label="Filter by product module"
+            value={module}
+            onChange={(e) => setModule(e.target.value)}
+          >
+            <option value="all">All modules</option>
+            {KB_MODULES.map((m) => <option key={m.slug}>{m.name}</option>)}
+          </select>
         )}
       </div>
 
@@ -124,7 +120,10 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
         (releases.length ? (
           <div className="flex flex-col gap-3">
             {releases.map((g) => (
-              <Panel key={g.month} className="flex flex-col gap-4 min-[901px]:flex-row min-[901px]:items-center">
+              <Panel
+                key={g.month}
+                style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}
+              >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
                   <FileText size={20} />
                 </span>
@@ -132,9 +131,9 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <h2 className="text-base font-semibold">{g.month} Release Notes</h2>
-                    {g.newCount > 0 && <Badge variant="purple">{g.newCount} new</Badge>}
+                    {g.newCount > 0 && <Badge variant="new">{g.newCount} new</Badge>}
                     {g.enhancementCount > 0 && (
-                      <Badge variant="neutral">{plural(g.enhancementCount, 'enhancement')}</Badge>
+                      <Badge variant="static">{plural(g.enhancementCount, 'enhancement')}</Badge>
                     )}
                   </div>
                   <div className="mb-1 flex items-center gap-2 text-13 text-ink-500">
@@ -184,7 +183,7 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <h2 className="text-base font-semibold">{n.title}</h2>
-                    <Badge variant="purple">{n.month}</Badge>
+                    <Badge variant="new">{n.month}</Badge>
                   </div>
                   <p className="mb-1 text-13 text-ink-500">Sent {formatDate(n.date)}</p>
                   <p className="mb-3 max-w-lede text-sm text-ink-700">{n.summary}</p>
@@ -225,15 +224,15 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
       {section === 'videos' &&
         (videos.length ? (
           <div className="grid grid-cols-1 gap-4 min-[901px]:grid-cols-2 min-[1181px]:grid-cols-3">
-            {videos.map((v) => {
-              const tone = moduleByName(v.module)?.tone ?? 'neutral';
-              return (
-                <Panel key={v.id} className="flex flex-col">
+            {videos.map((v) => (
+                /* The module is static configuration, so its chip is neutral -
+                   never one of the status colours. */
+                <Panel key={v.id} style={{ display: 'flex', flexDirection: 'column' }}>
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
                       <Play size={18} />
                     </span>
-                    <Badge variant={tone}>{v.module}</Badge>
+                    <Badge variant="static">{v.module}</Badge>
                   </div>
                   <h3 className="mb-2 flex-1 text-sm font-semibold">{v.title}</h3>
                   <div className="flex items-center gap-3">
@@ -256,8 +255,7 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
                     )}
                   </div>
                 </Panel>
-              );
-            })}
+            ))}
           </div>
         ) : (
           empty

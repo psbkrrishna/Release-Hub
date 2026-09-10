@@ -1,46 +1,66 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { RADIUS, SPACE, T, TYPE, sx } from '@/styles/zerra';
 
-/* One component for what used to be six near-identical rules: .tag (solid /
-   outline / green / amber), .flabel (is-new / is-enh), .mod-pill, .pill-csm,
-   .pill-req and .code. They had already converged on the same production
-   Badge shape - 8px radius, px-2 py-1, 12px/500, 16px line-height - so the
-   only real difference left is the colour pair. */
+/* ---------------------------------------------------------------------------
+   Zerra pill. Height 22-24px, radius 999px, 12px/600, 0-9..12px padding.
+
+   The brand-versus-neutral split is load-bearing, and the guidelines are
+   explicit about it: brand marks a transient or live action, neutral marks a
+   static configuration. A static state is never blue. The variant names below
+   say which is which so a call site cannot get it the wrong way round.
+   --------------------------------------------------------------------------- */
 
 type Variant =
-  | 'solid'      // .tag.solid        - brand fill, white text
-  | 'outline'    // .tag.outline      - white fill, neutral border
-  | 'neutral'    // .mod-pill, .flabel.is-enh
-  | 'green'      // .tag.green
-  | 'amber'      // .pill-csm, .tag.amber
-  | 'brand'      // .pill-req
-  | 'purple'     // .flabel.is-new
-  | 'code';      // .code - the FEAT-0xx chip
+  | 'live' // transient / in-flight - brand
+  | 'static' // a fixed configuration value - neutral
+  | 'success'
+  | 'warning'
+  | 'danger'
+  | 'new' // anything new - the reserved accent
+  | 'code'; // an identifier chip
 
-const VARIANT: Record<Variant, string> = {
-  solid: 'bg-brand text-white border-transparent',
-  outline: 'bg-white text-ink-700 border-ink-150',
-  neutral: 'bg-ink-50 text-ink-700 border-ink-150',
-  green: 'bg-green-50 text-green-700 border-green-200',
-  amber: 'bg-amber-50 text-amber-700 border-amber-200',
-  brand: 'bg-brand-soft text-brand-text border-brand-border',
-  purple: 'bg-purple-50 text-purple-900 border-purple-200',
-  code: 'bg-ink-50 text-ink-700 border-ink-150 font-semibold tracking-[.02em] tabular-nums',
+const VARIANT: Record<Variant, CSSProperties> = {
+  live: { background: T.brandSoft, color: T.brand, borderColor: T.brandBorder },
+  static: { background: T.su2, color: T.tx3, borderColor: T.bd2 },
+  success: { background: T.succSoft, color: T.succText, borderColor: T.succBorder },
+  warning: { background: T.warnSoft, color: T.warnText, borderColor: T.warnBorder },
+  danger: { background: T.dangSoft, color: T.dangText, borderColor: T.dangBorder },
+  new: { background: T.indigoSoft, color: T.indigo, borderColor: T.indigo },
+  code: {
+    background: T.su2,
+    color: T.tx3,
+    borderColor: T.bd2,
+    fontVariantNumeric: 'tabular-nums',
+    letterSpacing: '0.02em',
+  },
 };
 
-interface Props {
+const Badge = ({
+  variant = 'static',
+  style,
+  children,
+}: {
   variant?: Variant;
-  className?: string;
+  style?: CSSProperties;
   children: ReactNode;
-}
-
-const Badge = ({ variant = 'neutral', className = '', children }: Props) => (
+}) => (
   <span
-    className={[
-      'inline-flex items-center gap-1 whitespace-nowrap rounded-lg border px-2 py-1',
-      'text-xs font-medium leading-4',
+    style={sx(
+      {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        height: 24,
+        padding: `0 ${SPACE.x3}px`,
+        borderRadius: RADIUS.pill,
+        borderWidth: 1,
+        borderStyle: 'solid',
+        whiteSpace: 'nowrap',
+        ...TYPE.pill,
+      },
       VARIANT[variant],
-      className,
-    ].join(' ')}
+      style,
+    )}
   >
     {children}
   </span>

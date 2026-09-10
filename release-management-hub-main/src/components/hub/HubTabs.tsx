@@ -1,23 +1,26 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { House, Rocket, BookOpen } from 'lucide-react';
+import { RADIUS, SPACE, T, sx } from '@/styles/zerra';
 
 /* ---------------------------------------------------------------------------
    The hub's three sections.
 
-   They are peers, not a hierarchy, which is why the breadcrumb above this strip
-   never restates the active tab - the strip already says which one you are on.
-   The breadcrumb only names a level deeper than a tab root.
+   They are peers, not a hierarchy, which is why the breadcrumb never restates
+   the active tab - the strip already says which one you are on, and the
+   breadcrumb only names a level deeper than a tab root.
+
+   No icons: three tab labels do not need decorating, and one of them is long
+   enough that an icon only pushed it further from its neighbour.
    --------------------------------------------------------------------------- */
 
 export type HubTab = 'overview' | 'releases' | 'knowledge';
 
 export const HUB_TABS = [
-  { key: 'overview', label: 'Overview', icon: House, path: '/release-hub/overview' },
-  { key: 'releases', label: 'Release Hub', icon: Rocket, path: '/release-hub/releases' },
+  { key: 'overview', label: 'Overview', path: '/release-hub/overview' },
+  { key: 'releases', label: 'Release Hub', path: '/release-hub/releases' },
   {
     key: 'knowledge',
     label: 'Product & Feature Documentation',
-    icon: BookOpen,
     path: '/release-hub/knowledge',
   },
 ] as const;
@@ -36,35 +39,59 @@ const HubTabs = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const active = hubTabOf(pathname);
+  const [hover, setHover] = useState<string | null>(null);
 
   return (
-    /* The rule sits on the wrapper and the scroller carries the -1px, so the
-       active underline straddles it without a negative margin inside the
-       scroll box - `overflow-x: auto` makes the cross axis scrollable too, and
-       a 1px overhang there would earn a stray vertical scrollbar.
-
-       It needs its own scroller at all because the creator's feature table is
-       1680px wide; without one the strip would ride that horizontal scroll. */
-    <div className="mb-4 border-b border-ink-150">
-      <nav aria-label="Release Hub sections" className="-mb-px overflow-x-auto">
-        <div className="flex min-w-max gap-1">
-          {HUB_TABS.map(({ key, label, icon: Icon, path }) => {
+    /* Edge to edge: the strip's rule spans the full canvas, so the 16px page
+       padding is cancelled with a negative margin and given back to the tabs
+       as padding. The scroller is separate because the creator's feature table
+       is 1680px wide and the strip must not ride that horizontal scroll. */
+    <div
+      style={{
+        margin: `0 -${SPACE.x4}px ${SPACE.x4}px`,
+        borderBottom: `1px solid ${T.bd2}`,
+      }}
+    >
+      <nav aria-label="Release Hub sections" style={{ overflowX: 'auto', marginBottom: -1 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: SPACE.x1,
+            minWidth: 'max-content',
+            padding: `0 ${SPACE.x4}px`,
+          }}
+        >
+          {HUB_TABS.map(({ key, label, path }) => {
             const on = key === active;
             return (
               <button
                 key={key}
                 type="button"
                 onClick={() => navigate(path)}
+                onMouseEnter={() => setHover(key)}
+                onMouseLeave={() => setHover(null)}
                 aria-current={on ? 'page' : undefined}
-                className={[
-                  'flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5',
-                  'text-sm transition-colors',
-                  on
-                    ? 'border-brand font-semibold text-brand'
-                    : 'border-transparent text-ink-600 hover:border-ink-200 hover:text-ink-900',
-                ].join(' ')}
+                style={sx(
+                  {
+                    display: 'flex',
+                    alignItems: 'center',
+                    whiteSpace: 'nowrap',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: '2px solid transparent',
+                    borderTopLeftRadius: RADIUS.control,
+                    borderTopRightRadius: RADIUS.control,
+                    padding: `${SPACE.x3}px ${SPACE.x4}px`,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: T.tx3,
+                    cursor: 'pointer',
+                    transition: 'color 120ms ease, border-color 120ms ease',
+                  },
+                  hover === key && !on && { color: T.tx },
+                  on && { color: T.brand, borderBottomColor: T.brand },
+                )}
               >
-                <Icon size={16} className="shrink-0" />
                 {label}
               </button>
             );

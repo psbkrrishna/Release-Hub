@@ -1,16 +1,15 @@
+import { useState, type ReactNode } from 'react';
+
 /* ---------------------------------------------------------------------------
-   The two Overview illustrations, drawn inline.
+   The two Overview illustrations: the supplied artwork in public/, with the
+   hand-authored drawings kept underneath as a fallback.
 
-   Inline SVG rather than image files: the app ships no raster assets, these
-   have to sit on the palette they are placed against, and they stay crisp at
-   any size. Both are decorative - the copy beside them carries the meaning -
-   so they are aria-hidden and add nothing to the accessibility tree.
+   Both are decorative - the copy beside them carries the meaning - so they are
+   aria-hidden and add nothing to the accessibility tree.
 
-   Geometry is laid out against the reference design's own coordinates, with
-   each viewBox cropped to the artwork's real extents so nothing is scaled
-   down by empty margin. These are hand-authored approximations of that
-   design's artwork; if the original vector files are added to the repo, each
-   component below becomes a single <img> and the match becomes exact.
+   The drawings' geometry is laid out against the reference design's own
+   coordinates, with each viewBox cropped to the artwork's real extents so
+   nothing is scaled down by empty margin.
 
    Type inside an <svg> does not inherit font-family from the page, so it is
    named explicitly.
@@ -43,9 +42,76 @@ const C = {
   ink: '#1B2559',
 } as const;
 
+/* ---------------------------------------------------------------------------
+   Asset first, drawing second.
+
+   These are the supplied illustrations, and they are what renders. Each has
+   its own background baked in, so the slot it is placed in is sized to the
+   file's own aspect ratio (see the callers) - object-fit: contain then has no
+   letterbox to fill, and no band of a near-but-not-quite tint appears beside
+   the artwork.
+
+     public/hero-illustration.webp   1780x877  (2.030:1) on cream
+     public/release-gift.webp        1568x993  (1.579:1) on lilac
+
+   The drawings below stay as the fallback: if a file is ever missing the
+   Overview keeps its artwork instead of showing a broken image.
+   --------------------------------------------------------------------------- */
+
+const ASSET = {
+  hero: '/hero-illustration.webp',
+  gift: '/release-gift.webp',
+} as const;
+
+/** Renders the asset, or the supplied drawing if the asset is not there. */
+const Art = ({
+  src,
+  className,
+  position,
+  fallback,
+}: {
+  src: string;
+  className: string;
+  position: string;
+  fallback: ReactNode;
+}) => {
+  const [missing, setMissing] = useState(false);
+  if (missing) return <>{fallback}</>;
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      className={className}
+      style={{ objectFit: 'contain', objectPosition: position }}
+      onError={() => setMissing(true)}
+    />
+  );
+};
+
+export const SearchHeroArt = ({ className = '' }: { className?: string }) => (
+  <Art
+    src={ASSET.hero}
+    className={className}
+    /* Anchored bottom-right: the figure and the desk line sit low in the
+       frame, so this keeps them on the panel's own bottom edge. */
+    position="bottom right"
+    fallback={<DrawnSearchHero className={className} />}
+  />
+);
+
+export const ReleaseGiftArt = ({ className = '' }: { className?: string }) => (
+  <Art
+    src={ASSET.gift}
+    className={className}
+    position="center"
+    fallback={<DrawnReleaseGift className={className} />}
+  />
+);
+
 /** Person at a desk, with the three things the hub offers stacked beside
  *  them. Sits on warm-50. */
-export const SearchHeroArt = ({ className = '' }: { className?: string }) => (
+const DrawnSearchHero = ({ className = '' }: { className?: string }) => (
   <svg
     viewBox="0 0 555 295"
     className={className}
@@ -162,7 +228,7 @@ export const SearchHeroArt = ({ className = '' }: { className?: string }) => (
 );
 
 /** An opened box with sparkles - the release, arriving. Sits on lilac-50. */
-export const ReleaseGiftArt = ({ className = '' }: { className?: string }) => (
+const DrawnReleaseGift = ({ className = '' }: { className?: string }) => (
   <svg
     viewBox="0 0 236 196"
     className={className}

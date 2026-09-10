@@ -52,9 +52,14 @@ export default {
            are used: the warm ground behind the search hero, and the lilac one
            behind the latest-release band. Both are backgrounds only - no text,
            border or icon takes its colour from here, so they extend the
-           palette without competing with brand blue or release purple. */
-        warm: { 50: "#FDF7EF", 100: "#FAEEDE", 200: "#F3E2CC" },
-        lilac: { 50: "#F5F1FD", 100: "#ECE4FB", 200: "#DCD0F6" },
+           palette without competing with brand blue or release purple.
+
+           The two 50s are sampled from the supplied illustrations' own grounds
+           (hero-illustration.webp and release-gift.webp), so each panel is the
+           exact tint of the artwork sitting in it and no edge shows around the
+           image. Change one and the other has to move with it. */
+        warm: { 50: "#FCF9F3", 100: "#FAEEDE", 200: "#F3E2CC" },
+        lilac: { 50: "#F9F2FE", 100: "#ECE4FB", 200: "#DCD0F6" },
       },
       fontFamily: {
         sans: ["'Source Sans 3'", "ui-sans-serif", "system-ui", "sans-serif"],

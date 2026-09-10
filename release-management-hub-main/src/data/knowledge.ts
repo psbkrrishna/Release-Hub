@@ -1,6 +1,6 @@
 import { MODULES, MONTH_NAMES, sortReleaseMonths } from '@/data/features';
 import type { Feature } from '@/types/Feature';
-import type { KbModule, Newsletter, ReleaseNoteGroup } from '@/types/Knowledge';
+import type { KbGroup, KbModule, Newsletter, ReleaseNoteGroup } from '@/types/Knowledge';
 
 /* ---------------------------------------------------------------------------
    Knowledge Hub content.
@@ -14,7 +14,7 @@ import type { KbModule, Newsletter, ReleaseNoteGroup } from '@/types/Knowledge';
    already their source of truth.
    --------------------------------------------------------------------------- */
 
-/** "1 guide" / "2 guides". Counts appear beside a noun all over the hub, and
+/** "1 document" / "2 documents". Counts appear beside a noun all over the hub,
  *  several of them legitimately reach 1. */
 export const plural = (n: number, word: string, suffix = 's'): string =>
   `${n} ${word}${n === 1 ? '' : suffix}`;
@@ -22,13 +22,9 @@ export const plural = (n: number, word: string, suffix = 's'): string =>
 export const slugify = (name: string): string =>
   name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-/* Five badge tones across ten modules. Assigned by position so a new module
-   picks up a tone without anyone choosing one. */
-const TONES = ['brand', 'green', 'purple', 'amber', 'neutral'] as const;
-
-/** Evergreen guides per module, keyed by module name. A module with no entry
- *  still gets a page - it just leads with its features instead of its guides. */
-const GUIDES: Record<string, { blurb: string; tagline: string; docs: Array<[string, string, number]>; videos: Array<[string, string]> }> = {
+/** Evergreen documents per module, keyed by module name. A module with no
+ *  entry still gets a page - it leads with its features instead. */
+const DOCS: Record<string, { blurb: string; tagline: string; docs: Array<[string, string, number]>; videos: Array<[string, string]> }> = {
   'Performance Management': {
     tagline: 'Reviews, goals and calibration',
     blurb: 'Review cycles, goals and calibration - how the appraisal process is set up and run end to end.',
@@ -145,22 +141,21 @@ const GUIDES: Record<string, { blurb: string; tagline: string; docs: Array<[stri
 };
 
 export const KB_MODULES: KbModule[] = MODULES.map((name, i) => {
-  const guide = GUIDES[name];
+  const doc = DOCS[name];
   const slug = slugify(name);
   return {
     name,
     slug,
-    tone: TONES[i % TONES.length],
-    blurb: guide?.blurb ?? `Documentation and training material for the ${name} module.`,
-    tagline: guide?.tagline ?? 'Guides and videos',
-    docs: (guide?.docs ?? []).map(([title, blurb, minutes], d) => ({
+    blurb: doc?.blurb ?? `Documentation and training material for the ${name} module.`,
+    tagline: doc?.tagline ?? 'Documents and videos',
+    docs: (doc?.docs ?? []).map(([title, blurb, minutes], d) => ({
       id: `${slug}-doc-${d + 1}`,
       title,
       blurb,
       minutes,
       url: `https://docs.zwayam.com/${slug}/${slugify(title)}`,
     })),
-    videos: (guide?.videos ?? []).map(([title, duration], v) => ({
+    videos: (doc?.videos ?? []).map(([title, duration], v) => ({
       id: `${slug}-vid-${v + 1}`,
       title,
       duration,
@@ -168,6 +163,41 @@ export const KB_MODULES: KbModule[] = MODULES.map((name, i) => {
     })),
   };
 });
+
+/* ---------------------------------------------------------------------------
+   Product groups.
+
+   Ten module cards in one flat grid gave the reader no way in; grouping them
+   by the part of the product they belong to does. Declared as names rather
+   than as a field on each module so the grouping - and its order - is
+   readable in one place.
+   --------------------------------------------------------------------------- */
+
+const GROUPS: Array<{ name: string; modules: string[] }> = [
+  { name: 'Hiring', modules: ['Recruiting', 'Onboarding'] },
+  { name: 'People', modules: ['Core HR', 'Employee Experience'] },
+  {
+    name: 'Performance & Learning',
+    modules: ['Performance Management', 'Learning & Development'],
+  },
+  { name: 'Pay & Time', modules: ['Payroll', 'Time Tracking', 'Benefits'] },
+  { name: 'Insights', modules: ['Analytics'] },
+];
+
+export const KB_GROUPS: KbGroup[] = (() => {
+  const grouped = GROUPS.map(({ name, modules }) => ({
+    name,
+    modules: modules
+      .map((n) => KB_MODULES.find((m) => m.name === n))
+      .filter((m): m is KbModule => Boolean(m)),
+  })).filter((g) => g.modules.length > 0);
+
+  /* Anything added to MODULES but not named above still gets a home, so a new
+     module can never quietly vanish from this page. */
+  const placed = new Set(GROUPS.flatMap((g) => g.modules));
+  const rest = KB_MODULES.filter((m) => !placed.has(m.name));
+  return rest.length ? [...grouped, { name: 'More', modules: rest }] : grouped;
+})();
 
 export const moduleBySlug = (slug?: string): KbModule | undefined =>
   KB_MODULES.find((m) => m.slug === slug);

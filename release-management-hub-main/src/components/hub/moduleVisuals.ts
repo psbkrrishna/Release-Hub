@@ -1,37 +1,45 @@
 import {
-  ClipboardList, Briefcase, Heart, BarChart3, Building2, UserPlus, Wallet,
-  GraduationCap, Clock, Smile, BookOpen,
-} from 'lucide-react';
+  ClipboardText, Briefcase, Heart, ChartBar, Buildings, UserPlus, Wallet,
+  GraduationCap, Clock, Smiley, BookOpen,
+} from '@phosphor-icons/react';
 import type { ComponentType } from 'react';
-import type { KbModule } from '@/types/Knowledge';
+import type { CSSProperties } from 'react';
+import { RADIUS, T } from '@/styles/zerra';
 
-/* How a module looks wherever it appears - the Knowledge Hub grid, a module
-   page, the Home tab. Declared once so the same module never arrives in two
-   different colours. */
+/* How a module looks wherever it appears - the documentation grid, a module
+   page, the Overview. Declared once so the same module never arrives looking
+   two different ways.
 
-type Icon = ComponentType<{ size?: number | string; className?: string }>;
+   Icons are Phosphor, the app's one icon set. */
+
+type Icon = ComponentType<{ size?: number | string; weight?: string }>;
 
 const ICONS: Record<string, Icon> = {
-  'Performance Management': ClipboardList,
+  'Performance Management': ClipboardText,
   Recruiting: Briefcase,
   Benefits: Heart,
-  Analytics: BarChart3,
-  'Core HR': Building2,
+  Analytics: ChartBar,
+  'Core HR': Buildings,
   Onboarding: UserPlus,
   Payroll: Wallet,
   'Learning & Development': GraduationCap,
   'Time Tracking': Clock,
-  'Employee Experience': Smile,
+  'Employee Experience': Smiley,
 };
 
 /** Falls back to a book, so a module added to MODULES renders before anyone
  *  has chosen an icon for it. */
 export const moduleIcon = (name: string): Icon => ICONS[name] ?? BookOpen;
 
-export const TONE_TINT: Record<KbModule['tone'], string> = {
-  brand: 'bg-brand-soft text-brand',
-  green: 'bg-green-50 text-green-600',
-  purple: 'bg-purple-50 text-purple-500',
-  amber: 'bg-amber-50 text-amber-700',
-  neutral: 'bg-ink-50 text-ink-700',
+/* One tile treatment for every module. The five-colour rotation this replaced
+   used green, amber and purple decoratively - colours the guidelines reserve
+   for status and for anything new. */
+export const MODULE_TILE: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  borderRadius: RADIUS.control,
+  background: T.brandSoft,
+  color: T.brand,
 };

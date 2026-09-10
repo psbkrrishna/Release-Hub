@@ -1,5 +1,6 @@
 import { Toaster } from 'sonner';
-import { BarChart3 } from 'lucide-react';
+import { ChartBar } from '@phosphor-icons/react';
+import { ROOT, T, RADIUS } from '@/styles/zerra';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import EmptyState from '@/components/primitives/EmptyState';
@@ -12,6 +13,7 @@ import PerformanceReviews from './pages/PerformanceReviews';
 import ReleaseHubLayout from './pages/hub/ReleaseHubLayout';
 import HubIndexRedirect from './pages/hub/HubIndexRedirect';
 import Overview from './pages/hub/Overview';
+import KnowledgeLayout from './pages/hub/KnowledgeLayout';
 import KnowledgeHome from './pages/hub/KnowledgeHome';
 import KnowledgeSection from './pages/hub/KnowledgeSection';
 import ModuleDocs from './pages/hub/ModuleDocs';
@@ -27,8 +29,27 @@ const queryClient = new QueryClient();
    mounted here but had no consumer, so it only wrote a localStorage key that
    nothing read back. FeatureStore owns release state. */
 const App = () => (
+  /* The Zerra token block sits on this wrapper, so every descendant - and the
+     document-level rules in index.html - resolve var(--token). A plain div
+     with no transform, so the shell's fixed header and rail are unaffected. */
+  <div style={ROOT}>
   <QueryClientProvider client={queryClient}>
-    <Toaster richColors position="top-right" closeButton />
+    {/* One toast treatment: black with white text. richColors is gone - it
+        produced per-status coloured cards, which the guidelines rule out. */}
+    <Toaster
+      position="top-right"
+      closeButton
+      toastOptions={{
+        style: {
+          background: T.neutralStrong,
+          color: '#FFFFFF',
+          border: 'none',
+          borderRadius: RADIUS.control,
+          fontSize: 13,
+          padding: '10px 14px',
+        },
+      }}
+    />
     <BrowserRouter>
       <UserRoleProvider>
         <FeatureStore>
@@ -47,11 +68,16 @@ const App = () => (
                 <Route path="home" element={<Navigate to="/release-hub/overview" replace />} />
                 <Route path="releases" element={<Index />} />
                 <Route path="features/:featureId" element={<FeatureDetail />} />
-                <Route path="knowledge" element={<KnowledgeHome />} />
-                <Route path="knowledge/release-notes" element={<KnowledgeSection section="release-notes" />} />
-                <Route path="knowledge/newsletters" element={<KnowledgeSection section="newsletters" />} />
-                <Route path="knowledge/videos" element={<KnowledgeSection section="videos" />} />
-                <Route path="knowledge/modules/:moduleSlug" element={<ModuleDocs />} />
+                {/* The documentation tab carries its own left nav pane, so it
+                    is a layout route - the pane then survives navigation
+                    between its pages instead of remounting under each one. */}
+                <Route path="knowledge" element={<KnowledgeLayout />}>
+                  <Route index element={<KnowledgeHome />} />
+                  <Route path="release-notes" element={<KnowledgeSection section="release-notes" />} />
+                  <Route path="newsletters" element={<KnowledgeSection section="newsletters" />} />
+                  <Route path="videos" element={<KnowledgeSection section="videos" />} />
+                  <Route path="modules/:moduleSlug" element={<ModuleDocs />} />
+                </Route>
               </Route>
 
               {/* The Knowledge Base was its own destination before the merge.
@@ -62,7 +88,7 @@ const App = () => (
               <Route
                 path="insights"
                 element={
-                  <EmptyState icon={<BarChart3 size={26} />} title="Insights">
+                  <EmptyState icon={<ChartBar size={28} />} title="Insights">
                     Placeholder for future analytics views.
                   </EmptyState>
                 }
@@ -74,6 +100,7 @@ const App = () => (
       </UserRoleProvider>
     </BrowserRouter>
   </QueryClientProvider>
+  </div>
 );
 
 export default App;

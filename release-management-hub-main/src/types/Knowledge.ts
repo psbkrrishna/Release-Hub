@@ -27,6 +27,14 @@ export interface KbVideo {
   url: string;
 }
 
+/** A product family, and the modules documented under it. */
+export interface KbGroup {
+  name: string;
+  modules: KbModule[];
+  /** Rendered greyed, with no documentation to explore yet. */
+  comingSoon?: boolean;
+}
+
 export interface KbModule {
   /** Must be a value in MODULES, or its documentation is unreachable from a
    *  feature. */
@@ -37,7 +45,10 @@ export interface KbModule {
   /** Three to six words, for cards too narrow to hold the sentence without
    *  truncating it mid-clause - the Home tab's module grid. */
   tagline: string;
-  tone: 'brand' | 'green' | 'purple' | 'amber' | 'neutral';
+  /* No per-module tone. Modules used to be colour-coded across brand, green,
+     purple and amber, but the guidelines reserve green/amber/danger for status
+     and rule out introducing accent colours - a module is static
+     configuration, so it reads brand or neutral and nothing else. */
   docs: KbDoc[];
   videos: KbVideo[];
 }

@@ -1,9 +1,11 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Search, Plus, BookOpen, Play, FileText, AlertCircle, History, X,
-  Headset, Check, ChevronLeft, ChevronRight, ArrowRight, Pencil, Rocket, Trash2,
-} from 'lucide-react';
+  MagnifyingGlass as Search, Plus, BookOpen, Play, FileText, WarningCircle as AlertCircle,
+  ClockCounterClockwise as History, X, Headset, Check, CaretLeft, CaretRight,
+  ArrowRight, PencilSimple as Pencil, Rocket, Trash,
+} from '@phosphor-icons/react';
+import { RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
 import CreateFeatureModal from '@/components/CreateFeatureModal';
 import HubHeader from '@/components/hub/HubHeader';
 import ColumnFilter from '@/components/hub/ColumnFilter';
@@ -50,8 +52,7 @@ const SEAM_L = "before:absolute before:inset-y-0 before:left-0 before:w-px befor
    reader to decode five tooltips to learn one thing. */
 const TagLabel = ({ feature }: { feature: Feature }) => (
   <Badge
-    variant={feature.featureTag === 'New Feature' ? 'purple' : 'neutral'}
-    className="font-semibold"
+    variant={feature.featureTag === 'New Feature' ? 'new' : 'static'}
   >
     {feature.featureTag === 'New Feature' ? 'New Feature' : 'Enhancement'}
   </Badge>
@@ -86,10 +87,10 @@ const StatusCell = ({ feature }: { feature: Feature }) => {
   const { canToggle, toggleEnabled } = useFeatureStore();
 
   if (feature.status === 'Contact CSM') {
-    return <Badge variant="amber"><AlertCircle size={13} />Contact CSM</Badge>;
+    return <Badge variant="warning"><AlertCircle size={13} />Contact CSM</Badge>;
   }
   if (feature.status === 'Enablement requested') {
-    return <Badge variant="brand"><History size={13} />Enablement requested</Badge>;
+    return <Badge variant="live"><History size={13} />Enablement requested</Badge>;
   }
 
   return (
@@ -220,6 +221,20 @@ const Index = () => {
     setPage(1);
   };
 
+  /* The page-number input is typed into, so it holds a draft until it is
+     committed - clamped to the real range, and reset if the entry is junk. */
+  const [pageDraft, setPageDraft] = useState('1');
+  useEffect(() => setPageDraft(String(current)), [current]);
+
+  const commitPage = () => {
+    const n = Number(pageDraft);
+    if (!pageDraft || Number.isNaN(n)) {
+      setPageDraft(String(current));
+      return;
+    }
+    setPage(Math.min(Math.max(1, n), pages));
+  };
+
   const clearFilters = () => {
     setName('');
     setCustomer('');
@@ -320,7 +335,7 @@ const Index = () => {
       : [
           { label: 'Publish feature', icon: Rocket, onSelect: () => publish(f.id) },
           { label: 'Edit feature', icon: Pencil, onSelect: () => { setEditing(f); setModalOpen(true); } },
-          { label: 'Delete feature', icon: Trash2, danger: true, separatorBefore: true, onSelect: () => remove(f.id) },
+          { label: 'Delete feature', icon: Trash, danger: true, separatorBefore: true, onSelect: () => remove(f.id) },
         ];
 
   /* A group header inside the table body. The creator's table is one table
@@ -378,7 +393,7 @@ const Index = () => {
           <td className={`${TD} min-w-[300px]`}>
             <SummaryCell text={(f.summary || '').split('\n').join(' ')} />
           </td>
-          <td className={TD_MID}><Badge variant="neutral">{f.productModule}</Badge></td>
+          <td className={TD_MID}><Badge variant="static">{f.productModule}</Badge></td>
           <td className={TD_MID}><ContentIcons feature={f} onOpen={openRes} /></td>
           <td className={TD_MID}>
             {f.configurationDoc ? (
@@ -396,9 +411,9 @@ const Index = () => {
           </td>
           <td className={TD_MID}>
             {row.status === 'support' ? (
-              <Badge variant="amber"><Headset size={13} />Support Requested</Badge>
+              <Badge variant="warning"><Headset size={13} />Support Requested</Badge>
             ) : (
-              <Badge variant="green"><Check size={12} />Enabled</Badge>
+              <Badge variant="success"><Check size={12} />Enabled</Badge>
             )}
           </td>
         </tr>,
@@ -442,7 +457,7 @@ const Index = () => {
           <td className={`${TD} min-w-[300px]`}>
             <SummaryCell text={(f.summary || '').split('\n').join(' ')} />
           </td>
-          <td className={TD_MID}><Badge variant="neutral">{f.productModule}</Badge></td>
+          <td className={TD_MID}><Badge variant="static">{f.productModule}</Badge></td>
           {isCreator && <td className={`${TD_MID} whitespace-nowrap text-ink-700`}>{f.featureType}</td>}
           {/* Group separator: everything left of it describes the feature,
               everything right measures its adoption. A shade heavier than the
@@ -477,7 +492,7 @@ const Index = () => {
         lede={lede}
         action={
           isCreator ? (
-            <Button size="lg" onClick={() => { setEditing(null); setModalOpen(true); }}>
+            <Button onClick={() => { setEditing(null); setModalOpen(true); }}>
               <Plus size={18} />Create Feature
             </Button>
           ) : undefined
@@ -632,42 +647,80 @@ const Index = () => {
           </table>
         </div>
 
+        {/* Pagination per the guidelines: "Showing 1-12 of 12" on the left,
+            and on the right two 32px chevrons around a 32x32 page-number
+            input plus an "of N" label. No "Page" prefix, and no combined
+            "Page 1 of 1" string - the input is the page number. */}
         {list.length > 0 && (
-          <div className="flex flex-wrap items-center gap-4 border-t border-ink-150 bg-ink-50 px-4 py-3 text-13 text-ink-600">
-            <div className="flex items-center gap-2">
-              <span>Rows per view</span>
-              <select
-                className="h-8 cursor-pointer appearance-none rounded-md border border-[#D4D4D8] bg-white pl-3 pr-8 text-13 text-ink-900 outline-none"
-                style={caretBackground}
-                value={perPage}
-                onChange={(e) => setFilter(() => setPerPage(Number(e.target.value)))}
-                aria-label="Rows per view"
-              >
-                {[10, 20, 50].map((n) => <option key={n}>{n}</option>)}
-              </select>
-            </div>
-            <span className="tabular-nums">
-              {list.length ? `${from + 1}–${to}` : 0} of {list.length}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: SPACE.x4,
+              borderTop: `1px solid ${T.bd}`,
+              padding: `${SPACE.x2}px ${SPACE.x4}px`,
+              ...TYPE.cellSecondary,
+            }}
+          >
+            <span>
+              Showing <b style={{ color: T.tx }}>{from + 1}-{to}</b> of{' '}
+              <b style={{ color: T.tx }}>{list.length}</b>
             </span>
-            <div className="ml-auto flex items-center gap-2">
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: SPACE.x2,
+                marginLeft: 'auto',
+              }}
+            >
               <IconButton
                 bordered
+                size="compact"
+                style={{ height: 32, width: 32 }}
                 disabled={current <= 1}
                 onClick={() => setPage(current - 1)}
+                title={current <= 1 ? 'Already on the first page' : 'Previous page'}
                 aria-label="Previous page"
               >
-                <ChevronLeft size={16} />
+                <CaretLeft size={16} />
               </IconButton>
-              <span className="min-w-[64px] text-center text-13 tabular-nums text-ink-700">
-                {current} of {pages}
-              </span>
+
+              <input
+                type="text"
+                inputMode="numeric"
+                aria-label="Page number"
+                value={pageDraft}
+                onChange={(e) => setPageDraft(e.target.value.replace(/[^0-9]/g, ''))}
+                onBlur={commitPage}
+                onKeyDown={(e) => e.key === 'Enter' && commitPage()}
+                style={{
+                  height: 32,
+                  width: 32,
+                  textAlign: 'center',
+                  borderRadius: RADIUS.control,
+                  border: `1px solid ${T.bd2}`,
+                  background: T.card,
+                  color: T.tx,
+                  outline: 'none',
+                  fontVariantNumeric: 'tabular-nums',
+                  ...TYPE.input,
+                }}
+              />
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>of {pages}</span>
+
               <IconButton
                 bordered
+                size="compact"
+                style={{ height: 32, width: 32 }}
                 disabled={current >= pages}
                 onClick={() => setPage(current + 1)}
+                title={current >= pages ? 'Already on the last page' : 'Next page'}
                 aria-label="Next page"
               >
-                <ChevronRight size={16} />
+                <CaretRight size={16} />
               </IconButton>
             </div>
           </div>

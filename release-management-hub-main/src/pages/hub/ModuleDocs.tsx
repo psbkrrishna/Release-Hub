@@ -1,18 +1,19 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  FileText, Play, ExternalLink, ArrowRight, Search, Clock, Rocket,
-} from 'lucide-react';
+  FileText, Play, ArrowSquareOut as ExternalLink, ArrowRight,
+  MagnifyingGlass as Search, Clock, RocketLaunch as Rocket,
+} from '@phosphor-icons/react';
 import Panel from '@/components/primitives/Panel';
 import Badge from '@/components/primitives/Badge';
 import Button from '@/components/primitives/Button';
 import IconButton from '@/components/primitives/IconButton';
 import EmptyState from '@/components/primitives/EmptyState';
-import { moduleIcon, TONE_TINT } from '@/components/hub/moduleVisuals';
+import { moduleIcon, MODULE_TILE } from '@/components/hub/moduleVisuals';
 import { useFeatureStore } from '@/components/FeatureStore';
-import { KB_MODULES, moduleBySlug, plural } from '@/data/knowledge';
+import { moduleBySlug, plural } from '@/data/knowledge';
 import { formatDate } from '@/data/features';
 
-/* One module: its evergreen guides, its videos, and every feature that has
+/* One module: its evergreen documents, its videos, and every feature that has
    shipped in it. That last section is the point of merging the two halves -
    from a module you can reach the feature, and from the feature you can reach
    the module. */
@@ -48,33 +49,33 @@ const ModuleDocs = () => {
     .filter((f) => f.productModule === module.name)
     .sort((a, b) => b.prodEnablementDate.localeCompare(a.prodEnablementDate));
 
-  const others = KB_MODULES.filter((m) => m.slug !== module.slug);
-
   return (
     <>
       <div className="mb-5 rounded-lg border border-brand-border bg-brand-soft p-6">
         <div className="mb-3 flex items-center gap-3">
-          <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${TONE_TINT[module.tone]}`}>
+          <span style={{ ...MODULE_TILE, height: 44, width: 44 }}>
             <Icon size={22} />
           </span>
           <div>
             {/* h2: the layout owns the page's h1. */}
             <h2 className="text-22 font-semibold leading-tight tracking-[-0.01em]">{module.name}</h2>
             <div className="mt-1 flex flex-wrap items-center gap-3 text-13 text-ink-600">
-              <span className="flex items-center gap-1"><FileText size={13} />{plural(module.docs.length, 'guide')}</span>
+              <span className="flex items-center gap-1"><FileText size={13} />{plural(module.docs.length, 'document')}</span>
               <span className="flex items-center gap-1"><Play size={13} />{plural(module.videos.length, 'video')}</span>
-              <span className="flex items-center gap-1"><Rocket size={13} />{plural(features.length, 'feature')} shipped</span>
+              <span className="flex items-center gap-1"><Rocket size={13} />{plural(features.length, 'feature')} released</span>
             </div>
           </div>
         </div>
-        <p className="max-w-lede text-sm text-ink-700">{module.blurb}</p>
+        {/* The tagline, and one line only - the blurb wrapped to two or three
+            here, which is what made the header block look unsettled. */}
+        <p className="truncate text-sm text-ink-700">{module.tagline}</p>
       </div>
 
       <div className="grid grid-cols-1 items-start gap-5 min-[1181px]:grid-cols-[1.6fr_1fr]">
         <div className="flex flex-col gap-5">
           <Panel>
             <h2 className="mb-4 flex items-center gap-2 text-base font-semibold">
-              <FileText size={18} />Guides
+              <FileText size={18} />Documents
             </h2>
             {module.docs.length ? (
               <div className="flex flex-col gap-3">
@@ -104,7 +105,7 @@ const ModuleDocs = () => {
               </div>
             ) : (
               <p className="text-sm text-ink-600">
-                No module guides yet. The features below carry their own release notes.
+                No documents yet. The features below carry their own release notes.
               </p>
             )}
           </Panel>
@@ -127,7 +128,7 @@ const ModuleDocs = () => {
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-ink-900">{f.title}</span>
                       <span className="mt-1 flex flex-wrap items-center gap-2">
-                        <Badge variant={f.featureTag === 'New Feature' ? 'purple' : 'neutral'}>
+                        <Badge variant={f.featureTag === 'New Feature' ? 'new' : 'static'}>
                           {f.featureTag}
                         </Badge>
                         <span className="text-xs text-ink-500">
@@ -173,20 +174,10 @@ const ModuleDocs = () => {
             )}
           </Panel>
 
-          <Panel>
-            <h2 className="mb-3 text-base font-semibold">Other modules</h2>
-            <div className="flex flex-wrap gap-2">
-              {others.map((m) => (
-                <button
-                  key={m.slug}
-                  onClick={() => navigate(`/release-hub/knowledge/modules/${m.slug}`)}
-                  className="rounded-lg border border-ink-150 px-2 py-1 text-xs font-medium text-ink-700 transition-colors hover:border-brand-border hover:bg-brand-soft hover:text-brand-text"
-                >
-                  {m.name}
-                </button>
-              ))}
-            </div>
-          </Panel>
+          {/* Module navigation used to live here as an "Other modules" panel.
+              It is now the tab's left pane (components/hub/DocsNav) - a way
+              out of the page does not belong after all of the page's
+              content. */}
         </div>
       </div>
     </>

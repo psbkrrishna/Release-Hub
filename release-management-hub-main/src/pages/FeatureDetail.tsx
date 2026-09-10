@@ -43,10 +43,10 @@ const FeatureDetail = () => {
   const inRelease = visibleFeatures.filter((f) => f.releaseMonth === feature.releaseMonth).length;
 
   const statusTag =
-    feature.status === 'Enabled' ? <Badge variant="green">Enabled</Badge>
-    : feature.status === 'Enablement requested' ? <Badge variant="amber">Enablement requested</Badge>
-    : feature.status === 'Contact CSM' ? <Badge variant="amber">Contact CSM</Badge>
-    : <Badge variant="outline">Disabled</Badge>;
+    feature.status === 'Enabled' ? <Badge variant="success">Enabled</Badge>
+    : feature.status === 'Enablement requested' ? <Badge variant="warning">Enablement requested</Badge>
+    : feature.status === 'Contact CSM' ? <Badge variant="warning">Contact CSM</Badge>
+    : <Badge variant="static">Disabled</Badge>;
 
   /* Resource links share a shape, so they share one class string rather than
      three near-identical ones. */
@@ -59,9 +59,9 @@ const FeatureDetail = () => {
       {/* ReleaseHubLayout owns the breadcrumb. */}
       <div className="mb-5 rounded-lg border border-brand-border bg-brand-soft p-6">
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <Badge variant="solid">{feature.featureTag}</Badge>
-          <Badge variant="outline">{feature.productModule}</Badge>
-          {feature.published ? statusTag : <Badge variant="amber">Unpublished</Badge>}
+          <Badge variant="live">{feature.featureTag}</Badge>
+          <Badge variant="static">{feature.productModule}</Badge>
+          {feature.published ? statusTag : <Badge variant="warning">Unpublished</Badge>}
         </div>
         <h2 className="mb-3 text-26 font-bold leading-tight tracking-[-0.01em]">{feature.title}</h2>
         <p className="mb-2 max-w-lede text-ink-600">{summary}</p>
@@ -105,7 +105,7 @@ const FeatureDetail = () => {
             )}
 
             <Button
-              size="lg"
+             
               onClick={() =>
                 feature.productRoute
                   ? navigate(feature.productRoute)

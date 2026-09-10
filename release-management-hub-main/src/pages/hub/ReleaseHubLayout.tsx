@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import Crumb, { type CrumbLevel } from '@/components/primitives/Crumb';
 import HubTabs, { HUB_TABS, hubTabOf } from '@/components/hub/HubTabs';
+import { SPACE, T } from '@/styles/zerra';
 import { moduleBySlug } from '@/data/knowledge';
 
 /* ---------------------------------------------------------------------------
@@ -44,7 +45,18 @@ const ReleaseHubLayout = () => {
 
   return (
     <>
-      <h1 className="mb-2 text-xl font-semibold leading-tight tracking-[-0.01em] text-brand">
+      {/* 24px in --tx, not 20px in brand blue: the page title is the page's
+          name, and colouring it brand made it compete with the active tab. */}
+      <h1
+        style={{
+          margin: `0 0 ${SPACE.x3}px`,
+          fontSize: 24,
+          fontWeight: 700,
+          lineHeight: 1.2,
+          letterSpacing: '-0.01em',
+          color: T.tx,
+        }}
+      >
         Feature Hub
       </h1>
       <HubTabs />

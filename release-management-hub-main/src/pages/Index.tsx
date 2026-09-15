@@ -44,10 +44,24 @@ const TH = 'whitespace-nowrap bg-ink-50 px-4 py-2.5 text-left text-xs font-mediu
    from growing the header band. */
 const TH_ROW = 'flex items-center gap-1.5 -my-1';
 
-/* The feature-name column is a fixed width rather than a minimum, so the name
-   inside it has something definite to ellipse against. Set on the header cell
-   and the body cell both, or the table's own layout wins. */
-const NAME_W = 260;
+/* The feature-name and summary columns are fixed widths rather than minimums,
+   so each has something definite to ellipse or clamp against. Set on the
+   header cell and the body cell both, or the table's own layout wins.
+
+   They used to be 260 and a bare min-w-[300px]. With only the name column
+   locked, the browser's table layout poured every pixel of slack into summary
+   instead - at 1440px it grew to 391px while the paragraph inside it stays
+   capped at max-w-cell (46ch, ~320px), so every row carried a 40-70px dead
+   gap on the right of text that was already wrapping. Meanwhile the name
+   column, which actually needed the room, stayed clamped at 260 and
+   truncated most real titles mid-word - "Advanced Candidate Sourcing with
+   LinkedIn Integration" measures 334px and has nowhere near that.
+
+   Locking both fixes both: NAME_W now covers every current title in full,
+   and SUMMARY_W matches the text's own cap exactly, so the box stops being
+   bigger than what's inside it. */
+const NAME_W = 380;
+const SUMMARY_W = 352;
 
 /* A sticky cell needs its own background or the scrolling content shows
    through it - which in turn means the row hover has to be restated on it,
@@ -60,12 +74,7 @@ const SEAM_L = "before:absolute before:inset-y-0 before:left-0 before:w-px befor
 
 /* The feature tag chip is components/hub/FeatureTag now - it renders in three
    places and used to be written out in all three, which is how one of them came
-   to say "New" while the other two said "New Feature".
-
-   The full label costs nothing in the name cell: measured, the chip goes 49px ->
-   91px, which with the 8px gap and the 75px ID chip is 174px of the cell's
-   228px. The Enhancement chip is wider still at 98px, so the tight case here
-   already existed and this lands 7px inside it. */
+   to say "New" while the other two said "New Feature". */
 
 const ContentIcons = ({
   feature,
@@ -409,7 +418,7 @@ const Index = () => {
               <Badge variant="code">{f.id}</Badge>
             </div>
           </td>
-          <td className={`${TD} min-w-[300px]`}>
+          <td className={TD} style={{ width: SUMMARY_W, minWidth: SUMMARY_W, maxWidth: SUMMARY_W }}>
             <SummaryCell text={(f.summary || '').split('\n').join(' ')} />
           </td>
           <td className={TD_MID}><Badge variant="static">{f.productModule}</Badge></td>
@@ -480,7 +489,7 @@ const Index = () => {
               <Badge variant="code">{f.id}</Badge>
             </div>
           </td>
-          <td className={`${TD} min-w-[300px]`}>
+          <td className={TD} style={{ width: SUMMARY_W, minWidth: SUMMARY_W, maxWidth: SUMMARY_W }}>
             <SummaryCell text={(f.summary || '').split('\n').join(' ')} />
           </td>
           <td className={TD_MID}><Badge variant="static">{f.productModule}</Badge></td>
@@ -604,7 +613,7 @@ const Index = () => {
                       {nameFilterControl}
                     </span>
                   </th>
-                  <th className={TH}>Summary</th>
+                  <th className={TH} style={{ width: SUMMARY_W, minWidth: SUMMARY_W }}>Summary</th>
                   <th className={TH}>
                     <span className={TH_ROW}>Module{moduleFilterControl}</span>
                   </th>
@@ -635,7 +644,7 @@ const Index = () => {
                       {nameFilterControl}
                     </span>
                   </th>
-                  <th className={TH}>Summary</th>
+                  <th className={TH} style={{ width: SUMMARY_W, minWidth: SUMMARY_W }}>Summary</th>
                   <th className={TH}>
                     <span className={TH_ROW}>Product Module{moduleFilterControl}</span>
                   </th>

@@ -160,6 +160,21 @@ export const SPACE = {
   x10: 40,
 } as const;
 
+/** Fixed chrome heights.
+ *
+ *  The hub's white header is sticky, and two other things have to know exactly
+ *  how tall it is: the documentation tab's left nav, which runs from the bottom
+ *  of the header to the bottom of the viewport, and anything that scrolls
+ *  underneath it. Stating it once here is what keeps those in agreement.
+ *
+ *  hubHeader is built, not guessed: 12 top padding + 28 title + 8 gap + 42 tab
+ *  strip (16 + 20 label + 4 + 2 underline). Every one of those is set
+ *  explicitly in ReleaseHubLayout and HubTabs, so the total cannot drift. */
+export const SHELL = { topBar: 56, hubHeader: 90 } as const;
+
+/** Distance from the top of the viewport to the first line of page content. */
+export const CONTENT_TOP = SHELL.topBar + SHELL.hubHeader;
+
 /** Label-to-input is always 4px; field-to-field 16; section-to-section 24. */
 export const GAP = { label: SPACE.x1, field: SPACE.x4, section: SPACE.x6 } as const;
 

@@ -1,49 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+/* Two lines, always - so every row in the table is the same height.
 
-/* Two lines, then Show more - so every row is the same height on first read.
-   The control only appears where two lines actually cut something off, so a
-   short summary doesn't offer to expand into nothing.
+   This used to offer "Show more", which expanded the cell in place and pushed
+   that one row to four or five lines while its neighbours stayed at two. That
+   is the thing that made the table look ragged, so the expander is gone: the
+   clamp is now the rule rather than a first impression of one.
+
+   Nothing is lost with it. The full summary is a native tooltip away, and the
+   feature page - one click from the name in the next column - carries the
+   whole thing as body copy.
 
    The clamp is line-clamp-2 rather than the hand-rolled -webkit-box stack the
    stylesheet used; Tailwind's utility emits the same three properties. */
-const SummaryCell = ({ text }: { text: string }) => {
-  const [open, setOpen] = useState(false);
-  const [overflows, setOverflows] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const check = () => {
-      if (open) return;
-      setOverflows(el.scrollHeight > el.clientHeight + 1);
-    };
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [text, open]);
-
-  return (
-    <>
-      <div
-        ref={ref}
-        className={`max-w-cell text-ink-700 ${open ? '' : 'line-clamp-2'}`}
-      >
-        {text}
-      </div>
-      {(overflows || open) && (
-        <button
-          className="mt-1 inline-flex items-center gap-1 rounded text-13 font-medium text-brand hover:underline"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? 'Show less' : 'Show more'}
-          <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
-        </button>
-      )}
-    </>
-  );
-};
+const SummaryCell = ({ text }: { text: string }) => (
+  <div className="line-clamp-2 max-w-cell text-ink-700" title={text}>
+    {text}
+  </div>
+);
 
 export default SummaryCell;

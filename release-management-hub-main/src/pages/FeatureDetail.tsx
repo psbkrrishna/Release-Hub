@@ -1,15 +1,65 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Search, ArrowRight, Calendar, SlidersHorizontal, CheckCircle, Play, BookOpen,
-  FileText, ExternalLink,
-} from 'lucide-react';
+  MagnifyingGlass as Search, ArrowRight, Calendar, SlidersHorizontal, CheckCircle,
+  Play, BookOpen, FileText, ArrowSquareOut as ExternalLink, Info, RocketLaunch as Rocket,
+} from '@phosphor-icons/react';
+import type { ComponentType } from 'react';
 import Button from '@/components/primitives/Button';
 import Panel from '@/components/primitives/Panel';
 import Badge from '@/components/primitives/Badge';
+import FeatureTag from '@/components/hub/FeatureTag';
+import Crumb from '@/components/primitives/Crumb';
 import EmptyState from '@/components/primitives/EmptyState';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { formatDate, valueOf } from '@/data/features';
-import { moduleByName } from '@/data/knowledge';
+import { moduleByName, plural } from '@/data/knowledge';
+import { RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
+
+/* ---------------------------------------------------------------------------
+   One feature.
+
+   The page reads top to bottom in the order the questions get asked: what is
+   it and is it on (header), which release brought it (banner), what changed
+   and what it gets you (main), where to read more (references).
+   --------------------------------------------------------------------------- */
+
+/** A fact about the feature, as the guidelines' neutral --su2 chip. Facts are
+ *  static configuration, so they are never tinted - the badges above the title
+ *  are the only coloured things in the header, and they carry state. */
+const MetaChip = ({
+  icon: Icon,
+  children,
+}: {
+  icon: ComponentType<{ size?: number | string }>;
+  children: React.ReactNode;
+}) => (
+  <span
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      height: 24,
+      padding: `0 ${SPACE.x2}px`,
+      borderRadius: RADIUS.tag,
+      background: T.su2,
+      color: T.tx3,
+      fontSize: 12,
+      fontWeight: 600,
+      fontVariantNumeric: 'tabular-nums',
+      whiteSpace: 'nowrap',
+    }}
+  >
+    <Icon size={13} />
+    {children}
+  </span>
+);
+
+/** What happens to this feature at release, in the customer's words. */
+const DEFAULT_LABEL: Record<string, string> = {
+  'Default On': 'Default: On',
+  'Default Off': 'Default: Off',
+  'Non Deferrable': 'Not deferrable',
+};
 
 const FeatureDetail = () => {
   const { featureId } = useParams();
@@ -25,7 +75,7 @@ const FeatureDetail = () => {
         title="That feature isn't available"
         action={
           <Button variant="secondary" onClick={() => navigate('/release-hub/releases')}>
-            <ArrowRight size={18} />Back to Release Management
+            <ArrowRight size={18} />Back to the Release Hub
           </Button>
         }
       >
@@ -56,40 +106,117 @@ const FeatureDetail = () => {
 
   return (
     <>
-      {/* ReleaseHubLayout owns the breadcrumb. */}
-      <div className="mb-5 rounded-lg border border-brand-border bg-brand-soft p-6">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <Badge variant="live">{feature.featureTag}</Badge>
+      <Crumb
+        levels={[
+          { label: 'Release Hub', path: '/release-hub/releases' },
+          { label: feature.title },
+        ]}
+      />
+
+      {/* ---- Header ------------------------------------------------------
+          The feature's own name is the page title here, with its state above
+          it and its facts below it. It used to sit on a brand-soft panel,
+          which made the whole header read as a banner about the feature
+          rather than as the page's own head. */}
+      <Panel style={{ marginBottom: SPACE.x4 }}>
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <FeatureTag tag={feature.featureTag} />
           <Badge variant="static">{feature.productModule}</Badge>
           {feature.published ? statusTag : <Badge variant="warning">Unpublished</Badge>}
         </div>
-        <h2 className="mb-3 text-26 font-bold leading-tight tracking-[-0.01em]">{feature.title}</h2>
-        <p className="mb-2 max-w-lede text-ink-600">{summary}</p>
-        {more && <p className="mb-2 max-w-lede text-ink-600">{more}</p>}
-        <div className="mt-4 flex flex-wrap items-center gap-4 text-13 text-ink-500">
-          <span className="inline-flex items-center gap-2">
-            <Calendar size={14} />
+
+        {/* h2: the shell owns the page's h1. Styled as a page title. */}
+        <h2 style={{ margin: `0 0 ${SPACE.x2}px`, ...TYPE.pageTitle, lineHeight: 1.25 }}>
+          {feature.title}
+        </h2>
+
+        <p style={{ margin: 0, maxWidth: '70ch', ...TYPE.body }}>
+          {[summary, more].filter(Boolean).join(' ')}
+        </p>
+
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: SPACE.x2,
+            marginTop: SPACE.x3,
+          }}
+        >
+          <MetaChip icon={Calendar}>
             {feature.published ? 'Released' : 'Planned for'} {formatDate(feature.prodEnablementDate)}
-          </span>
-          <Badge variant="code">{feature.id}</Badge>
-          <span className="inline-flex items-center gap-2">
-            <SlidersHorizontal size={14} />{feature.featureType}
-          </span>
+          </MetaChip>
+          <MetaChip icon={Rocket}>{plural(inRelease, 'feature')} in this release</MetaChip>
+          {feature.featureType && (
+            <MetaChip icon={SlidersHorizontal}>
+              {DEFAULT_LABEL[feature.featureType] ?? feature.featureType}
+            </MetaChip>
+          )}
+          <MetaChip icon={FileText}>{feature.id}</MetaChip>
         </div>
+      </Panel>
+
+      {/* ---- Release banner ----------------------------------------------
+          Full content width, one line, one action - the guidelines' banner.
+          This was a card in the right-hand column, three lines tall, below
+          everything else on the page; the release a feature shipped in is a
+          fact about the whole page, so it belongs across the top of it. */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: SPACE.x2,
+          marginBottom: SPACE.x4,
+          background: T.brandSoft,
+          borderWidth: 1,
+          borderStyle: 'solid',
+          borderColor: T.brandBorder,
+          borderRadius: RADIUS.control,
+          padding: `${SPACE.x2}px ${SPACE.x3}px`,
+        }}
+      >
+        <Info size={16} style={{ flexShrink: 0, color: T.brand }} />
+        <span
+          style={{
+            minWidth: 0,
+            flex: 1,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontSize: 13,
+            color: T.tx2,
+          }}
+        >
+          Included in the {feature.releaseMonth} release.
+        </span>
+        <button
+          type="button"
+          onClick={() =>
+            navigate(`/release-hub/releases?month=${encodeURIComponent(feature.releaseMonth)}`)
+          }
+          className="inline-flex shrink-0 items-center gap-1 rounded text-13 font-semibold text-brand hover:underline"
+        >
+          View release <ArrowRight size={13} />
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-6 min-[901px]:grid-cols-[1.6fr_1fr]">
+      <div className="grid grid-cols-1 items-start gap-4 min-[901px]:grid-cols-[1.6fr_1fr]">
         <div>
           <Panel>
-            <h3 className="mb-3 text-base font-semibold">What's new</h3>
-            <p className="mb-3 max-w-prose text-ink-600">{[summary, more].filter(Boolean).join(' ')}</p>
-            {feature.description && (
-              <p className="mb-3 max-w-prose text-ink-700">{feature.description}</p>
-            )}
+            <h3 style={{ margin: `0 0 ${SPACE.x3}px`, ...TYPE.sectionTitle }}>What&apos;s new</h3>
+            {/* The summary is the header's description now, so this is the
+                long-form explanation only. Repeating the summary here put the
+                same two sentences twice on one screen; a feature that has no
+                long form falls back to it rather than showing an empty
+                section. */}
+            <p className="mb-3 max-w-prose text-ink-700">
+              {feature.description || [summary, more].filter(Boolean).join(' ')}
+            </p>
 
             {value.length > 0 && (
               <>
-                <h3 className="mb-3 mt-5 text-base font-semibold">Value delivered</h3>
+                <h3 style={{ margin: `${SPACE.x5}px 0 ${SPACE.x3}px`, ...TYPE.sectionTitle }}>
+                  Value delivered
+                </h3>
                 <ul className="mb-4 flex max-w-prose list-none flex-col gap-2 p-0">
                   {value.map((b) => (
                     <li
@@ -104,22 +231,22 @@ const FeatureDetail = () => {
               </>
             )}
 
+            {/* The page's one primary action. */}
             <Button
-             
               onClick={() =>
                 feature.productRoute
                   ? navigate(feature.productRoute)
                   : toast(`Opening ${feature.productModule} — this is where the capability lives.`)
               }
             >
-              View it in the product <ArrowRight size={18} />
+              View live <ArrowRight size={18} />
             </Button>
           </Panel>
         </div>
 
         <div className="flex flex-col gap-4">
           <Panel>
-            <h3 className="mb-3 text-base font-semibold">Release resources</h3>
+            <h3 style={{ margin: `0 0 ${SPACE.x3}px`, ...TYPE.sectionTitle }}>References</h3>
             <div className="flex flex-col gap-0.5">
               {feature.demoVideo && (
                 <a
@@ -169,7 +296,7 @@ const FeatureDetail = () => {
 
           {isCreator && (
             <Panel>
-              <h3 className="mb-3 text-base font-semibold">Adoption</h3>
+              <h3 style={{ margin: `0 0 ${SPACE.x3}px`, ...TYPE.sectionTitle }}>Adoption</h3>
               <dl className="m-0">
                 {([
                   ['Enabled customers', feature.enabledCustomers ?? 0, true],
@@ -196,20 +323,6 @@ const FeatureDetail = () => {
               </dl>
             </Panel>
           )}
-
-          <div className="rounded-lg border border-brand-border bg-brand-soft p-5">
-            <div className="mb-0.5 text-xs font-semibold uppercase tracking-[.04em] text-brand-text">
-              Included in
-            </div>
-            <h4 className="mb-2 text-base font-semibold">{feature.releaseMonth} Release</h4>
-            <p className="mb-3 text-sm text-ink-600">{inRelease} features in this release.</p>
-            <Button
-              variant="secondary"
-              onClick={() => navigate(`/release-hub/releases?month=${encodeURIComponent(feature.releaseMonth)}`)}
-            >
-              View this release <ArrowRight size={18} />
-            </Button>
-          </div>
         </div>
       </div>
     </>

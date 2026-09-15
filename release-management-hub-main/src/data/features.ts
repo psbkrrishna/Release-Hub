@@ -444,6 +444,30 @@ export const MODULES = [
 /** The release What's New speaks for. */
 export const LATEST_RELEASE = 'July 2026';
 
+/* ---------------------------------------------------------------------------
+   Which features get announced.
+
+   One flag, three surfaces: the What's New popup, the What's New floater, and
+   the highlights on the Overview's release band. They were three independent
+   selections before - the first two took the first four features of the latest
+   release, the third read a hand-written list - so a feature could lead the
+   Overview and be absent from What's New. Now the creator decides once, on the
+   feature itself.
+   --------------------------------------------------------------------------- */
+
+/** How many announced features the What's New surfaces show at once. */
+export const WHATS_NEW_MAX = 4;
+
+/** Undefined counts as announced: the seed rows predate the flag, and a
+ *  released feature being news is the common case. */
+export const isInWhatsNew = (f: Feature): boolean => f.showInWhatsNew !== false;
+
+/** The announced features of one release, in table order, capped. */
+export const announcedIn = (features: Feature[], month: string): Feature[] =>
+  features
+    .filter((f) => f.published && f.releaseMonth === month && isInWhatsNew(f))
+    .slice(0, WHATS_NEW_MAX);
+
 /** The implementation team's queue: customers awaiting enablement support. */
 export const supportQueue: Array<{ customer: string; featureId: string; status: 'support' | 'enabled' }> = [
   { customer: 'GreyOrange', featureId: 'FEAT-001', status: 'support' },

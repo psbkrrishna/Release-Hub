@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, X, ChevronRight, History } from 'lucide-react';
 import Spotlight from '@/components/primitives/Spotlight';
 import IconButton from '@/components/primitives/IconButton';
-import { LATEST_RELEASE } from '@/data/features';
+import { LATEST_RELEASE, announcedIn } from '@/data/features';
+import { announceHeadline, announceSummary } from '@/data/knowledge';
 import { useFeatureStore } from '@/components/FeatureStore';
 import type { Feature } from '@/types/Feature';
 
@@ -54,9 +55,12 @@ const WhatsNewButton = () => {
   const [popupOpen, setPopupOpen] = useState(false);
   const [pulse, setPulse] = useState(() => localStorage.getItem(OPENED_KEY) !== '1');
 
-  // Always published only: What's New is customer-facing news whoever is
-  // signed in, so a draft has no business appearing in it.
-  const latest = features.filter((f) => f.published && f.releaseMonth === LATEST_RELEASE).slice(0, 4);
+  /* Published only, and announced only: What's New is customer-facing news
+     whoever is signed in, so a draft has no business appearing in it, and nor
+     does a released feature the creator did not flag as news. Both rules live
+     in announcedIn, which the Overview's release band reads too - so the two
+     surfaces cannot disagree about what shipped. */
+  const latest = announcedIn(features, LATEST_RELEASE);
 
   useEffect(() => {
     if (localStorage.getItem(SEEN_KEY) === '1') return;
@@ -156,7 +160,7 @@ const WhatsNewButton = () => {
                 {LATEST_RELEASE} Release
               </div>
               <p className="mt-0.5 text-13 text-ink-600">
-                Two new features and two enhancements are live.
+                {announceSummary(latest)} are live.
               </p>
             </div>
             <IconButton
@@ -201,8 +205,8 @@ const WhatsNewButton = () => {
         tone="news"
         isRelease
         tag={`${LATEST_RELEASE} release`}
-        title="Four new ways to move work forward"
-        intro="Two new features and two enhancements are live. Open any one to see what changed."
+        title={announceHeadline(latest)}
+        intro={`${announceSummary(latest)} are live. Open any one to see what changed.`}
         icon={<Sparkles size={20} />}
         ctaLabel="View the full release"
         onCta={goToRelease}

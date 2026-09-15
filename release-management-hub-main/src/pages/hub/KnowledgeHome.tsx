@@ -1,139 +1,150 @@
-import { useMemo } from 'react';
+import { useState, type ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Play, Envelope as Mail, ArrowRight, Clock } from '@phosphor-icons/react';
-import Panel from '@/components/primitives/Panel';
 import HubHeader from '@/components/hub/HubHeader';
 import ModuleCard from '@/components/hub/ModuleCard';
+import { DOC_SECTIONS } from '@/components/hub/docSections';
 import { useFeatureStore } from '@/components/FeatureStore';
-import { KB_GROUPS, KB_MODULES, plural, releaseNoteGroups, sortedNewsletters } from '@/data/knowledge';
-import { formatDate } from '@/data/features';
+import { KB_MODULES } from '@/data/knowledge';
+import { RADIUS, SPACE, T, TYPE, sx } from '@/styles/zerra';
 
-/* The Product & Feature Documentation landing page. Three ways in by content
-   type, then the documentation itself grouped by product family - which is
-   what people came for, so it gets the room. Counts are computed rather than
-   written down: the old page advertised "50+ documents" beside a list of
-   fifteen. */
+/* ---------------------------------------------------------------------------
+   The documentation landing page: search, the three cross-module destinations,
+   then every module.
+
+   Two groups, and they have to read as two kinds of thing. Release notes,
+   newsletters and videos span every module; a module card is one module's own
+   documentation. They were briefly the same kind of card here, stacked three
+   abreast above the grid, and the page read as six equal choices - so these
+   three are now compact tinted tiles, roughly a third the height of a module
+   card, under their own eyebrow and separated by a rule.
+
+   The module grid is one flat list, not families. Ten modules split five ways
+   gave most groups one or two cards each, which is a heading per card - a
+   grouping that does no grouping. When there are enough modules for a family to
+   mean something, the grid is where that goes back.
+   --------------------------------------------------------------------------- */
+
+/** One cross-module destination. Deliberately unlike ModuleCard: no count
+ *  chips, no footer action, one line of copy, and a tinted ground. */
+const SectionTile = ({
+  icon: Icon,
+  label,
+  sub,
+  onOpen,
+}: {
+  icon: ComponentType<{ size?: number | string }>;
+  label: string;
+  sub: string;
+  onOpen: () => void;
+}) => {
+  const [hover, setHover] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={sx(
+        {
+          display: 'flex',
+          alignItems: 'center',
+          gap: SPACE.x3,
+          width: '100%',
+          textAlign: 'left',
+          background: T.brandSoft,
+          /* Longhand, not the `border` shorthand: hover changes only the
+             background, and React warns when a shorthand and its longhand are
+             both set across a rerender. */
+          borderWidth: 1,
+          borderStyle: 'solid',
+          borderColor: T.brandBorder,
+          borderRadius: RADIUS.control,
+          padding: SPACE.x3,
+          cursor: 'pointer',
+          transition: 'background 120ms ease, border-color 120ms ease',
+        },
+        /* The interaction rules' usual hover fill - soft blue - is already this
+           tile's resting colour, so both halves of the hover step once further
+           into the same ramp: --brand-softHover for the fill, and the border
+           --brand-border -> --brand, which is ModuleCard's exact grammar. */
+        hover && { background: T.brandSoftHover, borderColor: T.brand },
+      )}
+    >
+      <span style={{ display: 'flex', flexShrink: 0, color: T.brand }}>
+        <Icon size={20} />
+      </span>
+      <span style={{ minWidth: 0 }}>
+        <span style={sx({ display: 'block', ...TYPE.cardTitle }, hover && { color: T.brand })}>
+          {label}
+        </span>
+        {/* One line, ellipsed - a longer sub can never take the tile to two. */}
+        <span
+          style={{
+            display: 'block',
+            marginTop: 2,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            ...TYPE.helper,
+          }}
+        >
+          {sub}
+        </span>
+      </span>
+    </button>
+  );
+};
 
 const KnowledgeHome = () => {
   const navigate = useNavigate();
   const { visibleFeatures } = useFeatureStore();
 
-  const newsletters = useMemo(() => sortedNewsletters(), []);
-  const releases = useMemo(() => releaseNoteGroups(visibleFeatures), [visibleFeatures]);
-
-  const docCount = KB_MODULES.reduce((n, m) => n + m.docs.length, 0);
-  const videoCount =
-    KB_MODULES.reduce((n, m) => n + m.videos.length, 0) +
-    visibleFeatures.filter((f) => f.demoVideo).length;
-
-  const latest = releases[0];
-
-  const entries = [
-    {
-      key: 'release-notes',
-      icon: FileText,
-      tint: 'bg-brand-soft text-brand',
-      title: 'Release notes',
-      sub: 'What changed, release by release',
-      body: 'Every feature and enhancement in each monthly release, with the detail behind each one.',
-      meta: latest ? `Latest: ${latest.month} · ${latest.features.length} items` : 'No releases yet',
-      path: '/release-hub/knowledge/release-notes',
-    },
-    {
-      key: 'newsletters',
-      icon: Mail,
-      tint: 'bg-purple-50 text-purple-500',
-      title: 'Newsletters',
-      sub: 'The monthly round-up',
-      body: 'The customer newsletter for each release — the short version of what shipped and why it matters.',
-      meta: newsletters[0] ? `Latest issue: ${formatDate(newsletters[0].date)}` : 'No issues yet',
-      path: '/release-hub/knowledge/newsletters',
-    },
-    {
-      key: 'videos',
-      icon: Play,
-      tint: 'bg-green-50 text-green-600',
-      title: 'Video library',
-      sub: 'Walkthroughs and demos',
-      body: 'Training walkthroughs for each module, plus a demo for every feature that ships with one.',
-      meta: plural(videoCount, 'video'),
-      path: '/release-hub/knowledge/videos',
-    },
-  ];
-
   return (
     <>
-      {/* No heading: the layout's page title and the active tab already say
-          "Knowledge Hub". The lede still earns its place - it says what is
-          in here, which neither of those does. */}
-      <HubHeader lede="Module documentation, release notes, newsletters and training videos — everything that explains how the platform works." />
+      <HubHeader />
 
-      <div className="mb-8 grid grid-cols-1 gap-5 min-[901px]:grid-cols-3">
-        {entries.map(({ key, icon: Icon, tint, title, sub, body, meta, path }) => (
-          <Panel key={key} onClick={() => navigate(path)}>
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tint}`}>
-                  <Icon size={20} />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold group-hover:text-brand">{title}</h2>
-                  <p className="text-13 text-ink-600">{sub}</p>
-                </div>
-              </div>
-              <ArrowRight size={18} className="shrink-0 text-ink-400 transition-colors group-hover:text-brand" />
-            </div>
-            <p className="mb-4 text-sm text-ink-700">{body}</p>
-            <span className="flex items-center gap-1 text-13 text-ink-600">
-              <Clock size={14} />
-              {meta}
-            </span>
-          </Panel>
+      <h2 style={{ margin: `0 0 ${SPACE.x2}px`, ...TYPE.eyebrow }}>Across all modules</h2>
+      <div className="grid grid-cols-1 gap-3 min-[601px]:grid-cols-3">
+        {DOC_SECTIONS.map(({ label, sub, icon, path }) => (
+          <SectionTile
+            key={path}
+            icon={icon}
+            label={label}
+            sub={sub}
+            onOpen={() => navigate(path)}
+          />
         ))}
       </div>
 
-      {/* ---- Documentation, grouped by product family -------------------
-          Ten cards in one flat grid gave the reader no way in. Each group is
-          a band with its own heading and module count, separated by a rule -
-          so the page is scanned by product first, module second. */}
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-22 font-semibold text-ink-900">Product &amp; feature documentation</h2>
-        <span className="text-13 text-ink-600">
-          {plural(docCount, 'document')} across {plural(KB_MODULES.length, 'module')}
-        </span>
+      <h2
+        style={{
+          margin: `${SPACE.x6}px 0 ${SPACE.x2}px`,
+          paddingTop: SPACE.x6,
+          /* --bd2, not --bd. This rule sits on the canvas (--bg #FAFAFA), not
+             on a white card, and --bd (#ECECEE) against that is all but
+             invisible. */
+          borderTop: `1px solid ${T.bd2}`,
+          ...TYPE.eyebrow,
+        }}
+      >
+        By module
+      </h2>
+      <div className="grid grid-cols-1 gap-4 min-[601px]:grid-cols-2 min-[1181px]:grid-cols-3">
+        {KB_MODULES.map((m) => (
+          <ModuleCard
+            key={m.slug}
+            name={m.name}
+            /* The tagline, not the blurb: it is written to fit one line,
+               which the blurb is not. */
+            tagline={m.tagline}
+            docs={m.docs.length}
+            videos={m.videos.length}
+            features={visibleFeatures.filter((f) => f.productModule === m.name).length}
+            onOpen={() => navigate(`/release-hub/knowledge/modules/${m.slug}`)}
+          />
+        ))}
       </div>
-      <p className="mb-6 text-sm text-ink-600">
-        Every product module, its documents, its videos, and the features released in it.
-      </p>
-
-      {KB_GROUPS.map((group, i) => (
-        <section key={group.name} className={i > 0 ? 'mt-8 border-t border-ink-150 pt-8' : ''}>
-          <h3 className="mb-4 flex items-center gap-2 text-15 font-semibold text-ink-900">
-            {group.name}
-            <span aria-hidden className="text-ink-300">·</span>
-            <span className="font-normal text-ink-600">{plural(group.modules.length, 'Module')}</span>
-          </h3>
-
-          <div className="grid grid-cols-1 gap-5 min-[901px]:grid-cols-2 min-[1181px]:grid-cols-3">
-            {group.modules.map((m) => {
-              const features = visibleFeatures.filter((f) => f.productModule === m.name).length;
-              return (
-                <ModuleCard
-                  key={m.slug}
-                  name={m.name}
-                  /* The tagline, not the blurb: it is written to fit one line,
-                     which the blurb is not. */
-                  tagline={m.tagline}
-                  docs={m.docs.length}
-                  videos={m.videos.length}
-                  features={features}
-                  onOpen={() => navigate(`/release-hub/knowledge/modules/${m.slug}`)}
-                />
-              );
-            })}
-          </div>
-        </section>
-      ))}
     </>
   );
 };

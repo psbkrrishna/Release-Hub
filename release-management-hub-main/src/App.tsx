@@ -13,7 +13,7 @@ import PerformanceReviews from './pages/PerformanceReviews';
 import ReleaseHubLayout from './pages/hub/ReleaseHubLayout';
 import HubIndexRedirect from './pages/hub/HubIndexRedirect';
 import Overview from './pages/hub/Overview';
-import KnowledgeLayout from './pages/hub/KnowledgeLayout';
+import ModuleLayout from './pages/hub/ModuleLayout';
 import KnowledgeHome from './pages/hub/KnowledgeHome';
 import KnowledgeSection from './pages/hub/KnowledgeSection';
 import ModuleDocs from './pages/hub/ModuleDocs';
@@ -68,15 +68,19 @@ const App = () => (
                 <Route path="home" element={<Navigate to="/release-hub/overview" replace />} />
                 <Route path="releases" element={<Index />} />
                 <Route path="features/:featureId" element={<FeatureDetail />} />
-                {/* The documentation tab carries its own left nav pane, so it
-                    is a layout route - the pane then survives navigation
-                    between its pages instead of remounting under each one. */}
-                <Route path="knowledge" element={<KnowledgeLayout />}>
+                {/* The documentation tab's landing page is a plain page:
+                    search, then the modules. Everything below it - a module,
+                    or one of the three section lists - shares a layout route
+                    that adds the left nav, so the nav survives navigation
+                    between those pages instead of remounting under each. */}
+                <Route path="knowledge">
                   <Route index element={<KnowledgeHome />} />
-                  <Route path="release-notes" element={<KnowledgeSection section="release-notes" />} />
-                  <Route path="newsletters" element={<KnowledgeSection section="newsletters" />} />
-                  <Route path="videos" element={<KnowledgeSection section="videos" />} />
-                  <Route path="modules/:moduleSlug" element={<ModuleDocs />} />
+                  <Route element={<ModuleLayout />}>
+                    <Route path="release-notes" element={<KnowledgeSection section="release-notes" />} />
+                    <Route path="newsletters" element={<KnowledgeSection section="newsletters" />} />
+                    <Route path="videos" element={<KnowledgeSection section="videos" />} />
+                    <Route path="modules/:moduleSlug" element={<ModuleDocs />} />
+                  </Route>
                 </Route>
               </Route>
 

@@ -40,6 +40,14 @@ export interface Feature {
   dauLast30DayAvg?: number; // Daily Active Users average over last 30 days
   releaseId?: string;
   productRoute?: string;
+  /** Whether this feature is announced: it appears in the What's New popup and
+   *  floater, and among the highlights on the Overview's release band. A
+   *  released feature is not automatically news - a back-end change or a fix
+   *  belongs in the release table without leading the Overview.
+   *
+   *  Undefined counts as announced, because the seed rows predate the flag.
+   *  Read it through isInWhatsNew() rather than testing it directly. */
+  showInWhatsNew?: boolean;
   /** What the customer gets out of it - at most three bullets, shown as
    *  "Value delivered" on the feature page. Seed rows that predate this field
    *  fall back to announcementBullets; read both through valueOf(). */

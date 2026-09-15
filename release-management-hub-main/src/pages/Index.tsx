@@ -11,9 +11,11 @@ import HubHeader from '@/components/hub/HubHeader';
 import ColumnFilter from '@/components/hub/ColumnFilter';
 import RowMenu, { type RowMenuItem } from '@/components/hub/RowMenu';
 import SummaryCell from '@/components/hub/SummaryCell';
+import FeatureTag from '@/components/hub/FeatureTag';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import Switch from '@/components/primitives/Switch';
+import Tooltip from '@/components/primitives/Tooltip';
 import IconButton from '@/components/primitives/IconButton';
 import EmptyState from '@/components/primitives/EmptyState';
 import { caretBackground } from '@/components/primitives/fieldStyles';
@@ -31,13 +33,21 @@ import type { Feature } from '@/types/Feature';
    a date). That width is measured once below and applied inline, rather than
    being restated as a magic number in four class strings.
    --------------------------------------------------------------------------- */
-const TD = 'border-b border-ink-150 p-4 align-top text-sm';
+/* 10px of vertical padding, not 16. The guidelines put body cells at 6-12px
+   vertically for a dense list, and this is one - 16px on top of a two-line
+   name cell was a third of the row height doing nothing. */
+const TD = 'border-b border-ink-150 px-4 py-2.5 align-top text-sm';
 const TD_MID = `${TD} align-middle`;
 const TD_NUM = `${TD_MID} whitespace-nowrap text-right tabular-nums`;
 const TH = 'whitespace-nowrap bg-ink-50 px-4 py-2.5 text-left text-xs font-medium text-ink-600';
 /* Label and its filter button on one baseline. -my-1 keeps the 24px button
    from growing the header band. */
 const TH_ROW = 'flex items-center gap-1.5 -my-1';
+
+/* The feature-name column is a fixed width rather than a minimum, so the name
+   inside it has something definite to ellipse against. Set on the header cell
+   and the body cell both, or the table's own layout wins. */
+const NAME_W = 260;
 
 /* A sticky cell needs its own background or the scrolling content shows
    through it - which in turn means the row hover has to be restated on it,
@@ -48,15 +58,14 @@ const STICKY_BG = 'bg-white group-hover:bg-[#F9FAFB]';
 const SEAM_R = "after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-ink-150 after:content-['']";
 const SEAM_L = "before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-ink-150 before:content-['']";
 
-/* One label per feature, two possible values. The old icon cluster asked the
-   reader to decode five tooltips to learn one thing. */
-const TagLabel = ({ feature }: { feature: Feature }) => (
-  <Badge
-    variant={feature.featureTag === 'New Feature' ? 'new' : 'static'}
-  >
-    {feature.featureTag === 'New Feature' ? 'New Feature' : 'Enhancement'}
-  </Badge>
-);
+/* The feature tag chip is components/hub/FeatureTag now - it renders in three
+   places and used to be written out in all three, which is how one of them came
+   to say "New" while the other two said "New Feature".
+
+   The full label costs nothing in the name cell: measured, the chip goes 49px ->
+   91px, which with the 8px gap and the 75px ID chip is 174px of the cell's
+   228px. The Enhancement chip is wider still at 98px, so the tight case here
+   already existed and this lands 7px inside it. */
 
 const ContentIcons = ({
   feature,
@@ -93,18 +102,27 @@ const StatusCell = ({ feature }: { feature: Feature }) => {
     return <Badge variant="live"><History size={13} />Enablement requested</Badge>;
   }
 
+  const toggle = (
+    <Switch
+      checked={feature.isEnabled}
+      disabled={!canToggle}
+      onChange={() => toggleEnabled(feature.id)}
+      label={canToggle ? `Toggle ${feature.title}` : `${feature.title} enablement`}
+    />
+  );
+
   return (
     <div className="flex items-center gap-3 whitespace-nowrap">
-      <Switch
-        checked={feature.isEnabled}
-        disabled={!canToggle}
-        onChange={() => toggleEnabled(feature.id)}
-        label={
-          canToggle
-            ? `Toggle ${feature.title}`
-            : 'Read-only for this role — open the feature to request enablement'
-        }
-      />
+      {/* A disabled control has to say why it is disabled, and a native
+          `title` cannot do it - browsers fire no mouse events on a disabled
+          form control, so its tooltip never appears. Hence the wrapper. */}
+      {canToggle ? (
+        toggle
+      ) : (
+        <Tooltip inert label="Your role can view enablement but not change it">
+          {toggle}
+        </Tooltip>
+      )}
       <span className="text-sm font-medium text-green-700">
         {feature.isEnabled ? 'Enabled' : 'Disabled'}
       </span>
@@ -320,12 +338,6 @@ const Index = () => {
   const supportCount = supportQueue.filter((r) => r.status === 'support').length;
   const queueEnabled = supportQueue.filter((r) => r.status === 'enabled').length;
 
-  const lede = isImplementation
-    ? 'Every customer awaiting enablement support for a released feature.'
-    : isCreator
-      ? 'Every feature and enhancement across releases, published and still in progress.'
-      : 'Every released feature, and which of them are switched on for your organization.';
-
   const menuFor = (f: Feature): RowMenuItem[] =>
     f.published
       ? [
@@ -378,15 +390,22 @@ const Index = () => {
           <td className={`${TD_MID} sticky left-0 z-[2] ${STICKY_BG}`} style={{ width: c1, minWidth: c1 }}>
             <b className="font-semibold">{row.customer}</b>
           </td>
-          <td className={`${TD} sticky z-[2] min-w-[220px] ${STICKY_BG} ${SEAM_R}`} style={{ left: c1 }}>
+          <td
+            className={`${TD} sticky z-[2] ${STICKY_BG} ${SEAM_R}`}
+            style={{ left: c1, width: NAME_W, minWidth: NAME_W, maxWidth: NAME_W }}
+          >
+            {/* One line, ellipsed. A wrapping feature name was the other half
+                of why rows drifted to four lines; the whole name is on the
+                tooltip, and on the page the name opens. */}
             <button
-              className="rounded text-left text-sm font-semibold text-ink-900 hover:text-brand hover:underline"
+              className="block w-full truncate rounded text-left text-sm font-semibold text-ink-900 hover:text-brand hover:underline"
+              title={f.title}
               onClick={() => navigate(`/release-hub/features/${f.id}`)}
             >
               {f.title}
             </button>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <TagLabel feature={f} />
+            <div className="mt-1 flex items-center gap-2">
+              <FeatureTag tag={f.featureTag} />
               <Badge variant="code">{f.id}</Badge>
             </div>
           </td>
@@ -442,15 +461,22 @@ const Index = () => {
           >
             {f.releaseMonth}
           </td>
-          <td className={`${TD} sticky z-[2] min-w-[220px] ${STICKY_BG} ${SEAM_R}`} style={{ left: c1 }}>
+          <td
+            className={`${TD} sticky z-[2] ${STICKY_BG} ${SEAM_R}`}
+            style={{ left: c1, width: NAME_W, minWidth: NAME_W, maxWidth: NAME_W }}
+          >
+            {/* One line, ellipsed. A wrapping feature name was the other half
+                of why rows drifted to four lines; the whole name is on the
+                tooltip, and on the page the name opens. */}
             <button
-              className="rounded text-left text-sm font-semibold text-ink-900 hover:text-brand hover:underline"
+              className="block w-full truncate rounded text-left text-sm font-semibold text-ink-900 hover:text-brand hover:underline"
+              title={f.title}
               onClick={() => navigate(`/release-hub/features/${f.id}`)}
             >
               {f.title}
             </button>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <TagLabel feature={f} />
+            <div className="mt-1 flex items-center gap-2">
+              <FeatureTag tag={f.featureTag} />
               <Badge variant="code">{f.id}</Badge>
             </div>
           </td>
@@ -485,11 +511,11 @@ const Index = () => {
 
   return (
     <>
-      {/* No page title and no breadcrumb here: the layout owns both, and the
-          tab strip already says "Release Hub". The count chips that used to
-          sit under this are archived - see the note by publishedCount. */}
+      {/* No page title, no breadcrumb and no supporting line here: the layout
+          owns the title, the tab strip already says "Release Hub", and the
+          table below says what it holds. The count chips that used to sit
+          under this are archived - see the note by publishedCount. */}
       <HubHeader
-        lede={lede}
         action={
           isCreator ? (
             <Button onClick={() => { setEditing(null); setModalOpen(true); }}>
@@ -569,7 +595,10 @@ const Index = () => {
                       />
                     </span>
                   </th>
-                  <th className={`${TH} sticky z-[4] ${SEAM_R}`} style={{ left: c1 }}>
+                  <th
+                    className={`${TH} sticky z-[4] ${SEAM_R}`}
+                    style={{ left: c1, width: NAME_W, minWidth: NAME_W }}
+                  >
                     <span className={TH_ROW}>
                       Feature
                       {nameFilterControl}
@@ -597,7 +626,10 @@ const Index = () => {
                       />
                     </span>
                   </th>
-                  <th className={`${TH} sticky z-[4] ${SEAM_R}`} style={{ left: c1 }}>
+                  <th
+                    className={`${TH} sticky z-[4] ${SEAM_R}`}
+                    style={{ left: c1, width: NAME_W, minWidth: NAME_W }}
+                  >
                     <span className={TH_ROW}>
                       Feature Name
                       {nameFilterControl}

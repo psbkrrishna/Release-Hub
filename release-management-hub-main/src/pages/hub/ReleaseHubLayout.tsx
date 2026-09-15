@@ -1,58 +1,47 @@
-import { Outlet, useLocation } from 'react-router-dom';
-import Crumb, { type CrumbLevel } from '@/components/primitives/Crumb';
-import HubTabs, { HUB_TABS, hubTabOf } from '@/components/hub/HubTabs';
-import { SPACE, T } from '@/styles/zerra';
-import { moduleBySlug } from '@/data/knowledge';
+import { Outlet } from 'react-router-dom';
+import HubTabs from '@/components/hub/HubTabs';
+import { SHELL, SPACE, T } from '@/styles/zerra';
 
 /* ---------------------------------------------------------------------------
-   The Feature Hub shell: page title, tab strip, and whichever tab is open.
+   The Feature Hub shell: the page title and tab strip in one white header
+   container, and whichever tab is open below it.
 
-   The breadcrumb is deliberately absent at a tab root. Arriving by tab needs
-   no trail - the title says where you are and the strip says which tab - so a
-   crumb reading "Dashboard > Feature Hub" would only restate the two lines
-   directly above it. It appears only on pages below a tab root, where it is
-   doing real work: naming the current page and offering the way back up.
+   The header is the platform's standard pattern from the guidelines - title
+   and tabs on --card over a --bd2 rule - and it is sticky, so it stays put
+   while the page scrolls under it. Sticky rather than fixed: it then inherits
+   the rail's 72px offset and the assistant panel's column automatically,
+   instead of restating both here and drifting when either changes.
+
+   Negative margins cancel the 16px page padding, so the container and the tab
+   rule run the full width of the canvas.
+
+   The breadcrumb is not here. It is in-page navigation, so the pages that have
+   somewhere to go back to render their own - and on the module pages it has to
+   sit beside the left nav rather than above it.
    --------------------------------------------------------------------------- */
 
-/** The label for a page below a tab root, or '' when we are at one. */
-const leafOf = (pathname: string): string => {
-  if (pathname.startsWith('/release-hub/features/')) return 'Feature details';
-
-  const kb = pathname.match(/^\/release-hub\/knowledge\/(.+)$/)?.[1];
-  if (!kb) return '';
-  if (kb === 'release-notes') return 'Release notes';
-  if (kb === 'newsletters') return 'Newsletters';
-  if (kb === 'videos') return 'Video library';
-
-  const slug = kb.match(/^modules\/([^/]+)$/)?.[1];
-  // An unknown slug renders its own not-found state; the crumb stays generic
-  // rather than echoing whatever was typed into the address bar.
-  return slug ? moduleBySlug(slug)?.name ?? 'Module documentation' : '';
-};
-
-/** Scoped to the hub: the tab, then the page. The app-level trail back to the
- *  Dashboard is the left rail's job, not this. */
-const crumbFor = (pathname: string): CrumbLevel[] | null => {
-  const leaf = leafOf(pathname);
-  if (!leaf) return null;
-  const tab = HUB_TABS.find((t) => t.key === hubTabOf(pathname))!;
-  return [{ label: tab.label, path: tab.path }, { label: leaf }];
-};
-
-const ReleaseHubLayout = () => {
-  const { pathname } = useLocation();
-  const crumb = crumbFor(pathname);
-
-  return (
-    <>
+const ReleaseHubLayout = () => (
+  <>
+    <div
+      style={{
+        position: 'sticky',
+        top: SHELL.topBar,
+        zIndex: 50,
+        margin: `-${SPACE.x4}px -${SPACE.x4}px ${SPACE.x4}px`,
+        padding: `${SPACE.x3}px ${SPACE.x4}px 0`,
+        background: T.card,
+      }}
+    >
       {/* 24px in --tx, not 20px in brand blue: the page title is the page's
-          name, and colouring it brand made it compete with the active tab. */}
+          name, and colouring it brand made it compete with the active tab.
+          The line height is stated rather than left to the font, because
+          SHELL.hubHeader adds it up. */}
       <h1
         style={{
-          margin: `0 0 ${SPACE.x3}px`,
+          margin: `0 0 ${SPACE.x2}px`,
           fontSize: 24,
           fontWeight: 700,
-          lineHeight: 1.2,
+          lineHeight: '28px',
           letterSpacing: '-0.01em',
           color: T.tx,
         }}
@@ -60,10 +49,9 @@ const ReleaseHubLayout = () => {
         Feature Hub
       </h1>
       <HubTabs />
-      {crumb && <Crumb levels={crumb} />}
-      <Outlet />
-    </>
-  );
-};
+    </div>
+    <Outlet />
+  </>
+);
 
 export default ReleaseHubLayout;

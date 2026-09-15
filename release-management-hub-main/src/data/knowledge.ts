@@ -1,4 +1,6 @@
-import { MODULES, MONTH_NAMES, sortReleaseMonths } from '@/data/features';
+import {
+  MODULES, MONTH_NAMES, WHATS_NEW_MAX, isInWhatsNew, sortReleaseMonths,
+} from '@/data/features';
 import type { Feature } from '@/types/Feature';
 import type { KbGroup, KbModule, Newsletter, ReleaseNoteGroup } from '@/types/Knowledge';
 
@@ -328,6 +330,18 @@ const PITCHES: Record<string, ReleasePitch> = {
         icon: 'controls',
         featureId: 'FEAT-011',
       },
+      /* July ships four features and all four are announced, so all four are
+         written up. Without an entry here FEAT-004 would still appear - the
+         highlights come from the flag now - but described by its own title and
+         tag, which would read as the odd one out beside three benefit-led
+         lines. The icon set has three members and the row has four, so one
+         repeats; people is the apt one for benefits. */
+      {
+        title: 'Help people choose benefits with confidence',
+        sub: 'Plan comparisons and cost calculators',
+        icon: 'people',
+        featureId: 'FEAT-004',
+      },
     ],
   },
   'June 2026': {
@@ -380,26 +394,72 @@ const PITCHES: Record<string, ReleasePitch> = {
   },
 };
 
-/** The pitch for a release, or one built from its own features. */
+const ICONS: PitchIcon[] = ['insight', 'people', 'controls'];
+
+/** The pitch for a release: a headline, and one highlight per announced
+ *  feature.
+ *
+ *  The highlights are the release's announced features - the ones flagged for
+ *  What's New - not a list written down here. PITCHES still supplies the
+ *  headline and the curated wording for the features it names, but it no longer
+ *  decides which features appear: un-flag one and it leaves the Overview, flag
+ *  a fourth and it arrives. Curated entries keep their authored order and the
+ *  rest follow, described by their own title and tag. */
 export const releasePitch = (group: ReleaseNoteGroup): ReleasePitch => {
   const written = PITCHES[group.month];
-  if (written) return written;
+
+  /* The flag and the cap, but not announcedIn's `published` gate. group.features
+     is already built from the caller's visibleFeatures, so the role gate has
+     been applied once - applying it again emptied the creator's own band, which
+     leads with an unpublished release they are the only one who can see. */
+  const announced = group.features.filter(isInWhatsNew).slice(0, WHATS_NEW_MAX);
+  const announcedIds = new Set(announced.map((f) => f.id));
+
+  /* A curated entry whose feature is no longer announced - or was pulled from
+     the release - drops out rather than linking to something the band is not
+     claiming to show. */
+  const curated = (written?.highlights ?? []).filter((h) => announcedIds.has(h.featureId));
+  const curatedIds = new Set(curated.map((h) => h.featureId));
+
+  const highlights = [
+    ...curated,
+    ...announced
+      .filter((f) => !curatedIds.has(f.id))
+      .map((f, i) => ({
+        title: f.title,
+        sub: `${f.featureTag} · ${f.productModule}`,
+        icon: ICONS[(curated.length + i) % ICONS.length],
+        featureId: f.id,
+      })),
+  ];
+
+  if (written) return { headline: written.headline, highlights };
 
   const parts: string[] = [];
   if (group.newCount) parts.push(plural(group.newCount, 'new feature'));
   if (group.enhancementCount) parts.push(plural(group.enhancementCount, 'enhancement'));
-  const icons: PitchIcon[] = ['insight', 'people', 'controls'];
 
   return {
     headline: `${parts.join(' and ')} across ${group.modules.slice(0, 3).join(', ')}.`,
-    highlights: group.features.slice(0, 3).map((f, i) => ({
-      title: f.title,
-      sub: `${f.featureTag} · ${f.productModule}`,
-      icon: icons[i % icons.length],
-      featureId: f.id,
-    })),
+    highlights,
   };
 };
+
+/** "2 new features and 2 enhancements", counted from the announced set rather
+ *  than written down. The three announcement surfaces used to state these
+ *  numbers as literal prose, which the flag would have quietly falsified. */
+export const announceSummary = (list: Feature[]): string => {
+  const neu = list.filter((f) => f.featureTag === 'New Feature').length;
+  const enh = list.length - neu;
+  const parts: string[] = [];
+  if (neu) parts.push(plural(neu, 'new feature'));
+  if (enh) parts.push(plural(enh, 'enhancement'));
+  return parts.join(' and ');
+};
+
+/** "4 new ways to move work forward". */
+export const announceHeadline = (list: Feature[]): string =>
+  `${list.length} new ${list.length === 1 ? 'way' : 'ways'} to move work forward`;
 
 /** "July 2026" -> "2026-07-01", for sorting a month against an ISO date. */
 export const monthToIso = (month: string): string => {

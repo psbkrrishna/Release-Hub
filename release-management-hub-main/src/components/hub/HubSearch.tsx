@@ -280,7 +280,10 @@ const HubSearch = ({
       {hero && suggestions && suggestions.length > 0 && (
         /* 28px below the field, matching the reference design. */
         <div className="mt-7 flex flex-wrap items-center gap-3">
-          <span className="mr-1 text-sm text-ink-600">Try searching for</span>
+          {/* "Try", not "Try searching for": the chips beside it already say
+              what they are, and the long form pushed the third one off the
+              line at the widths this hero is read at. */}
+          <span className="mr-1 text-sm text-ink-600">Try</span>
           {suggestions.map((s) => (
             <button
               key={s}

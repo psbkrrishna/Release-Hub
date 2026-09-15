@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight, X } from 'lucide-react';
-import { LATEST_RELEASE } from '@/data/features';
+import { LATEST_RELEASE, announcedIn } from '@/data/features';
+import { announceHeadline, announceSummary } from '@/data/knowledge';
+import { useFeatureStore } from '@/components/FeatureStore';
 
 /* Sits under the top bar and begins where the rail ends, so it reads as a
    banner over the page content rather than a second global chrome layer.
@@ -17,6 +19,10 @@ const ReleaseBanner = ({
   onDismiss: () => void;
 }) => {
   const navigate = useNavigate();
+  /* Same source as the What's New surfaces, so the banner cannot claim a count
+     the popup then contradicts. */
+  const { features } = useFeatureStore();
+  const announced = announcedIn(features, LATEST_RELEASE);
 
   return (
     <div
@@ -34,13 +40,13 @@ const ReleaseBanner = ({
       </span>
 
       <span className="overflow-hidden truncate whitespace-nowrap text-sm leading-[1.3]">
-        <b className="mr-2 font-semibold">Four new ways to move work forward</b>
+        <b className="mr-2 font-semibold">{announceHeadline(announced)}</b>
         {/* The bar is a fixed height, so the copy truncates rather than
             wrapping out of it. Below the width where this sentence fits whole
             it is dropped rather than clipped mid-word, keeping the headline,
             the action and the dismiss - the three things that have to survive. */}
         <span className="hidden min-[901px]:inline">
-          Two new features and two enhancements in the {LATEST_RELEASE} release.
+          {announceSummary(announced)} in the {LATEST_RELEASE} release.
         </span>
       </span>
 

@@ -23,6 +23,10 @@ const FIELDS = [
   { key: 'value3', label: 'Value Delivered', error: '' },
   { key: 'productModule', label: 'Product Module', error: 'Product module is required.' },
   { key: 'featureType', label: 'Feature Type', error: 'Feature type is required.' },
+  /* A two-option select with a default can never be blank, so it never trips
+     the required check - it is in FIELDS to keep the list the single place a
+     field is declared. */
+  { key: 'showInWhatsNew', label: "Show in What's New", error: '' },
   { key: 'releaseNotes', label: 'Release Notes URL', error: 'Release notes URL is required.' },
   { key: 'demoVideo', label: 'Demo Video URL', error: 'Demo video URL is required.' },
   { key: 'prodEnablementDate', label: 'Production Enablement Date', error: 'Production enablement date is required.' },
@@ -49,6 +53,9 @@ const EMPTY: FormState = {
   value3: '',
   productModule: MODULES[0],
   featureType: 'Default On',
+  // Yes by default: a feature being worth announcing is the common case, and
+  // it matches how every seed row behaves.
+  showInWhatsNew: 'Yes',
   releaseNotes: '',
   demoVideo: '',
   prodEnablementDate: '2026-07-01',
@@ -114,6 +121,8 @@ const CreateFeatureModal = ({
             value3: bullets[2] ?? '',
             productModule: feature.productModule,
             featureType: feature.featureType ?? 'Default On',
+            // Undefined means announced, the same reading isInWhatsNew uses.
+            showInWhatsNew: feature.showInWhatsNew === false ? 'No' : 'Yes',
             releaseNotes: feature.releaseNotes ?? '',
             demoVideo: feature.demoVideo ?? '',
             prodEnablementDate: feature.prodEnablementDate,
@@ -173,6 +182,7 @@ const CreateFeatureModal = ({
         description: form.description.trim(),
         productModule: form.productModule,
         featureType: type,
+        showInWhatsNew: form.showInWhatsNew === 'Yes',
         releaseNotes: form.releaseNotes.trim(),
         demoVideo: form.demoVideo.trim(),
         configurationDoc: form.configurationDoc.trim(),
@@ -326,6 +336,25 @@ const CreateFeatureModal = ({
               onChange={(e) => set('featureType', e.target.value)}
             >
               {FEATURE_TYPES.map((t) => <option key={t}>{t}</option>)}
+            </select>
+          </Field>
+
+          {/* Sits next to Feature Type because the two together are what
+              happens to the feature at release: whether it switches on, and
+              whether it gets announced. */}
+          <Field
+            id="in-showInWhatsNew"
+            label="Show in What's New"
+            hint="Yes lists it in the What's New popup and on the Overview's release band."
+          >
+            <select
+              id="in-showInWhatsNew"
+              style={selectStyle()}
+              value={form.showInWhatsNew}
+              onChange={(e) => set('showInWhatsNew', e.target.value)}
+            >
+              <option>Yes</option>
+              <option>No</option>
             </select>
           </Field>
 

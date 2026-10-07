@@ -21,15 +21,16 @@ const STORAGE_KEY = 'hubVersion';
 
 const readStored = (): HubVersion => {
   try {
-    return localStorage.getItem(STORAGE_KEY) === 'v2' ? 'v2' : 'v1';
+    return localStorage.getItem(STORAGE_KEY) === 'v1' ? 'v1' : 'v2';
   } catch {
-    return 'v1';
+    return 'v2';
   }
 };
 
-/* V1 is the shipped three-tab Feature Hub; V2 is the tab-less header with
-   breadcrumbs and top-right CTAs. Both render the same routes, so switching is
-   a layout change, never a navigation. */
+/* V2 is the default: the tab-less header with breadcrumbs and top-right CTAs.
+   V1 is the earlier three-tab Feature Hub, kept behind the top-bar dropdown for
+   comparison. Both render the same routes, so switching is a layout change,
+   never a navigation. */
 const HubVersionProvider = ({ children }: { children: React.ReactNode }) => {
   const [version, setVersionState] = useState<HubVersion>(readStored);
 

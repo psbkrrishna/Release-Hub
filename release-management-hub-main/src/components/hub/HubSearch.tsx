@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, Rocket, BookOpen, FileText, Play, Mail } from 'lucide-react';
+import { Search, X, Rocket, BookOpen, FileText, Play, Mail, Newspaper } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useFeatureStore } from '@/components/FeatureStore';
-import { KB_MODULES, sortedNewsletters } from '@/data/knowledge';
+import { KB_MODULES, releaseNoteGroups, sortedNewsletters } from '@/data/knowledge';
 
 /* ---------------------------------------------------------------------------
    One search across both halves of the hub: features, modules, documents, videos
@@ -14,7 +14,7 @@ import { KB_MODULES, sortedNewsletters } from '@/data/knowledge';
    than calling anything - no debounce needed, and results appear as you type.
    --------------------------------------------------------------------------- */
 
-type Kind = 'Feature' | 'Module' | 'Document' | 'Video' | 'Newsletter';
+type Kind = 'Feature' | 'Module' | 'Document' | 'Video' | 'Newsletter' | 'Release Note';
 
 const KIND_ICON: Record<Kind, ComponentType<{ size?: number | string; className?: string }>> = {
   Feature: Rocket,
@@ -22,6 +22,7 @@ const KIND_ICON: Record<Kind, ComponentType<{ size?: number | string; className?
   Document: FileText,
   Video: Play,
   Newsletter: Mail,
+  'Release Note': Newspaper,
 };
 
 interface Hit {
@@ -83,15 +84,15 @@ const HubSearch = ({
         path: `/release-hub/knowledge/modules/${m.slug}`,
         haystack: `${m.name} ${m.blurb}`.toLowerCase(),
       });
-      // A document or video leads to the module page that lists it, which is
-      // more use than a bare link to the file.
+      // A document leads straight to its own page now, not the module list it
+      // sits in.
       m.docs.forEach((d) =>
         hits.push({
           key: d.id,
           kind: 'Document',
           title: d.title,
           sub: m.name,
-          path: `/release-hub/knowledge/modules/${m.slug}`,
+          path: `/release-hub/knowledge/modules/${m.slug}/documents/${d.id}`,
           haystack: `${d.title} ${d.blurb} ${m.name}`.toLowerCase(),
         }),
       );
@@ -113,8 +114,19 @@ const HubSearch = ({
         kind: 'Newsletter',
         title: n.title,
         sub: `Newsletter · ${n.month}`,
-        path: '/release-hub/knowledge/newsletters',
+        path: `/release-hub/knowledge/newsletters/${n.id}`,
         haystack: `${n.title} ${n.summary} ${n.month}`.toLowerCase(),
+      }),
+    );
+
+    releaseNoteGroups(visibleFeatures).forEach((g) =>
+      hits.push({
+        key: `rn-${g.slug}`,
+        kind: 'Release Note',
+        title: `${g.month} Release Notes`,
+        sub: `Release notes · ${g.month}`,
+        path: `/release-hub/knowledge/release-notes/${g.slug}`,
+        haystack: `${g.month} release notes ${g.modules.join(' ')}`.toLowerCase(),
       }),
     );
 

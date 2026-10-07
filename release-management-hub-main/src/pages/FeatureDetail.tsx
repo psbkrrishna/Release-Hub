@@ -8,11 +8,12 @@ import Button from '@/components/primitives/Button';
 import Panel from '@/components/primitives/Panel';
 import Badge from '@/components/primitives/Badge';
 import FeatureTag from '@/components/hub/FeatureTag';
-import Crumb from '@/components/primitives/Crumb';
+import HubCrumb from '@/components/hub/HubCrumb';
+import { useHubVersion } from '@/components/HubVersionProvider';
 import EmptyState from '@/components/primitives/EmptyState';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { formatDate, valueOf } from '@/data/features';
-import { moduleByName, plural } from '@/data/knowledge';
+import { moduleByName, plural, releaseNoteSlug } from '@/data/knowledge';
 import { RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
 
 /* ---------------------------------------------------------------------------
@@ -65,6 +66,7 @@ const FeatureDetail = () => {
   const { featureId } = useParams();
   const navigate = useNavigate();
   const { byId, visibleFeatures, isCreator, toast } = useFeatureStore();
+  const { version } = useHubVersion();
   const feature = featureId ? byId(featureId) : undefined;
 
   // A draft is only the creator's to see; anyone else lands back on the hub.
@@ -75,7 +77,7 @@ const FeatureDetail = () => {
         title="That feature isn't available"
         action={
           <Button variant="secondary" onClick={() => navigate('/release-hub/releases')}>
-            <ArrowRight size={18} />Back to the Release Hub
+            <ArrowRight size={18} />Back to Releases
           </Button>
         }
       >
@@ -106,9 +108,9 @@ const FeatureDetail = () => {
 
   return (
     <>
-      <Crumb
+      <HubCrumb
         levels={[
-          { label: 'Release Hub', path: '/release-hub/releases' },
+          { label: 'Releases', path: '/release-hub/releases' },
           { label: feature.title },
         ]}
       />
@@ -125,10 +127,13 @@ const FeatureDetail = () => {
           {feature.published ? statusTag : <Badge variant="warning">Unpublished</Badge>}
         </div>
 
-        {/* h2: the shell owns the page's h1. Styled as a page title. */}
-        <h2 style={{ margin: `0 0 ${SPACE.x2}px`, ...TYPE.pageTitle, lineHeight: 1.25 }}>
-          {feature.title}
-        </h2>
+        {/* h2: the shell owns the page's h1. Styled as a page title. In V2
+            the page header carries it instead. */}
+        {version !== 'v2' && (
+          <h2 style={{ margin: `0 0 ${SPACE.x2}px`, ...TYPE.pageTitle, lineHeight: 1.25 }}>
+            {feature.title}
+          </h2>
+        )}
 
         <p style={{ margin: 0, maxWidth: '70ch', ...TYPE.body }}>
           {[summary, more].filter(Boolean).join(' ')}
@@ -258,10 +263,17 @@ const FeatureDetail = () => {
                   <ExternalLink size={14} className="ml-auto text-ink-500" />
                 </a>
               )}
+              {/* Points at the one release-notes document for this feature's
+                  month, per the Knowledge Hub's own rule - not the per-feature
+                  URL on the feature record, which was never more than a
+                  placeholder for this same document. */}
               <a
                 className={resLink}
-                href="#"
-                onClick={(e) => { e.preventDefault(); openRes('Release notes', feature.releaseNotes); }}
+                href={`/release-hub/knowledge/release-notes/${releaseNoteSlug(feature.releaseMonth)}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(`/release-hub/knowledge/release-notes/${releaseNoteSlug(feature.releaseMonth)}`);
+                }}
               >
                 <BookOpen size={18} />Read release notes
                 <ArrowRight size={14} className="ml-auto text-ink-500" />

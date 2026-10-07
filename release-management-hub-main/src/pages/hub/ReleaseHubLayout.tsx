@@ -1,5 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import HubTabs from '@/components/hub/HubTabs';
+import HubHeaderV2, { HubActionSlotContext, useActionSlotState } from '@/components/hub/HubHeaderV2';
+import { useHubVersion } from '@/components/HubVersionProvider';
 import { SHELL, SPACE, T } from '@/styles/zerra';
 
 /* ---------------------------------------------------------------------------
@@ -20,7 +22,18 @@ import { SHELL, SPACE, T } from '@/styles/zerra';
    sit beside the left nav rather than above it.
    --------------------------------------------------------------------------- */
 
-const ReleaseHubLayout = () => (
+const ReleaseHubLayoutV2 = () => {
+  const [slot, setSlot] = useActionSlotState();
+
+  return (
+    <HubActionSlotContext.Provider value={slot}>
+      <HubHeaderV2 setSlot={setSlot} />
+      <Outlet />
+    </HubActionSlotContext.Provider>
+  );
+};
+
+const ReleaseHubLayoutV1 = () => (
   <>
     <div
       style={{
@@ -53,5 +66,10 @@ const ReleaseHubLayout = () => (
     <Outlet />
   </>
 );
+
+const ReleaseHubLayout = () => {
+  const { version } = useHubVersion();
+  return version === 'v2' ? <ReleaseHubLayoutV2 /> : <ReleaseHubLayoutV1 />;
+};
 
 export default ReleaseHubLayout;

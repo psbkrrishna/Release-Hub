@@ -5,8 +5,8 @@ import type { Feature } from '@/types/Feature';
 
    Only evergreen material is declared as data. Anything that describes a
    specific feature - release notes, demo videos, configuration documents - is
-   derived from the feature list instead, so the Knowledge Hub and the Release
-   Management tab can never disagree about what shipped.
+   derived from the feature list instead, so the Knowledge Hub and the
+   Releases tab can never disagree about what shipped.
    --------------------------------------------------------------------------- */
 
 /** A module-level guide. Not tied to any one release. */
@@ -16,7 +16,11 @@ export interface KbDoc {
   blurb: string;
   /** Reading time in minutes. */
   minutes: number;
-  url: string;
+  /** The document's own body, as paragraphs. Rendered on the document's own
+   *  page rather than only summarised here, so opening it - or sharing its
+   *  link - keeps the reader on the portal instead of pointing at a URL
+   *  nothing actually serves. */
+  content: string[];
 }
 
 export interface KbVideo {
@@ -27,14 +31,6 @@ export interface KbVideo {
   url: string;
 }
 
-/** A product family, and the modules documented under it. */
-export interface KbGroup {
-  name: string;
-  modules: KbModule[];
-  /** Rendered greyed, with no documentation to explore yet. */
-  comingSoon?: boolean;
-}
-
 export interface KbModule {
   /** Must be a value in MODULES, or its documentation is unreachable from a
    *  feature. */
@@ -43,7 +39,7 @@ export interface KbModule {
   /** A full sentence, for the Knowledge Hub grid and the module page header. */
   blurb: string;
   /** Three to six words, for cards too narrow to hold the sentence without
-   *  truncating it mid-clause - the Home tab's module grid. */
+   *  truncating it mid-clause - the Documentation tab's module grid. */
   tagline: string;
   /* No per-module tone. Modules used to be colour-coded across brand, green,
      purple and amber, but the guidelines reserve green/amber/danger for status
@@ -61,19 +57,21 @@ export interface Newsletter {
   month: string;
   date: string;
   summary: string;
-  url: string;
   featureIds: string[];
 }
 
 /** Derived, never authored: one release note document per release month, built
  *  from the features the signed-in role is allowed to see. The Knowledge Hub
- *  lists these as documents; the per-feature detail lives in Release
- *  Management, which is one click away. */
+ *  renders these as full pages; the per-feature detail lives in Releases,
+ *  which is one click away. */
 export interface ReleaseNoteGroup {
   month: string;
   date: string;
-  /** The release note document itself. */
-  url: string;
+  /** URL-safe "YYYY-MM" - the document's own address is
+   *  /release-hub/knowledge/release-notes/:slug. A slug rather than a full
+   *  path, same as KbModule.slug, so the route lives with the router and not
+   *  with the data. */
+  slug: string;
   features: Feature[];
   newCount: number;
   enhancementCount: number;

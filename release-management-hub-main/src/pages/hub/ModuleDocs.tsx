@@ -1,14 +1,14 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  FileText, Play, ArrowSquareOut as ExternalLink, ArrowRight,
+  FileText, Play, ArrowRight, CaretRight,
   MagnifyingGlass as Search, Clock, RocketLaunch as Rocket, MonitorPlay,
 } from '@phosphor-icons/react';
 import type { ComponentType } from 'react';
 import Panel from '@/components/primitives/Panel';
 import FeatureTag from '@/components/hub/FeatureTag';
 import Button from '@/components/primitives/Button';
-import Crumb from '@/components/primitives/Crumb';
-import IconButton from '@/components/primitives/IconButton';
+import HubCrumb from '@/components/hub/HubCrumb';
+import { useHubVersion } from '@/components/HubVersionProvider';
 import EmptyState from '@/components/primitives/EmptyState';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { moduleBySlug, plural } from '@/data/knowledge';
@@ -59,6 +59,7 @@ const ModuleDocs = () => {
   const { moduleSlug } = useParams();
   const navigate = useNavigate();
   const { visibleFeatures, toast } = useFeatureStore();
+  const { version } = useHubVersion();
 
   const module = moduleBySlug(moduleSlug);
 
@@ -91,7 +92,7 @@ const ModuleDocs = () => {
           Crumb, the module's name as the title, and its counts as neutral
           chips beneath. The brand-soft hero tile this replaced said nothing
           the title did not, and pushed the documents below the fold. */}
-      <Crumb
+      <HubCrumb
         levels={[
           { label: 'Documentation', path: '/release-hub/knowledge' },
           { label: module.name },
@@ -99,23 +100,29 @@ const ModuleDocs = () => {
       />
 
       <div style={{ marginBottom: SPACE.x6 }}>
-        {/* h2: the shell owns the page's h1. Styled as a page title. */}
-        <h2 style={{ margin: `0 0 ${SPACE.x2}px`, ...TYPE.pageTitle, lineHeight: 1.25 }}>
-          {module.name}
-        </h2>
-        {/* One line only - the blurb wrapped to three here, which is what
-            made the header block look unsettled. */}
-        <p
-          style={{
-            margin: `0 0 ${SPACE.x3}px`,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            ...TYPE.body,
-          }}
-        >
-          {module.tagline}
-        </p>
+        {/* In V2 the page header already carries the module's name and
+            tagline, so the body keeps only the chips. */}
+        {version !== 'v2' && (
+          <>
+            {/* h2: the shell owns the page's h1. Styled as a page title. */}
+            <h2 style={{ margin: `0 0 ${SPACE.x2}px`, ...TYPE.pageTitle, lineHeight: 1.25 }}>
+              {module.name}
+            </h2>
+            {/* One line only - the blurb wrapped to three here, which is what
+                made the header block look unsettled. */}
+            <p
+              style={{
+                margin: `0 0 ${SPACE.x3}px`,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                ...TYPE.body,
+              }}
+            >
+              {module.tagline}
+            </p>
+          </>
+        )}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: SPACE.x2 }}>
           <MetaChip icon={FileText}>{plural(module.docs.length, 'document')}</MetaChip>
           <MetaChip icon={MonitorPlay}>{plural(module.videos.length, 'video')}</MetaChip>
@@ -139,10 +146,16 @@ const ModuleDocs = () => {
             </h3>
             {module.docs.length ? (
               <div className="flex flex-col gap-3">
+                {/* The whole row opens the document's own page now, rather
+                    than a corner icon toasting a URL nothing served - so the
+                    row is a button, not a div, and the arrow says "read this"
+                    instead of "leaves the app". */}
                 {module.docs.map((doc) => (
-                  <div
+                  <button
                     key={doc.id}
-                    className="flex items-start justify-between gap-4 rounded-lg border border-ink-150 bg-ink-25 p-4"
+                    type="button"
+                    onClick={() => navigate(`/release-hub/knowledge/modules/${module.slug}/documents/${doc.id}`)}
+                    className="flex w-full items-start justify-between gap-4 rounded-lg border border-ink-150 bg-ink-25 p-4 text-left transition-colors hover:border-brand-border hover:bg-brand-soft"
                   >
                     <div>
                       <h4 className="text-sm font-semibold">{doc.title}</h4>
@@ -151,16 +164,8 @@ const ModuleDocs = () => {
                         <Clock size={12} />{doc.minutes} min read
                       </span>
                     </div>
-                    <IconButton
-                      tone="brand"
-                      className="shrink-0"
-                      title={`Open ${doc.title}`}
-                      aria-label={`Open ${doc.title}`}
-                      onClick={() => open(doc.title, doc.url)}
-                    >
-                      <ExternalLink size={16} />
-                    </IconButton>
-                  </div>
+                    <CaretRight size={16} className="mt-1 shrink-0 text-ink-400" />
+                  </button>
                 ))}
               </div>
             ) : (

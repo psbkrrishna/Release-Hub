@@ -162,6 +162,8 @@ export const SPACE = {
 
 /** Fixed chrome heights.
  *
+ *  V1 only - the V2 header is not sticky and has no fixed height.
+ *
  *  The hub's white header is sticky, and two other things have to know exactly
  *  how tall it is: the documentation tab's left nav, which runs from the bottom
  *  of the header to the bottom of the viewport, and anything that scrolls

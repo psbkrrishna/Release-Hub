@@ -21,6 +21,7 @@ import EmptyState from '@/components/primitives/EmptyState';
 import { caretBackground } from '@/components/primitives/fieldStyles';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { MODULES, formatDate, sortReleaseMonths, supportQueue } from '@/data/features';
+import { releaseNoteSlug } from '@/data/knowledge';
 import type { Feature } from '@/types/Feature';
 
 /* ---------------------------------------------------------------------------
@@ -83,6 +84,7 @@ const ContentIcons = ({
   feature: Feature;
   onOpen: (label: string, url?: string) => void;
 }) => {
+  const navigate = useNavigate();
   const items: Array<[ReactNode, string, string | undefined]> = [];
   if (feature.releaseNotes) items.push([<BookOpen size={16} />, 'Release notes', feature.releaseNotes]);
   if (feature.demoVideo) items.push([<Play size={16} />, 'Demo video', feature.demoVideo]);
@@ -90,10 +92,17 @@ const ContentIcons = ({
 
   if (!items.length) return <span className="text-xs text-ink-500">—</span>;
 
+  /* Release notes are a document in the Documentation section, one per release
+     month, so the icon opens that document rather than the feature's raw URL. */
+  const open = (label: string, url?: string) =>
+    label === 'Release notes' && feature.releaseMonth
+      ? navigate(`/release-hub/knowledge/release-notes/${releaseNoteSlug(feature.releaseMonth)}`)
+      : onOpen(label, url);
+
   return (
     <div className="flex items-center gap-1">
       {items.map(([icon, label, url]) => (
-        <IconButton key={label} tone="brand" title={label} aria-label={label} onClick={() => onOpen(label, url)}>
+        <IconButton key={label} tone="brand" title={label} aria-label={label} onClick={() => open(label, url)}>
           {icon}
         </IconButton>
       ))}
@@ -521,7 +530,7 @@ const Index = () => {
   return (
     <>
       {/* No page title, no breadcrumb and no supporting line here: the layout
-          owns the title, the tab strip already says "Release Hub", and the
+          owns the title, the tab strip already says "Releases", and the
           table below says what it holds. The count chips that used to sit
           under this are archived - see the note by publishedCount. */}
       <HubHeader

@@ -6,7 +6,7 @@ import { Navigate, useLocation } from 'react-router-dom';
    also where the left rail's Feature Hub entry points.
 
    A bare /release-hub means "take me to the hub", which is the Overview. One
-   carrying ?month= means "show me that release", which is the Release Hub tab
+   carrying ?month= means "show me that release", which is the Releases tab
    with its filter intact - so the query is forwarded rather than dropped. */
 const HubIndexRedirect = () => {
   const { search } = useLocation();

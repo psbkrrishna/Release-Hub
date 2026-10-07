@@ -1,14 +1,16 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import Modal from '@/components/primitives/Modal';
 import Button from '@/components/primitives/Button';
 import IconButton from '@/components/primitives/IconButton';
+import Tooltip from '@/components/primitives/Tooltip';
 import {
   inputStyle, readonlyInputStyle, selectStyle, textareaStyle,
 } from '@/components/primitives/fieldStyles';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { MODULES, addDays, formatDate, releaseMonthOf, valueOf } from '@/data/features';
 import { FEATURE_TYPES, type Feature, type FeatureType } from '@/types/Feature';
+import { RADIUS, T } from '@/styles/zerra';
 
 /* The list is declared once and drives both the labels and the validation, so
    a new field can't be added to the form and silently skip the check. All of
@@ -23,10 +25,6 @@ const FIELDS = [
   { key: 'value3', label: 'Value Delivered', error: '' },
   { key: 'productModule', label: 'Product Module', error: 'Product module is required.' },
   { key: 'featureType', label: 'Feature Type', error: 'Feature type is required.' },
-  /* A two-option select with a default can never be blank, so it never trips
-     the required check - it is in FIELDS to keep the list the single place a
-     field is declared. */
-  { key: 'showInWhatsNew', label: "Show in What's New", error: '' },
   { key: 'releaseNotes', label: 'Release Notes URL', error: 'Release notes URL is required.' },
   { key: 'demoVideo', label: 'Demo Video URL', error: 'Demo video URL is required.' },
   { key: 'prodEnablementDate', label: 'Production Enablement Date', error: 'Production enablement date is required.' },
@@ -53,9 +51,6 @@ const EMPTY: FormState = {
   value3: '',
   productModule: MODULES[0],
   featureType: 'Default On',
-  // Yes by default: a feature being worth announcing is the common case, and
-  // it matches how every seed row behaves.
-  showInWhatsNew: 'Yes',
   releaseNotes: '',
   demoVideo: '',
   prodEnablementDate: '2026-07-01',
@@ -91,6 +86,64 @@ const Field = ({
   </div>
 );
 
+/* A single checkbox, styled to match the rest of the form's controls rather
+   than left at the browser default - the app has no other native checkbox to
+   be consistent with, but it has plenty of custom ones (Switch is the same
+   idea: a real button carrying the checkbox role and state, not a styled
+   input). One element is both the hit target and the label, so there is
+   nothing to wire a separate <label for> to. */
+const Checkbox = ({
+  id,
+  checked,
+  onChange,
+  children,
+}: {
+  id: string;
+  checked: boolean;
+  onChange: () => void;
+  children: ReactNode;
+}) => (
+  <button
+    id={id}
+    type="button"
+    role="checkbox"
+    aria-checked={checked}
+    onClick={onChange}
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 8,
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      cursor: 'pointer',
+      fontSize: 13,
+      fontWeight: 500,
+      color: T.tx2,
+    }}
+  >
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 16,
+        height: 16,
+        flexShrink: 0,
+        borderRadius: RADIUS.tag,
+        borderWidth: 1,
+        borderStyle: 'solid',
+        borderColor: checked ? 'transparent' : T.bd2,
+        background: checked ? T.brandSolid : T.card,
+        transition: 'background 120ms ease, border-color 120ms ease',
+      }}
+    >
+      {checked && <Check size={11} color="#FFFFFF" strokeWidth={3} />}
+    </span>
+    {children}
+  </button>
+);
+
 const CreateFeatureModal = ({
   open,
   feature,
@@ -103,12 +156,19 @@ const CreateFeatureModal = ({
   const { upsert } = useFeatureStore();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [invalid, setInvalid] = useState<Set<FieldKey>>(new Set());
+  /* Its own piece of state rather than a FormState field: it lives in the
+     footer now, not the field grid, and it is never required or invalid, so it
+     never needed FIELDS' validation machinery in the first place. */
+  const [showInWhatsNew, setShowInWhatsNew] = useState(true);
   const titleId = useId();
 
   useEffect(() => {
     if (!open) return;
     setInvalid(new Set());
     const bullets = valueOf(feature ?? ({} as Feature));
+    // Undefined means announced, the same reading isInWhatsNew uses - a new
+    // feature defaults to checked, matching how every seed row behaves.
+    setShowInWhatsNew(feature?.showInWhatsNew !== false);
     setForm(
       feature
         ? {
@@ -121,8 +181,6 @@ const CreateFeatureModal = ({
             value3: bullets[2] ?? '',
             productModule: feature.productModule,
             featureType: feature.featureType ?? 'Default On',
-            // Undefined means announced, the same reading isInWhatsNew uses.
-            showInWhatsNew: feature.showInWhatsNew === false ? 'No' : 'Yes',
             releaseNotes: feature.releaseNotes ?? '',
             demoVideo: feature.demoVideo ?? '',
             prodEnablementDate: feature.prodEnablementDate,
@@ -182,7 +240,7 @@ const CreateFeatureModal = ({
         description: form.description.trim(),
         productModule: form.productModule,
         featureType: type,
-        showInWhatsNew: form.showInWhatsNew === 'Yes',
+        showInWhatsNew,
         releaseNotes: form.releaseNotes.trim(),
         demoVideo: form.demoVideo.trim(),
         configurationDoc: form.configurationDoc.trim(),
@@ -339,25 +397,6 @@ const CreateFeatureModal = ({
             </select>
           </Field>
 
-          {/* Sits next to Feature Type because the two together are what
-              happens to the feature at release: whether it switches on, and
-              whether it gets announced. */}
-          <Field
-            id="in-showInWhatsNew"
-            label="Show in What's New"
-            hint="Yes lists it in the What's New popup and on the Overview's release band."
-          >
-            <select
-              id="in-showInWhatsNew"
-              style={selectStyle()}
-              value={form.showInWhatsNew}
-              onChange={(e) => set('showInWhatsNew', e.target.value)}
-            >
-              <option>Yes</option>
-              <option>No</option>
-            </select>
-          </Field>
-
           <Field id="in-releaseNotes" label="Release Notes URL" invalid={bad('releaseNotes')} error={errorOf('releaseNotes')}>
             <input
               id="in-releaseNotes"
@@ -429,9 +468,24 @@ const CreateFeatureModal = ({
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 border-t border-ink-150 bg-ink-50 px-5 py-4">
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
-        <Button onClick={submit}>{feature ? 'Update Feature' : 'Create Feature'}</Button>
+      <div className="flex items-center justify-between gap-3 border-t border-ink-150 bg-ink-50 px-5 py-4">
+        {/* Moved here from the field grid: it is a release decision like
+            Feature Type, not a piece of the feature's own content, and a
+            checkbox reads as a decision to confirm on the way out rather than
+            a field to fill in on the way through the form. */}
+        <Tooltip label="Lists it in the What's New popup and on the Overview's release band">
+          <Checkbox
+            id="in-showInWhatsNew"
+            checked={showInWhatsNew}
+            onChange={() => setShowInWhatsNew((v) => !v)}
+          >
+            Show in What&apos;s New
+          </Checkbox>
+        </Tooltip>
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit}>{feature ? 'Update Feature' : 'Create Feature'}</Button>
+        </div>
       </div>
     </Modal>
   );

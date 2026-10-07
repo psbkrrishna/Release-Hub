@@ -17,7 +17,11 @@ import ModuleLayout from './pages/hub/ModuleLayout';
 import KnowledgeHome from './pages/hub/KnowledgeHome';
 import KnowledgeSection from './pages/hub/KnowledgeSection';
 import ModuleDocs from './pages/hub/ModuleDocs';
+import DocumentDetail from './pages/hub/DocumentDetail';
+import ReleaseNoteDetail from './pages/hub/ReleaseNoteDetail';
+import NewsletterDetail from './pages/hub/NewsletterDetail';
 import UserRoleProvider from './components/UserRoleProvider';
+import HubVersionProvider from './components/HubVersionProvider';
 import FeatureStore from './components/FeatureStore';
 
 const queryClient = new QueryClient();
@@ -52,13 +56,14 @@ const App = () => (
     />
     <BrowserRouter>
       <UserRoleProvider>
+        <HubVersionProvider>
         <FeatureStore>
           <Routes>
             <Route element={<Navigation />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
 
-              {/* The Release Hub: three peer tabs under one shell. Feature
+              {/* The Feature Hub: three peer tabs under one shell. Feature
                   detail keeps the URL it has always had - the release banner,
                   What's New and the feature table all point at it. */}
               <Route path="release-hub" element={<ReleaseHubLayout />}>
@@ -77,9 +82,15 @@ const App = () => (
                   <Route index element={<KnowledgeHome />} />
                   <Route element={<ModuleLayout />}>
                     <Route path="release-notes" element={<KnowledgeSection section="release-notes" />} />
+                    {/* A release's notes, and a newsletter issue, each render in
+                        full on their own address - documents that used to be a
+                        toast naming a URL nothing served. */}
+                    <Route path="release-notes/:month" element={<ReleaseNoteDetail />} />
                     <Route path="newsletters" element={<KnowledgeSection section="newsletters" />} />
+                    <Route path="newsletters/:id" element={<NewsletterDetail />} />
                     <Route path="videos" element={<KnowledgeSection section="videos" />} />
                     <Route path="modules/:moduleSlug" element={<ModuleDocs />} />
+                    <Route path="modules/:moduleSlug/documents/:docId" element={<DocumentDetail />} />
                   </Route>
                 </Route>
               </Route>
@@ -101,6 +112,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </FeatureStore>
+        </HubVersionProvider>
       </UserRoleProvider>
     </BrowserRouter>
   </QueryClientProvider>

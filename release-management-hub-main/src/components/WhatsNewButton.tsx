@@ -129,14 +129,22 @@ const WhatsNewButton = () => {
       {/* Unseen release news: the button carries a ring pulse until the reader
           opens the panel once, then settles to the quiet default. The pulse is
           an attention cue, not information, so with reduced motion the
-          brighter resting state carries the same signal without moving. */}
+          brighter resting state carries the same signal without moving.
+
+          A solid purple-500 fill made this pop, but two saturated colours -
+          that magenta and the brand blue behind it - sitting flush against
+          each other read as loud rather than inviting. Solid white plus
+          purple text and icon keeps the same amount of contrast against the
+          bar (white is the strongest possible lift off brand blue) while
+          losing the colour clash, and the purple label still carries the
+          release-news identity used everywhere else in the app. */}
       <button
         onClick={toggleFloater}
         className={[
-          'inline-flex h-8 items-center gap-2 rounded-md border px-3 text-sm font-medium text-white',
+          'inline-flex h-8 items-center gap-2 rounded-md bg-white px-3 text-sm font-semibold text-purple-600 transition-colors',
           pulse
-            ? 'border-white/[.62] bg-white/20 animate-wn-pulse motion-reduce:animate-none motion-reduce:shadow-[0_0_0_2px_rgba(255,255,255,.5)]'
-            : 'border-white/[.34] bg-white/10 hover:bg-white/20',
+            ? 'animate-wn-pulse motion-reduce:animate-none motion-reduce:shadow-[0_0_0_2px_rgba(255,255,255,.5)]'
+            : 'hover:bg-purple-50',
         ].join(' ')}
       >
         <Sparkles size={16} className={pulse ? 'animate-wn-nudge motion-reduce:animate-none' : ''} />

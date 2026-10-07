@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FileText, Play, Mail, ArrowRight, ExternalLink, Calendar, Filter,
+  FileText, Play, Mail, ArrowRight, Calendar, Filter,
 } from 'lucide-react';
 import Panel from '@/components/primitives/Panel';
 import Badge from '@/components/primitives/Badge';
@@ -9,6 +9,7 @@ import IconButton from '@/components/primitives/IconButton';
 import EmptyState from '@/components/primitives/EmptyState';
 import { selectStyle } from '@/components/primitives/fieldStyles';
 import { useFeatureStore } from '@/components/FeatureStore';
+import { useHubVersion } from '@/components/HubVersionProvider';
 import { KB_MODULES, moduleByName, plural, releaseNoteGroups, sortedNewsletters } from '@/data/knowledge';
 import { formatDate } from '@/data/features';
 
@@ -24,7 +25,7 @@ export type SectionKey = 'release-notes' | 'newsletters' | 'videos';
 const COPY: Record<SectionKey, { title: string; lede: string }> = {
   'release-notes': {
     title: 'Release notes',
-    lede: 'One release note document per release, newest first. Open a release in Release Management for the feature-by-feature detail.',
+    lede: 'One release note document per release, newest first, with the feature-by-feature detail on the document itself.',
   },
   newsletters: {
     title: 'Newsletters',
@@ -39,6 +40,7 @@ const COPY: Record<SectionKey, { title: string; lede: string }> = {
 const KnowledgeSection = ({ section }: { section: SectionKey }) => {
   const navigate = useNavigate();
   const { visibleFeatures, byId, toast } = useFeatureStore();
+  const { version } = useHubVersion();
   const [module, setModule] = useState('all');
 
   const open = (label: string, url?: string) =>
@@ -95,12 +97,16 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
   return (
     <>
       <div className="mb-5 flex flex-col gap-4 min-[861px]:flex-row min-[861px]:items-start min-[861px]:justify-between">
-        <div>
-          {/* h2, not h1: the layout owns the page title. Ink rather than brand
-              so it reads as subordinate to it. */}
-          <h2 className="mb-1 text-lg font-semibold leading-tight text-ink-900">{title}</h2>
-          <p className="max-w-lede text-sm text-ink-600">{lede}</p>
-        </div>
+        {/* In V2 the page header already names the list and says what it
+            holds; only the module filter is left here. */}
+        {version !== 'v2' && (
+          <div>
+            {/* h2, not h1: the layout owns the page title. Ink rather than
+                brand so it reads as subordinate to it. */}
+            <h2 className="mb-1 text-lg font-semibold leading-tight text-ink-900">{title}</h2>
+            <p className="max-w-lede text-sm text-ink-600">{lede}</p>
+          </div>
+        )}
         {showFilter && (
           <select
             style={{ ...selectStyle(), width: 'auto', minWidth: 180, flexShrink: 0 }}
@@ -114,8 +120,9 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
         )}
       </div>
 
-      {/* One document per release, not one per feature. The per-feature detail
-          is Release Management's job, and it is one click away on each row. */}
+      {/* One document per release, not one per feature - and now the document
+          itself carries the feature-by-feature detail, rendered on its own
+          page rather than pointed at with a fake external link. */}
       {section === 'release-notes' &&
         (releases.length ? (
           <div className="flex flex-col gap-3">
@@ -130,7 +137,12 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
 
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <h2 className="text-base font-semibold">{g.month} Release Notes</h2>
+                    <button
+                      onClick={() => navigate(`/release-hub/knowledge/release-notes/${g.slug}`)}
+                      className="rounded text-left text-base font-semibold hover:text-brand hover:underline"
+                    >
+                      {g.month} Release Notes
+                    </button>
                     {g.newCount > 0 && <Badge variant="new">{g.newCount} new</Badge>}
                     {g.enhancementCount > 0 && (
                       <Badge variant="static">{plural(g.enhancementCount, 'enhancement')}</Badge>
@@ -151,19 +163,17 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
 
                 <div className="flex shrink-0 flex-wrap items-center gap-3">
                   <button
-                    onClick={() => navigate(`/release-hub/releases?month=${encodeURIComponent(g.month)}`)}
+                    onClick={() => navigate(`/release-hub/knowledge/release-notes/${g.slug}`)}
                     className="inline-flex items-center gap-1 rounded text-13 font-semibold text-brand hover:underline"
                   >
-                    Open in Release Management <ArrowRight size={13} />
+                    Read release notes <ArrowRight size={13} />
                   </button>
-                  <IconButton
-                    tone="brand"
-                    title={`Open ${g.month} release notes`}
-                    aria-label={`Open ${g.month} release notes`}
-                    onClick={() => open(`${g.month} release notes`, g.url)}
+                  <button
+                    onClick={() => navigate(`/release-hub/releases?month=${encodeURIComponent(g.month)}`)}
+                    className="inline-flex items-center gap-1 rounded text-13 text-ink-600 hover:text-brand"
                   >
-                    <ExternalLink size={16} />
-                  </IconButton>
+                    Open in Releases <ArrowRight size={13} />
+                  </button>
                 </div>
               </Panel>
             ))}
@@ -182,7 +192,12 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <h2 className="text-base font-semibold">{n.title}</h2>
+                    <button
+                      onClick={() => navigate(`/release-hub/knowledge/newsletters/${n.id}`)}
+                      className="rounded text-left text-base font-semibold hover:text-brand hover:underline"
+                    >
+                      {n.title}
+                    </button>
                     <Badge variant="new">{n.month}</Badge>
                   </div>
                   <p className="mb-1 text-13 text-ink-500">Sent {formatDate(n.date)}</p>
@@ -209,11 +224,11 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
                 <IconButton
                   tone="brand"
                   className="shrink-0"
-                  title="Open newsletter"
-                  aria-label={`Open ${n.title}`}
-                  onClick={() => open(n.title, n.url)}
+                  title={`Read ${n.title}`}
+                  aria-label={`Read ${n.title}`}
+                  onClick={() => navigate(`/release-hub/knowledge/newsletters/${n.id}`)}
                 >
-                  <ExternalLink size={16} />
+                  <ArrowRight size={16} />
                 </IconButton>
               </div>
             </Panel>

@@ -11,6 +11,7 @@ import WhatsNewButton from '@/components/WhatsNewButton';
 import IconButton from '@/components/primitives/IconButton';
 import { caretBackgroundLight } from '@/components/primitives/fieldStyles';
 import { useUserRole, type UserRole } from '@/components/UserRoleProvider';
+import { useHubVersion, type HubVersion } from '@/components/HubVersionProvider';
 
 /* Icons are component references now, not name strings. The previous version
    built class names as `ph ph-${icon}`, which meant seven of the rail's icons
@@ -58,6 +59,7 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { userRole, setUserRole } = useUserRole();
+  const { version, setVersion } = useHubVersion();
   const [railCollapsed, setRailCollapsed] = useState(false);
   // The rail widens on hover to reveal labels and overlays the canvas rather
   // than reflowing it, so the shell keeps its 72px offset either way.
@@ -171,6 +173,20 @@ const Navigation = () => {
           <IconButton tone="onBrand" className="rounded-lg" title="Profile" aria-label="Profile">
             <UserCircle size={18} />
           </IconButton>
+
+          <div className="flex items-center gap-2 text-sm text-white/85">
+            <span>Version:</span>
+            <select
+              className="h-8 min-w-[72px] cursor-pointer appearance-none rounded-md border border-white/[.34] bg-white/[.12] pl-3 pr-4 text-base font-medium text-white"
+              style={caretBackgroundLight}
+              value={version}
+              onChange={(e) => setVersion(e.target.value as HubVersion)}
+              aria-label="Hub version"
+            >
+              <option value="v1" className="bg-white text-ink-900">V1</option>
+              <option value="v2" className="bg-white text-ink-900">V2</option>
+            </select>
+          </div>
 
           <div className="flex items-center gap-2 text-sm text-white/85">
             <span>Demo Role:</span>

@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { DOC_SECTIONS } from '@/components/hub/docSections';
 import { KB_MODULES } from '@/data/knowledge';
 import { useMediaQuery, WIDE } from '@/hooks/useMediaQuery';
-import { CONTENT_TOP, RADIUS, SPACE, T, TYPE, sx } from '@/styles/zerra';
+import { useHubVersion } from '@/components/HubVersionProvider';
+import { CONTENT_TOP, RADIUS, SHELL, SPACE, T, TYPE, sx } from '@/styles/zerra';
 
 /* ---------------------------------------------------------------------------
    Navigation for a module page.
@@ -84,10 +85,31 @@ const NavRow = ({
   );
 };
 
+/** Whether `pathname` is this row's own page, or something nested under it -
+ *  a document under its module, or a release note / newsletter under its
+ *  list - so opening one of those keeps the right row marked current rather
+ *  than lighting nothing up. */
+const isCurrent = (pathname: string, path: string) =>
+  pathname === path || pathname.startsWith(`${path}/`);
+
 const DocsNav = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const wide = useMediaQuery(WIDE);
+  const { version } = useHubVersion();
+
+  /* V1's header is sticky and a known height, so the nav fills the viewport
+     below it. V2's header scrolls away, so there is nothing to measure: the
+     nav sticks 16px under the top bar at its natural height, capped to the
+     viewport, and the quick links follow the modules instead of being pinned
+     to a foot that would sit below the fold at scroll 0. */
+  const stickyStyle =
+    version === 'v2'
+      ? {
+          top: SHELL.topBar + SPACE.x4,
+          maxHeight: `calc(100vh - ${SHELL.topBar + SPACE.x4}px)`,
+        }
+      : { top: CONTENT_TOP, height: `calc(100vh - ${CONTENT_TOP}px)` };
 
   return (
     <nav
@@ -97,11 +119,10 @@ const DocsNav = () => {
         wide
           ? {
               position: 'sticky',
-              top: CONTENT_TOP,
               alignSelf: 'flex-start',
               width: 248,
-              height: `calc(100vh - ${CONTENT_TOP}px)`,
               borderRight: `1px solid ${T.bd2}`,
+              ...stickyStyle,
             }
           : { width: '100%', borderBottom: `1px solid ${T.bd2}` },
       )}
@@ -125,7 +146,7 @@ const DocsNav = () => {
           <NavRow
             key={m.slug}
             label={m.name}
-            current={pathname === `/release-hub/knowledge/modules/${m.slug}`}
+            current={isCurrent(pathname, `/release-hub/knowledge/modules/${m.slug}`)}
             onSelect={() => navigate(`/release-hub/knowledge/modules/${m.slug}`)}
           />
         ))}
@@ -143,7 +164,7 @@ const DocsNav = () => {
             key={path}
             label={label}
             icon={icon}
-            current={pathname === path}
+            current={isCurrent(pathname, path)}
             onSelect={() => navigate(path)}
           />
         ))}

@@ -146,8 +146,8 @@ const DocsNav = () => {
           <NavRow
             key={m.slug}
             label={m.name}
-            current={isCurrent(pathname, `/release-hub/knowledge/modules/${m.slug}`)}
-            onSelect={() => navigate(`/release-hub/knowledge/modules/${m.slug}`)}
+            current={isCurrent(pathname, `/product-hub/knowledge/modules/${m.slug}`)}
+            onSelect={() => navigate(`/product-hub/knowledge/modules/${m.slug}`)}
           />
         ))}
       </div>

@@ -16,19 +16,19 @@ import { RADIUS, SPACE, T, sx } from '@/styles/zerra';
 export type HubTab = 'overview' | 'releases' | 'knowledge';
 
 export const HUB_TABS = [
-  { key: 'overview', label: 'Overview', path: '/release-hub/overview' },
-  { key: 'releases', label: 'Releases', path: '/release-hub/releases' },
+  { key: 'overview', label: 'Overview', path: '/product-hub/overview' },
+  { key: 'releases', label: 'Releases', path: '/product-hub/releases' },
   /* "Documentation", not "Product & Feature Documentation": a nav label is
      read at a glance, and the long form was wider than the other two tabs
      combined. The pages under it still say what they document. */
-  { key: 'knowledge', label: 'Documentation', path: '/release-hub/knowledge' },
+  { key: 'knowledge', label: 'Documentation', path: '/product-hub/knowledge' },
 ] as const;
 
 /** Feature detail has no tab of its own - it is a leaf of the Releases tab,
  *  and reads as one. */
 export const hubTabOf = (pathname: string): HubTab => {
-  if (pathname.startsWith('/release-hub/knowledge')) return 'knowledge';
-  if (pathname.startsWith('/release-hub/releases') || pathname.startsWith('/release-hub/features')) {
+  if (pathname.startsWith('/product-hub/knowledge')) return 'knowledge';
+  if (pathname.startsWith('/product-hub/releases') || pathname.startsWith('/product-hub/features')) {
     return 'releases';
   }
   return 'overview';
@@ -54,7 +54,7 @@ const HubTabs = () => {
         borderBottom: `1px solid ${T.bd2}`,
       }}
     >
-      <nav aria-label="Feature Hub sections" style={{ overflowX: 'auto', marginBottom: -1 }}>
+      <nav aria-label="Product Hub sections" style={{ overflowX: 'auto', marginBottom: -1 }}>
         <div
           style={{
             display: 'flex',

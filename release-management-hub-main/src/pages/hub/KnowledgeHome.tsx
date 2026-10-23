@@ -141,7 +141,7 @@ const KnowledgeHome = () => {
             docs={m.docs.length}
             videos={m.videos.length}
             features={visibleFeatures.filter((f) => f.productModule === m.name).length}
-            onOpen={() => navigate(`/release-hub/knowledge/modules/${m.slug}`)}
+            onOpen={() => navigate(`/product-hub/knowledge/modules/${m.slug}`)}
           />
         ))}
       </div>

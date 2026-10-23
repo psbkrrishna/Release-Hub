@@ -1,11 +1,12 @@
 import { Outlet } from 'react-router-dom';
 import HubTabs from '@/components/hub/HubTabs';
+import WebinarBand from '@/components/WebinarBand';
 import HubHeaderV2, { HubActionSlotContext, useActionSlotState } from '@/components/hub/HubHeaderV2';
 import { useHubVersion } from '@/components/HubVersionProvider';
 import { SHELL, SPACE, T } from '@/styles/zerra';
 
 /* ---------------------------------------------------------------------------
-   The Feature Hub shell: the page title and tab strip in one white header
+   The Product Hub shell: the page title and tab strip in one white header
    container, and whichever tab is open below it.
 
    The header is the platform's standard pattern from the guidelines - title
@@ -28,6 +29,7 @@ const ReleaseHubLayoutV2 = () => {
   return (
     <HubActionSlotContext.Provider value={slot}>
       <HubHeaderV2 setSlot={setSlot} />
+      <WebinarBand />
       <Outlet />
     </HubActionSlotContext.Provider>
   );
@@ -59,10 +61,11 @@ const ReleaseHubLayoutV1 = () => (
           color: T.tx,
         }}
       >
-        Feature Hub
+        Product Hub
       </h1>
       <HubTabs />
     </div>
+    <WebinarBand />
     <Outlet />
   </>
 );

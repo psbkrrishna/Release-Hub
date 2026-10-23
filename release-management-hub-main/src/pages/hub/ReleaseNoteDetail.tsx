@@ -6,6 +6,7 @@ import Button from '@/components/primitives/Button';
 import Panel from '@/components/primitives/Panel';
 import FeatureTag from '@/components/hub/FeatureTag';
 import HubCrumb from '@/components/hub/HubCrumb';
+import { notesLinkProps, useReleaseNotesTarget } from '@/components/ReleaseStore';
 import EmptyState from '@/components/primitives/EmptyState';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { useHubVersion } from '@/components/HubVersionProvider';
@@ -77,6 +78,7 @@ const ReleaseNoteDetail = () => {
   const { version } = useHubVersion();
 
   const group = releaseNoteBySlug(visibleFeatures, slug);
+  const uploaded = useReleaseNotesTarget(group?.month ?? '').file;
 
   if (!group) {
     return (
@@ -84,7 +86,7 @@ const ReleaseNoteDetail = () => {
         icon={<Search size={26} />}
         title="Those release notes aren't here"
         action={
-          <Button variant="secondary" onClick={() => navigate('/release-hub/knowledge/release-notes')}>
+          <Button variant="secondary" onClick={() => navigate('/product-hub/knowledge/release-notes')}>
             <ArrowRight size={18} />Back to release notes
           </Button>
         }
@@ -108,8 +110,8 @@ const ReleaseNoteDetail = () => {
     <>
       <HubCrumb
         levels={[
-          { label: 'Documentation', path: '/release-hub/knowledge' },
-          { label: 'Release notes', path: '/release-hub/knowledge/release-notes' },
+          { label: 'Documentation', path: '/product-hub/knowledge' },
+          { label: 'Release notes', path: '/product-hub/knowledge/release-notes' },
           { label: `${group.month} Release Notes` },
         ]}
       />
@@ -160,14 +162,14 @@ const ReleaseNoteDetail = () => {
 
         <div>
           {ordered.map((f) => (
-            <NoteEntry key={f.id} feature={f} onOpen={() => navigate(`/release-hub/features/${f.id}`)} />
+            <NoteEntry key={f.id} feature={f} onOpen={() => navigate(`/product-hub/features/${f.id}`)} />
           ))}
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: SPACE.x5, marginTop: SPACE.x5 }}>
           <button
             type="button"
-            onClick={() => navigate(`/release-hub/releases?month=${encodeURIComponent(group.month)}`)}
+            onClick={() => navigate(`/product-hub/releases?month=${encodeURIComponent(group.month)}`)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -184,10 +186,26 @@ const ReleaseNoteDetail = () => {
             View in Releases <ArrowRight size={14} />
           </button>
 
+          {uploaded && (
+            <a
+              {...notesLinkProps(uploaded)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                color: T.brand,
+              }}
+            >
+              Open the release notes document <ArrowRight size={14} />
+            </a>
+          )}
+
           {newsletter && (
             <button
               type="button"
-              onClick={() => navigate(`/release-hub/knowledge/newsletters/${newsletter.id}`)}
+              onClick={() => navigate(`/product-hub/knowledge/newsletters/${newsletter.id}`)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

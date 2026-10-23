@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Chatbot from '@/components/Chatbot';
 import ReleaseBanner from '@/components/ReleaseBanner';
+import { useLatestRelease } from '@/components/ReleaseStore';
 import WhatsNewButton from '@/components/WhatsNewButton';
 import IconButton from '@/components/primitives/IconButton';
 import { caretBackgroundLight } from '@/components/primitives/fieldStyles';
@@ -37,10 +38,10 @@ const topRail: RailItem[] = [
 
 /* One entry for the whole hub. The Knowledge Hub used to have its own rail
    entry, which made switching to that tab look like leaving for a different
-   destination - it is a tab within the Feature Hub, so the rail stays put. */
+   destination - it is a tab within the Product Hub, so the rail stays put. */
 const lowerRail: RailItem[] = [
   { icon: BarChart3, label: 'Analytics', path: '/insights' },
-  { icon: Rocket, label: 'Feature Hub', path: '/release-hub' },
+  { icon: Rocket, label: 'Product Hub', path: '/product-hub' },
 ];
 
 const footRail: RailItem[] = [
@@ -65,15 +66,17 @@ const Navigation = () => {
   // than reflowing it, so the shell keeps its 72px offset either way.
   const [railExpanded, setRailExpanded] = useState(false);
   const [kbOpen, setKbOpen] = useState(false);
-  const [bannerDismissed, setBannerDismissed] = useState(
-    () => localStorage.getItem('annDismissed') === '1',
-  );
+  /* The key holds the month that was dismissed, not a flag, so the next
+     release's banner - and the webinar it carries - appears again by itself. */
+  const latestMonth = useLatestRelease();
+  const [dismissedMonth, setDismissedMonth] = useState(() => localStorage.getItem('annDismissed'));
+  const bannerDismissed = !latestMonth || dismissedMonth === latestMonth;
 
-  /* The announcement is redundant inside the Feature Hub - that whole
+  /* The announcement is redundant inside the Product Hub - that whole
      destination is the release, and its Overview leads with the same news. It
      stays on every other page, where it is the way in. */
-  const onFeatureHub = location.pathname.startsWith('/release-hub');
-  const showBanner = !bannerDismissed && !onFeatureHub;
+  const onProductHub = location.pathname.startsWith('/product-hub');
+  const showBanner = !bannerDismissed && !onProductHub;
 
   /* The banner's height used to be a CSS variable so the shell and the
      assistant could both react to it. With no stylesheet to hold that
@@ -85,15 +88,15 @@ const Navigation = () => {
   const shellPadTop = showBanner ? 'pt-shell-top' : 'pt-topbar';
 
   /* Active on its own page and anywhere beneath it, so every tab of the
-     Feature Hub keeps its one rail entry lit. */
+     Product Hub keeps its one rail entry lit. */
   const isActive = ({ path }: RailItem) => {
     if (!path) return false;
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
   const dismissBanner = () => {
-    localStorage.setItem('annDismissed', '1');
-    setBannerDismissed(true);
+    localStorage.setItem('annDismissed', latestMonth);
+    setDismissedMonth(latestMonth);
   };
 
   const railButton = (item: RailItem) => {

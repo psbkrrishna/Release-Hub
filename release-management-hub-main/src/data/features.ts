@@ -126,7 +126,6 @@ const earlierReleases: Feature[] = [
     description:
       'Availability is read from every panellist’s calendar before a slot is offered, rather than proposing times and discovering the clash afterwards. Working hours are respected per region, so a panel spanning two time zones stops producing 7am invitations, and the slot is held provisionally until the candidate confirms so two candidates cannot take the same one.',
     productModule: 'Recruiting',
-    releaseNotes: 'https://docs.zwayam.com/releases/june-2026/feat-013',
     demoVideo: '',
     enablementDate: '2026-06-01',
     prodEnablementDate: '2026-06-01',
@@ -158,7 +157,6 @@ const earlierReleases: Feature[] = [
     description:
       'Each document type carries its own retention period, and the platform retires files on that schedule rather than leaving it to an annual clean-up nobody runs. A legal hold overrides the schedule for named employees, and every retention run is logged with what it removed - which is what makes the policy defensible rather than merely stated.',
     productModule: 'Core HR',
-    releaseNotes: 'https://docs.zwayam.com/releases/june-2026/feat-014',
     demoVideo: 'https://demo.zwayam.com/feat-014',
     enablementDate: '2026-06-01',
     prodEnablementDate: '2026-06-01',
@@ -190,7 +188,6 @@ const earlierReleases: Feature[] = [
     description:
       'A company objective is published once and adapted by each team in their own words, while the link back to the original is kept - so rewording does not sever the cascade. The coverage view shows how far the objective has travelled down the org and which teams have not picked it up, which is usually the answer to why a goal missed.',
     productModule: 'Performance Management',
-    releaseNotes: 'https://docs.zwayam.com/releases/june-2026/feat-015',
     demoVideo: 'https://demo.zwayam.com/feat-015',
     enablementDate: '2026-06-01',
     prodEnablementDate: '2026-06-01',
@@ -224,7 +221,6 @@ const earlierReleases: Feature[] = [
     description:
       'Reminders are timed against the payroll cut-off rather than sent on a fixed day, so approvers are prompted while there is still time to act. A timesheet left untouched for two days escalates to the next approver in line, which stops one person’s leave from holding up a pay run, and approver turnaround is reported so the persistent bottlenecks are visible.',
     productModule: 'Payroll',
-    releaseNotes: 'https://docs.zwayam.com/releases/may-2026/feat-016',
     demoVideo: '',
     enablementDate: '2026-05-01',
     prodEnablementDate: '2026-05-01',
@@ -256,7 +252,6 @@ const earlierReleases: Feature[] = [
     description:
       'Interviewer notes are collected into a single digest per candidate rather than left across separate scorecards, so a hiring manager reads one page instead of five. Where two interviewers scored the same competency very differently, the disagreement is flagged rather than averaged away - that gap is usually the most useful thing in the loop.',
     productModule: 'Recruiting',
-    releaseNotes: 'https://docs.zwayam.com/releases/may-2026/feat-017',
     demoVideo: 'https://demo.zwayam.com/feat-017',
     enablementDate: '2026-05-01',
     prodEnablementDate: '2026-05-01',
@@ -288,7 +283,6 @@ const earlierReleases: Feature[] = [
     description:
       'A course stays locked until its prerequisites are complete, so learners meet material in the order it was designed to be met rather than starting with the advanced module. A manager can waive a prerequisite where it genuinely does not apply, but the waiver carries a reason and stays on the record, so exceptions remain visible rather than becoming the norm.',
     productModule: 'Learning & Development',
-    releaseNotes: 'https://docs.zwayam.com/releases/may-2026/feat-018',
     demoVideo: '',
     enablementDate: '2026-05-01',
     prodEnablementDate: '2026-05-01',
@@ -325,7 +319,6 @@ const drafts: Feature[] = [
     description:
       'An employee offers a shift to colleagues who are qualified to cover it, and the handover completes once an approver signs off. Overtime limits and coverage minimums are checked before a swap can be accepted rather than flagged afterwards, so a swap cannot quietly create a compliance breach or leave a shift short.',
     productModule: 'Core HR',
-    releaseNotes: 'https://docs.zwayam.com/releases/august-2026/feat-019',
     demoVideo: 'https://demo.zwayam.com/feat-019',
     enablementDate: '2026-08-01',
     prodEnablementDate: '2026-08-01',
@@ -357,7 +350,6 @@ const drafts: Feature[] = [
     description:
       'Each exit reason gets its own questionnaire, so a resignation and a redundancy are not asked the same questions and the answers stay comparable within a reason. Responses feed the attrition view directly, and are withheld below the team size threshold you set - without which exit feedback from a small team is anonymous in name only.',
     productModule: 'Core HR',
-    releaseNotes: 'https://docs.zwayam.com/releases/august-2026/feat-020',
     demoVideo: 'https://demo.zwayam.com/feat-020',
     enablementDate: '2026-08-01',
     prodEnablementDate: '2026-08-01',
@@ -389,7 +381,6 @@ const drafts: Feature[] = [
     description:
       'Requisitions are weighted by seniority and expected effort rather than counted flat, so a recruiter carrying six executive searches does not read as under-loaded next to one carrying six volume roles. When a queue runs long the platform suggests a reassignment and shows what it would do to both recruiters’ load before anyone commits to it.',
     productModule: 'Recruiting',
-    releaseNotes: 'https://docs.zwayam.com/releases/august-2026/feat-021',
     demoVideo: 'https://demo.zwayam.com/feat-021',
     enablementDate: '2026-08-01',
     prodEnablementDate: '2026-08-01',
@@ -441,8 +432,16 @@ export const MODULES = [
   'Employee Experience',
 ];
 
-/** The release What's New speaks for. */
-export const LATEST_RELEASE = 'July 2026';
+/** The release What's New speaks for: the newest month with a published,
+ *  announced feature. Derived rather than written down, so publishing the next
+ *  month's features moves the popup, banner and floater on by itself. Empty when
+ *  nothing is published yet. */
+export const latestRelease = (features: Feature[]): string => {
+  const live = features.filter((f) => f.published && f.releaseMonth);
+  const announced = live.filter(isInWhatsNew);
+  const months = sortReleaseMonths([...new Set((announced.length ? announced : live).map((f) => f.releaseMonth))]);
+  return months[0] ?? '';
+};
 
 /* ---------------------------------------------------------------------------
    Which features get announced.

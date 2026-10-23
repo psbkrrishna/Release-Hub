@@ -1,6 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, ArrowRight, X } from 'lucide-react';
-import { LATEST_RELEASE, announcedIn } from '@/data/features';
+import { Sparkles, ArrowRight, X, Video as VideoCamera } from 'lucide-react';
+import { announcedIn } from '@/data/features';
+import { formatWebinarWhen } from '@/data/releases';
+import { HUB } from '@/lib/routes';
+import { useLatestRelease, useUpcomingWebinar } from '@/components/ReleaseStore';
 import { announceHeadline, announceSummary } from '@/data/knowledge';
 import { useFeatureStore } from '@/components/FeatureStore';
 
@@ -22,7 +25,10 @@ const ReleaseBanner = ({
   /* Same source as the What's New surfaces, so the banner cannot claim a count
      the popup then contradicts. */
   const { features } = useFeatureStore();
-  const announced = announcedIn(features, LATEST_RELEASE);
+  const releaseMonth = useLatestRelease();
+  const announced = announcedIn(features, releaseMonth);
+  const webinar = useUpcomingWebinar(releaseMonth);
+  const exploreHref = `${HUB}/releases?month=${encodeURIComponent(releaseMonth)}`;
 
   return (
     <div
@@ -46,20 +52,37 @@ const ReleaseBanner = ({
             it is dropped rather than clipped mid-word, keeping the headline,
             the action and the dismiss - the three things that have to survive. */}
         <span className="hidden min-[901px]:inline">
-          {announceSummary(announced)} in the {LATEST_RELEASE} release.
+          {announceSummary(announced)} in the {releaseMonth} release.
         </span>
       </span>
 
       <a
         className="ml-1 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded font-semibold text-purple-900 no-underline hover:underline"
-        href={`/release-hub/releases?month=${encodeURIComponent(LATEST_RELEASE)}`}
+        href={exploreHref}
         onClick={(e) => {
           e.preventDefault();
-          navigate(`/release-hub/releases?month=${encodeURIComponent(LATEST_RELEASE)}`);
+          navigate(exploreHref);
         }}
       >
         Explore <ArrowRight size={14} />
       </a>
+
+      {/* A second action, so it is the first to go when the bar runs out of
+          room: the headline, Explore and dismiss are what must survive. */}
+      {webinar && (
+        <a
+          className="hidden h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-purple-600 px-3 text-sm font-semibold text-white no-underline transition-colors hover:bg-purple-900 min-[701px]:inline-flex"
+          href={webinar.url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <VideoCamera size={14} />
+          Register for the webinar
+          <span className="hidden font-normal tabular-nums min-[1101px]:inline">
+            · {formatWebinarWhen(webinar.startsAt)}
+          </span>
+        </a>
+      )}
 
       <button
         className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-none bg-transparent text-[rgba(16,24,40,.62)] transition-colors hover:bg-[rgba(188,58,210,.14)] hover:text-ink-900"

@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "release-hub",
+      "name": "product-hub",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "release-management-hub-main", "run", "dev"],
       "port": 8080

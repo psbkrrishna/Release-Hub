@@ -2,7 +2,7 @@ import { docById, moduleBySlug, newsletterById, releaseNoteBySlug } from '@/data
 import type { Feature } from '@/types/Feature';
 
 /* ---------------------------------------------------------------------------
-   Where a page sits in the Feature Hub, for the V2 header.
+   Where a page sits in the Product Hub, for the V2 header.
 
    One resolver for every route, so the breadcrumb, the title, the line under
    it and the cross-links cannot drift between pages the way five hand-written
@@ -15,7 +15,7 @@ import type { Feature } from '@/types/Feature';
    body heading in V2 so the title is not stated twice.
    --------------------------------------------------------------------------- */
 
-const HUB = '/release-hub';
+const HUB = '/product-hub';
 
 export interface JourneyCrumb {
   label: string;
@@ -169,7 +169,7 @@ export const resolveJourney = (pathname: string, visibleFeatures: Feature[]): Jo
 
   return {
     crumbs: [],
-    title: 'Feature Hub',
+    title: 'Product Hub',
     subtext: SUBTEXT.overview,
     ctas: [TO_RELEASES, TO_DOCS],
   };

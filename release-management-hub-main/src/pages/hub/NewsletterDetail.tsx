@@ -31,7 +31,7 @@ const NewsletterDetail = () => {
         icon={<Search size={26} />}
         title="That newsletter isn't here"
         action={
-          <Button variant="secondary" onClick={() => navigate('/release-hub/knowledge/newsletters')}>
+          <Button variant="secondary" onClick={() => navigate('/product-hub/knowledge/newsletters')}>
             <ArrowRight size={18} />Back to newsletters
           </Button>
         }
@@ -52,8 +52,8 @@ const NewsletterDetail = () => {
     <>
       <HubCrumb
         levels={[
-          { label: 'Documentation', path: '/release-hub/knowledge' },
-          { label: 'Newsletters', path: '/release-hub/knowledge/newsletters' },
+          { label: 'Documentation', path: '/product-hub/knowledge' },
+          { label: 'Newsletters', path: '/product-hub/knowledge/newsletters' },
           { label: newsletter.title },
         ]}
       />
@@ -108,7 +108,7 @@ const NewsletterDetail = () => {
                 <button
                   key={f.id}
                   type="button"
-                  onClick={() => navigate(`/release-hub/features/${f.id}`)}
+                  onClick={() => navigate(`/product-hub/features/${f.id}`)}
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -137,7 +137,7 @@ const NewsletterDetail = () => {
 
         <button
           type="button"
-          onClick={() => navigate(`/release-hub/knowledge/release-notes/${releaseNoteSlug(newsletter.month)}`)}
+          onClick={() => navigate(`/product-hub/knowledge/release-notes/${releaseNoteSlug(newsletter.month)}`)}
           style={{
             display: 'inline-flex',
             alignItems: 'center',

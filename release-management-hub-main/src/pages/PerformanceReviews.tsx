@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp, CheckCircle2, Users, MoreVertical, Sparkles, BarChart3,
@@ -10,7 +10,7 @@ import Crumb from '@/components/primitives/Crumb';
 import IconButton from '@/components/primitives/IconButton';
 import Spotlight from '@/components/primitives/Spotlight';
 import { PERF, PERF_DEPTS as DEPTS } from '@/data/performance';
-import { LATEST_RELEASE } from '@/data/features';
+import { useLatestRelease } from '@/components/ReleaseStore';
 
 const SPOT_KEY = 'perfSpotSeen';
 
@@ -37,6 +37,7 @@ const StatCard = ({
 
 const PerformanceReviews = () => {
   const navigate = useNavigate();
+  const releaseMonth = useLatestRelease();
   const [spotOpen, setSpotOpen] = useState(false);
 
   // The spotlight fires the first time this session that the page is opened.
@@ -183,7 +184,7 @@ const PerformanceReviews = () => {
         ctaLabel="See what's new"
         onCta={() => {
           close();
-          navigate(`/release-hub/releases?month=${encodeURIComponent(LATEST_RELEASE)}`);
+          navigate(`/product-hub/releases?month=${encodeURIComponent(releaseMonth)}`);
         }}
         dismissLabel="Got it, close tour"
       >

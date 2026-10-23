@@ -25,7 +25,6 @@ const FIELDS = [
   { key: 'value3', label: 'Value Delivered', error: '' },
   { key: 'productModule', label: 'Product Module', error: 'Product module is required.' },
   { key: 'featureType', label: 'Feature Type', error: 'Feature type is required.' },
-  { key: 'releaseNotes', label: 'Release Notes URL', error: 'Release notes URL is required.' },
   { key: 'demoVideo', label: 'Demo Video URL', error: 'Demo video URL is required.' },
   { key: 'prodEnablementDate', label: 'Production Enablement Date', error: 'Production enablement date is required.' },
   { key: 'productGate', label: 'Feature Flag (Internal)', error: 'Feature flag is required.' },
@@ -51,7 +50,6 @@ const EMPTY: FormState = {
   value3: '',
   productModule: MODULES[0],
   featureType: 'Default On',
-  releaseNotes: '',
   demoVideo: '',
   prodEnablementDate: '2026-07-01',
   productGate: '',
@@ -181,7 +179,6 @@ const CreateFeatureModal = ({
             value3: bullets[2] ?? '',
             productModule: feature.productModule,
             featureType: feature.featureType ?? 'Default On',
-            releaseNotes: feature.releaseNotes ?? '',
             demoVideo: feature.demoVideo ?? '',
             prodEnablementDate: feature.prodEnablementDate,
             productGate: feature.productGate ?? '',
@@ -241,7 +238,6 @@ const CreateFeatureModal = ({
         productModule: form.productModule,
         featureType: type,
         showInWhatsNew,
-        releaseNotes: form.releaseNotes.trim(),
         demoVideo: form.demoVideo.trim(),
         configurationDoc: form.configurationDoc.trim(),
         productGate: form.productGate.trim(),
@@ -395,16 +391,6 @@ const CreateFeatureModal = ({
             >
               {FEATURE_TYPES.map((t) => <option key={t}>{t}</option>)}
             </select>
-          </Field>
-
-          <Field id="in-releaseNotes" label="Release Notes URL" invalid={bad('releaseNotes')} error={errorOf('releaseNotes')}>
-            <input
-              id="in-releaseNotes"
-              style={inputStyle({ invalid: bad('releaseNotes') })}
-              placeholder="https://"
-              value={form.releaseNotes}
-              onChange={(e) => set('releaseNotes', e.target.value)}
-            />
           </Field>
 
           <Field id="in-demoVideo" label="Demo Video URL" invalid={bad('demoVideo')} error={errorOf('demoVideo')}>

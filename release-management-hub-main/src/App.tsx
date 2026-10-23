@@ -2,7 +2,8 @@ import { Toaster } from 'sonner';
 import { ChartBar } from '@phosphor-icons/react';
 import { ROOT, T, RADIUS } from '@/styles/zerra';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route, useLocation } from 'react-router-dom';
+import { HUB, LEGACY_HUB } from '@/lib/routes';
 import EmptyState from '@/components/primitives/EmptyState';
 import Navigation from './components/Navigation';
 import NotFound from './pages/NotFound';
@@ -23,8 +24,14 @@ import NewsletterDetail from './pages/hub/NewsletterDetail';
 import UserRoleProvider from './components/UserRoleProvider';
 import HubVersionProvider from './components/HubVersionProvider';
 import FeatureStore from './components/FeatureStore';
+import ReleaseStore from './components/ReleaseStore';
 
 const queryClient = new QueryClient();
+
+const LegacyHubRedirect = () => {
+  const { pathname, search, hash } = useLocation();
+  return <Navigate to={`${HUB}${pathname.slice(LEGACY_HUB.length)}${search}${hash}`} replace />;
+};
 
 /* Toaster configured exactly as production's AppLayout mounts it. The
    shadcn TooltipProvider that used to wrap this is gone with the rest of
@@ -58,19 +65,24 @@ const App = () => (
       <UserRoleProvider>
         <HubVersionProvider>
         <FeatureStore>
+        <ReleaseStore>
           <Routes>
             <Route element={<Navigation />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
 
-              {/* The Feature Hub: three peer tabs under one shell. Feature
-                  detail keeps the URL it has always had - the release banner,
-                  What's New and the feature table all point at it. */}
-              <Route path="release-hub" element={<ReleaseHubLayout />}>
+              {/* Old /release-hub/... links land on the same page under the
+                  new base, query string included. */}
+              <Route path="release-hub/*" element={<LegacyHubRedirect />} />
+
+              {/* The Product Hub: three peer tabs under one shell. Feature
+                  detail keeps its URL shape - the release banner, What's New
+                  and the feature table all point at it. */}
+              <Route path="product-hub" element={<ReleaseHubLayout />}>
                 <Route index element={<HubIndexRedirect />} />
                 <Route path="overview" element={<Overview />} />
                 {/* The first tab shipped as "home" before it was renamed. */}
-                <Route path="home" element={<Navigate to="/release-hub/overview" replace />} />
+                <Route path="home" element={<Navigate to="/product-hub/overview" replace />} />
                 <Route path="releases" element={<Index />} />
                 <Route path="features/:featureId" element={<FeatureDetail />} />
                 {/* The documentation tab's landing page is a plain page:
@@ -97,7 +109,7 @@ const App = () => (
 
               {/* The Knowledge Base was its own destination before the merge.
                   Bookmarks and the left rail's old entry both land here. */}
-              <Route path="knowledge-base" element={<Navigate to="/release-hub/knowledge" replace />} />
+              <Route path="knowledge-base" element={<Navigate to="/product-hub/knowledge" replace />} />
 
               <Route path="performance-reviews" element={<PerformanceReviews />} />
               <Route
@@ -111,6 +123,7 @@ const App = () => (
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
+        </ReleaseStore>
         </FeatureStore>
         </HubVersionProvider>
       </UserRoleProvider>

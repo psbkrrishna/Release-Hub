@@ -69,7 +69,7 @@ const ModuleDocs = () => {
         icon={<Search size={26} />}
         title="That module isn't in the documentation"
         action={
-          <Button variant="secondary" onClick={() => navigate('/release-hub/knowledge')}>
+          <Button variant="secondary" onClick={() => navigate('/product-hub/knowledge')}>
             <ArrowRight size={18} />Back to all modules
           </Button>
         }
@@ -94,7 +94,7 @@ const ModuleDocs = () => {
           the title did not, and pushed the documents below the fold. */}
       <HubCrumb
         levels={[
-          { label: 'Documentation', path: '/release-hub/knowledge' },
+          { label: 'Documentation', path: '/product-hub/knowledge' },
           { label: module.name },
         ]}
       />
@@ -154,7 +154,7 @@ const ModuleDocs = () => {
                   <button
                     key={doc.id}
                     type="button"
-                    onClick={() => navigate(`/release-hub/knowledge/modules/${module.slug}/documents/${doc.id}`)}
+                    onClick={() => navigate(`/product-hub/knowledge/modules/${module.slug}/documents/${doc.id}`)}
                     className="flex w-full items-start justify-between gap-4 rounded-lg border border-ink-150 bg-ink-25 p-4 text-left transition-colors hover:border-brand-border hover:bg-brand-soft"
                   >
                     <div>
@@ -192,7 +192,7 @@ const ModuleDocs = () => {
                 {features.map((f) => (
                   <button
                     key={f.id}
-                    onClick={() => navigate(`/release-hub/features/${f.id}`)}
+                    onClick={() => navigate(`/product-hub/features/${f.id}`)}
                     className="flex items-center gap-3 rounded-lg border border-ink-150 bg-white p-3 text-left transition-colors hover:border-brand-border hover:bg-brand-soft"
                   >
                     <span className="min-w-0">

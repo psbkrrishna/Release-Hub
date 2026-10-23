@@ -28,7 +28,7 @@ const readStored = (): HubVersion => {
 };
 
 /* V2 is the default: the tab-less header with breadcrumbs and top-right CTAs.
-   V1 is the earlier three-tab Feature Hub, kept behind the top-bar dropdown for
+   V1 is the earlier three-tab Product Hub, kept behind the top-bar dropdown for
    comparison. Both render the same routes, so switching is a layout change,
    never a navigation. */
 const HubVersionProvider = ({ children }: { children: React.ReactNode }) => {

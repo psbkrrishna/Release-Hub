@@ -68,7 +68,7 @@ const HubSearch = ({
         kind: 'Feature',
         title: f.title,
         sub: `${f.productModule} · ${f.releaseMonth}`,
-        path: `/release-hub/features/${f.id}`,
+        path: `/product-hub/features/${f.id}`,
         haystack: [f.title, f.summary, f.description, f.productModule, f.id, f.releaseMonth]
           .join(' ')
           .toLowerCase(),
@@ -81,7 +81,7 @@ const HubSearch = ({
         kind: 'Module',
         title: m.name,
         sub: 'Module documentation',
-        path: `/release-hub/knowledge/modules/${m.slug}`,
+        path: `/product-hub/knowledge/modules/${m.slug}`,
         haystack: `${m.name} ${m.blurb}`.toLowerCase(),
       });
       // A document leads straight to its own page now, not the module list it
@@ -92,7 +92,7 @@ const HubSearch = ({
           kind: 'Document',
           title: d.title,
           sub: m.name,
-          path: `/release-hub/knowledge/modules/${m.slug}/documents/${d.id}`,
+          path: `/product-hub/knowledge/modules/${m.slug}/documents/${d.id}`,
           haystack: `${d.title} ${d.blurb} ${m.name}`.toLowerCase(),
         }),
       );
@@ -102,7 +102,7 @@ const HubSearch = ({
           kind: 'Video',
           title: v.title,
           sub: `${m.name} · ${v.duration}`,
-          path: `/release-hub/knowledge/modules/${m.slug}`,
+          path: `/product-hub/knowledge/modules/${m.slug}`,
           haystack: `${v.title} ${m.name}`.toLowerCase(),
         }),
       );
@@ -114,7 +114,7 @@ const HubSearch = ({
         kind: 'Newsletter',
         title: n.title,
         sub: `Newsletter · ${n.month}`,
-        path: `/release-hub/knowledge/newsletters/${n.id}`,
+        path: `/product-hub/knowledge/newsletters/${n.id}`,
         haystack: `${n.title} ${n.summary} ${n.month}`.toLowerCase(),
       }),
     );
@@ -125,7 +125,7 @@ const HubSearch = ({
         kind: 'Release Note',
         title: `${g.month} Release Notes`,
         sub: `Release notes · ${g.month}`,
-        path: `/release-hub/knowledge/release-notes/${g.slug}`,
+        path: `/product-hub/knowledge/release-notes/${g.slug}`,
         haystack: `${g.month} release notes ${g.modules.join(' ')}`.toLowerCase(),
       }),
     );
@@ -219,7 +219,7 @@ const HubSearch = ({
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        aria-label="Search the Feature Hub"
+        aria-label="Search the Product Hub"
         role="combobox"
         aria-expanded={showPanel}
         aria-controls="hub-search-results"

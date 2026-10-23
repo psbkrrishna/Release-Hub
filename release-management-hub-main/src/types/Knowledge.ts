@@ -68,7 +68,7 @@ export interface ReleaseNoteGroup {
   month: string;
   date: string;
   /** URL-safe "YYYY-MM" - the document's own address is
-   *  /release-hub/knowledge/release-notes/:slug. A slug rather than a full
+   *  /product-hub/knowledge/release-notes/:slug. A slug rather than a full
    *  path, same as KbModule.slug, so the route lives with the router and not
    *  with the data. */
   slug: string;

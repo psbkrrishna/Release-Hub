@@ -4,7 +4,9 @@ import {
   ArrowRight, FileText, Mail, Play, BarChart3, Users, SlidersHorizontal,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
+import { PencilSimple } from '@phosphor-icons/react';
 import Button from '@/components/primitives/Button';
+import ReleaseDetailsModal from '@/components/ReleaseDetailsModal';
 import HubSearch from '@/components/hub/HubSearch';
 import { SearchHeroArt, ReleaseGiftArt } from '@/components/hub/illustrations';
 import { useFeatureStore } from '@/components/FeatureStore';
@@ -43,21 +45,21 @@ const QUICK_LINKS = [
     tint: 'bg-purple-50 text-purple-500',
     title: 'Release notes',
     sub: "See what's new and why it matters.",
-    path: '/release-hub/knowledge/release-notes',
+    path: '/product-hub/knowledge/release-notes',
   },
   {
     icon: Mail,
     tint: 'bg-green-50 text-green-600',
     title: 'Newsletters',
     sub: 'Catch up on the latest updates.',
-    path: '/release-hub/knowledge/newsletters',
+    path: '/product-hub/knowledge/newsletters',
   },
   {
     icon: Play,
     tint: 'bg-amber-50 text-amber-700',
     title: 'Video library',
     sub: 'Watch walkthroughs and demos.',
-    path: '/release-hub/knowledge/videos',
+    path: '/product-hub/knowledge/videos',
   },
 ];
 
@@ -150,7 +152,8 @@ const PitchCard = ({
 
 const Overview = () => {
   const navigate = useNavigate();
-  const { visibleFeatures } = useFeatureStore();
+  const { visibleFeatures, isCreator } = useFeatureStore();
+  const [editingRelease, setEditingRelease] = useState(false);
 
   const latest = useMemo(() => releaseNoteGroups(visibleFeatures)[0], [visibleFeatures]);
   const pitch = latest ? releasePitch(latest) : null;
@@ -225,13 +228,20 @@ const Overview = () => {
                   Uncapped it would run the full 1015px column, which is a real
                   measure violation at ~155 characters a line. */}
               <p className="mb-4 max-w-[720px] text-sm text-ink-700">{pitch.headline}</p>
-              <Button
-                onClick={() =>
-                  navigate(`/release-hub/releases?month=${encodeURIComponent(latest.month)}`)
-                }
-              >
-                Explore what&apos;s new <ArrowRight size={16} />
-              </Button>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  onClick={() =>
+                    navigate(`/product-hub/releases?month=${encodeURIComponent(latest.month)}`)
+                  }
+                >
+                  Explore what&apos;s new <ArrowRight size={16} />
+                </Button>
+                {isCreator && (
+                  <Button variant="ghost" compact onClick={() => setEditingRelease(true)}>
+                    <PencilSimple size={14} weight="bold" />Edit release details
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* 240x150 is the asset's own 1586/992, for the same reason. */}
@@ -259,7 +269,7 @@ const Overview = () => {
                   sub={h.sub}
                   onOpen={
                     visibleIds.has(h.featureId)
-                      ? () => navigate(`/release-hub/features/${h.featureId}`)
+                      ? () => navigate(`/product-hub/features/${h.featureId}`)
                       : undefined
                   }
                 />
@@ -268,6 +278,14 @@ const Overview = () => {
           </div>
           )}
         </section>
+      )}
+
+      {latest && isCreator && (
+        <ReleaseDetailsModal
+          open={editingRelease}
+          month={latest.month}
+          onClose={() => setEditingRelease(false)}
+        />
       )}
 
       {/* ---- Quick links ------------------------------------------------

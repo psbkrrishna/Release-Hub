@@ -13,7 +13,8 @@ import { useHubVersion } from '@/components/HubVersionProvider';
 import EmptyState from '@/components/primitives/EmptyState';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { formatDate, valueOf } from '@/data/features';
-import { moduleByName, plural, releaseNoteSlug } from '@/data/knowledge';
+import { moduleByName, plural } from '@/data/knowledge';
+import { notesLinkProps, useReleaseNotesTarget } from '@/components/ReleaseStore';
 import { RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
 
 /* ---------------------------------------------------------------------------
@@ -68,6 +69,7 @@ const FeatureDetail = () => {
   const { byId, visibleFeatures, isCreator, toast } = useFeatureStore();
   const { version } = useHubVersion();
   const feature = featureId ? byId(featureId) : undefined;
+  const notes = useReleaseNotesTarget(feature?.releaseMonth ?? '');
 
   // A draft is only the creator's to see; anyone else lands back on the hub.
   if (!feature || (!feature.published && !isCreator)) {
@@ -76,7 +78,7 @@ const FeatureDetail = () => {
         icon={<Search size={26} />}
         title="That feature isn't available"
         action={
-          <Button variant="secondary" onClick={() => navigate('/release-hub/releases')}>
+          <Button variant="secondary" onClick={() => navigate('/product-hub/releases')}>
             <ArrowRight size={18} />Back to Releases
           </Button>
         }
@@ -110,7 +112,7 @@ const FeatureDetail = () => {
     <>
       <HubCrumb
         levels={[
-          { label: 'Releases', path: '/release-hub/releases' },
+          { label: 'Releases', path: '/product-hub/releases' },
           { label: feature.title },
         ]}
       />
@@ -196,7 +198,7 @@ const FeatureDetail = () => {
         <button
           type="button"
           onClick={() =>
-            navigate(`/release-hub/releases?month=${encodeURIComponent(feature.releaseMonth)}`)
+            navigate(`/product-hub/releases?month=${encodeURIComponent(feature.releaseMonth)}`)
           }
           className="inline-flex shrink-0 items-center gap-1 rounded text-13 font-semibold text-brand hover:underline"
         >
@@ -263,21 +265,26 @@ const FeatureDetail = () => {
                   <ExternalLink size={14} className="ml-auto text-ink-500" />
                 </a>
               )}
-              {/* Points at the one release-notes document for this feature's
-                  month, per the Knowledge Hub's own rule - not the per-feature
-                  URL on the feature record, which was never more than a
-                  placeholder for this same document. */}
-              <a
-                className={resLink}
-                href={`/release-hub/knowledge/release-notes/${releaseNoteSlug(feature.releaseMonth)}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate(`/release-hub/knowledge/release-notes/${releaseNoteSlug(feature.releaseMonth)}`);
-                }}
-              >
-                <BookOpen size={18} />Read release notes
-                <ArrowRight size={14} className="ml-auto text-ink-500" />
-              </a>
+              {/* The release's one notes link when it has one, otherwise the
+                  generated document for this feature's month. */}
+              {notes.file ? (
+                <a className={resLink} {...notesLinkProps(notes.file)}>
+                  <BookOpen size={18} />Read release notes
+                  <ExternalLink size={14} className="ml-auto text-ink-500" />
+                </a>
+              ) : (
+                <a
+                  className={resLink}
+                  href={notes.path}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(notes.path);
+                  }}
+                >
+                  <BookOpen size={18} />Read release notes
+                  <ArrowRight size={14} className="ml-auto text-ink-500" />
+                </a>
+              )}
               {feature.configurationDoc && (
                 <a
                   className={resLink}
@@ -293,10 +300,10 @@ const FeatureDetail = () => {
               {kbModule && (
                 <a
                   className={resLink}
-                  href={`/release-hub/knowledge/modules/${kbModule.slug}`}
+                  href={`/product-hub/knowledge/modules/${kbModule.slug}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    navigate(`/release-hub/knowledge/modules/${kbModule.slug}`);
+                    navigate(`/product-hub/knowledge/modules/${kbModule.slug}`);
                   }}
                 >
                   <BookOpen size={18} />{feature.productModule} documentation

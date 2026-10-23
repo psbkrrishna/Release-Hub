@@ -138,7 +138,7 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <button
-                      onClick={() => navigate(`/release-hub/knowledge/release-notes/${g.slug}`)}
+                      onClick={() => navigate(`/product-hub/knowledge/release-notes/${g.slug}`)}
                       className="rounded text-left text-base font-semibold hover:text-brand hover:underline"
                     >
                       {g.month} Release Notes
@@ -163,13 +163,13 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
 
                 <div className="flex shrink-0 flex-wrap items-center gap-3">
                   <button
-                    onClick={() => navigate(`/release-hub/knowledge/release-notes/${g.slug}`)}
+                    onClick={() => navigate(`/product-hub/knowledge/release-notes/${g.slug}`)}
                     className="inline-flex items-center gap-1 rounded text-13 font-semibold text-brand hover:underline"
                   >
                     Read release notes <ArrowRight size={13} />
                   </button>
                   <button
-                    onClick={() => navigate(`/release-hub/releases?month=${encodeURIComponent(g.month)}`)}
+                    onClick={() => navigate(`/product-hub/releases?month=${encodeURIComponent(g.month)}`)}
                     className="inline-flex items-center gap-1 rounded text-13 text-ink-600 hover:text-brand"
                   >
                     Open in Releases <ArrowRight size={13} />
@@ -193,7 +193,7 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <button
-                      onClick={() => navigate(`/release-hub/knowledge/newsletters/${n.id}`)}
+                      onClick={() => navigate(`/product-hub/knowledge/newsletters/${n.id}`)}
                       className="rounded text-left text-base font-semibold hover:text-brand hover:underline"
                     >
                       {n.title}
@@ -212,7 +212,7 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
                       return (
                         <button
                           key={id}
-                          onClick={() => navigate(`/release-hub/features/${id}`)}
+                          onClick={() => navigate(`/product-hub/features/${id}`)}
                           className="rounded-lg border border-ink-150 px-2 py-1 text-xs font-medium text-ink-700 transition-colors hover:border-brand-border hover:bg-brand-soft hover:text-brand-text"
                         >
                           {f.title}
@@ -226,7 +226,7 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
                   className="shrink-0"
                   title={`Read ${n.title}`}
                   aria-label={`Read ${n.title}`}
-                  onClick={() => navigate(`/release-hub/knowledge/newsletters/${n.id}`)}
+                  onClick={() => navigate(`/product-hub/knowledge/newsletters/${n.id}`)}
                 >
                   <ArrowRight size={16} />
                 </IconButton>
@@ -262,7 +262,7 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
                     )}
                     {v.featureId && (
                       <button
-                        onClick={() => navigate(`/release-hub/features/${v.featureId}`)}
+                        onClick={() => navigate(`/product-hub/features/${v.featureId}`)}
                         className="ml-auto inline-flex items-center gap-1 rounded text-13 text-ink-600 hover:text-brand"
                       >
                         Feature <ArrowRight size={13} />
@@ -281,7 +281,7 @@ const KnowledgeSection = ({ section }: { section: SectionKey }) => {
           <FileText size={14} />
           Looking for how a module works rather than what changed?{' '}
           <button
-            onClick={() => navigate('/release-hub/knowledge')}
+            onClick={() => navigate('/product-hub/knowledge')}
             className="rounded font-semibold text-brand hover:underline"
           >
             Browse module documentation

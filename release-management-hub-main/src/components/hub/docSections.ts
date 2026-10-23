@@ -17,18 +17,18 @@ export const DOC_SECTIONS = [
     label: 'Release notes',
     sub: 'What changed, release by release',
     icon: FileText,
-    path: '/release-hub/knowledge/release-notes',
+    path: '/product-hub/knowledge/release-notes',
   },
   {
     label: 'Newsletters',
     sub: 'The monthly round-up',
     icon: Envelope,
-    path: '/release-hub/knowledge/newsletters',
+    path: '/product-hub/knowledge/newsletters',
   },
   {
     label: 'Video library',
     sub: 'Walkthroughs and demos',
     icon: MonitorPlay,
-    path: '/release-hub/knowledge/videos',
+    path: '/product-hub/knowledge/videos',
   },
 ] as const;

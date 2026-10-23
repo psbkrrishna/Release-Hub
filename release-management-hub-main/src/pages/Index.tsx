@@ -21,7 +21,8 @@ import EmptyState from '@/components/primitives/EmptyState';
 import { caretBackground } from '@/components/primitives/fieldStyles';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { MODULES, formatDate, sortReleaseMonths, supportQueue } from '@/data/features';
-import { releaseNoteSlug } from '@/data/knowledge';
+import { openNotesFile, useReleaseNotesTarget } from '@/components/ReleaseStore';
+import ReleaseDetailsStrip from '@/components/ReleaseDetailsStrip';
 import type { Feature } from '@/types/Feature';
 
 /* ---------------------------------------------------------------------------
@@ -85,19 +86,21 @@ const ContentIcons = ({
   onOpen: (label: string, url?: string) => void;
 }) => {
   const navigate = useNavigate();
+  const notes = useReleaseNotesTarget(feature.releaseMonth);
   const items: Array<[ReactNode, string, string | undefined]> = [];
-  if (feature.releaseNotes) items.push([<BookOpen size={16} />, 'Release notes', feature.releaseNotes]);
+  if (feature.releaseMonth) items.push([<BookOpen size={16} />, 'Release notes', undefined]);
   if (feature.demoVideo) items.push([<Play size={16} />, 'Demo video', feature.demoVideo]);
   if (feature.configurationDoc) items.push([<FileText size={16} />, 'Config document', feature.configurationDoc]);
 
   if (!items.length) return <span className="text-xs text-ink-500">—</span>;
 
-  /* Release notes are a document in the Documentation section, one per release
-     month, so the icon opens that document rather than the feature's raw URL. */
-  const open = (label: string, url?: string) =>
-    label === 'Release notes' && feature.releaseMonth
-      ? navigate(`/release-hub/knowledge/release-notes/${releaseNoteSlug(feature.releaseMonth)}`)
-      : onOpen(label, url);
+  /* Release notes are one per release month: the file uploaded for the release
+     when it has one, otherwise the document in the Documentation section. */
+  const open = (label: string, url?: string) => {
+    if (label !== 'Release notes') return onOpen(label, url);
+    if (notes.file) openNotesFile(notes.file);
+    else navigate(notes.path);
+  };
 
   return (
     <div className="flex items-center gap-1">
@@ -360,7 +363,7 @@ const Index = () => {
     f.published
       ? [
           { label: 'Edit feature', icon: Pencil, onSelect: () => { setEditing(f); setModalOpen(true); } },
-          { label: 'View feature details', icon: ArrowRight, separatorBefore: true, onSelect: () => navigate(`/release-hub/features/${f.id}`) },
+          { label: 'View feature details', icon: ArrowRight, separatorBefore: true, onSelect: () => navigate(`/product-hub/features/${f.id}`) },
         ]
       : [
           { label: 'Publish feature', icon: Rocket, onSelect: () => publish(f.id) },
@@ -418,7 +421,7 @@ const Index = () => {
             <button
               className="block w-full truncate rounded text-left text-sm font-semibold text-ink-900 hover:text-brand hover:underline"
               title={f.title}
-              onClick={() => navigate(`/release-hub/features/${f.id}`)}
+              onClick={() => navigate(`/product-hub/features/${f.id}`)}
             >
               {f.title}
             </button>
@@ -489,7 +492,7 @@ const Index = () => {
             <button
               className="block w-full truncate rounded text-left text-sm font-semibold text-ink-900 hover:text-brand hover:underline"
               title={f.title}
-              onClick={() => navigate(`/release-hub/features/${f.id}`)}
+              onClick={() => navigate(`/product-hub/features/${f.id}`)}
             >
               {f.title}
             </button>
@@ -542,6 +545,8 @@ const Index = () => {
           ) : undefined
         }
       />
+
+      <ReleaseDetailsStrip month={month} months={releaseMonths} />
 
       {/* The queue's two counts stay: they are triage numbers for the work in
           front of this role, not the dashboard-style totals that were

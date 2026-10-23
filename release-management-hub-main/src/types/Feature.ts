@@ -11,7 +11,9 @@ export interface Feature {
    *  The summary says what it is in a line; this says how it works. */
   description?: string;
   productModule: string;
-  releaseNotes: string;
+  /** @deprecated Release notes are one per release - see ReleaseMeta. Nothing
+   *  reads this any more; it survives only on seed rows. */
+  releaseNotes?: string;
   demoVideo: string;
   enablementDate: string;
   prodEnablementDate: string;
@@ -65,13 +67,35 @@ export type SeedFeature = Omit<Feature, 'published' | 'releaseMonth' | 'featureT
   featureType?: 'Direct Enablement' | 'Non Deferrable' | 'Self Configurable' | 'Support Required';
 };
 
-export interface Release {
-  id: string;
+/** A webinar that walks customers through a release. */
+export interface ReleaseWebinar {
+  title: string;
+  /** Registration page. */
+  url: string;
+  /** Local date-time, "YYYY-MM-DDTHH:mm". Once it passes, the webinar is no
+   *  longer promoted anywhere. */
+  startsAt: string;
+}
+
+/** An uploaded release notes document. `url` is a blob URL for the session: with
+ *  no backend yet, the file lives in memory like every other edit, and goes
+ *  with a page refresh. */
+export interface ReleaseNotesFile {
   name: string;
-  date: string;
-  summary: string;
-  status: 'Scheduled' | 'Released';
-  featureIds: string[];
+  size: number;
+  /** MIME type, e.g. application/pdf. */
+  type: string;
+  url: string;
+}
+
+/** What is true of a release as a whole, rather than of any one feature. A
+ *  release is still identified by its month - the same string as
+ *  Feature.releaseMonth - so a feature never needs to point at it. */
+export interface ReleaseMeta {
+  month: string;
+  /** The release's one notes document, uploaded once for the whole release. */
+  releaseNotes?: ReleaseNotesFile;
+  webinar?: ReleaseWebinar;
 }
 
 export type AnnouncementPlacement = 'login' | 'dashboard' | 'contextual';

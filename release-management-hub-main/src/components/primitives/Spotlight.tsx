@@ -45,11 +45,14 @@ interface Props {
    *  the DOM is a reliable signal here because a closed Modal renders
    *  nothing at all. */
   isRelease?: boolean;
+  /** An optional offer shown first, above the body - the release popup uses it
+   *  for the webinar, so it is the first thing read after the headline. */
+  extra?: ReactNode;
 }
 
 const Spotlight = ({
   open, onClose, tone = 'brand', tag, title, intro, icon,
-  children, ctaLabel, onCta, dismissLabel, isRelease = false,
+  children, ctaLabel, onCta, dismissLabel, isRelease = false, extra,
 }: Props) => {
   const titleId = useId();
 
@@ -83,6 +86,7 @@ const Spotlight = ({
         </div>
 
         <div className="p-5">
+          {extra}
           {children}
           <button
             onClick={onCta}

@@ -32,7 +32,7 @@ const DocumentDetail = () => {
         icon={<Search size={26} />}
         title="That document isn't here"
         action={
-          <Button variant="secondary" onClick={() => navigate('/release-hub/knowledge')}>
+          <Button variant="secondary" onClick={() => navigate('/product-hub/knowledge')}>
             <ArrowRight size={18} />Back to all modules
           </Button>
         }
@@ -46,8 +46,8 @@ const DocumentDetail = () => {
     <>
       <HubCrumb
         levels={[
-          { label: 'Documentation', path: '/release-hub/knowledge' },
-          { label: module.name, path: `/release-hub/knowledge/modules/${module.slug}` },
+          { label: 'Documentation', path: '/product-hub/knowledge' },
+          { label: module.name, path: `/product-hub/knowledge/modules/${module.slug}` },
           { label: doc.title },
         ]}
       />
@@ -85,7 +85,7 @@ const DocumentDetail = () => {
 
         <button
           type="button"
-          onClick={() => navigate(`/release-hub/knowledge/modules/${module.slug}`)}
+          onClick={() => navigate(`/product-hub/knowledge/modules/${module.slug}`)}
           style={{
             display: 'inline-flex',
             alignItems: 'center',

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, X, ChevronRight, History } from 'lucide-react';
+import { Sparkles, X, ChevronRight, History, Video, ArrowUpRight } from 'lucide-react';
 import Spotlight from '@/components/primitives/Spotlight';
 import IconButton from '@/components/primitives/IconButton';
-import { LATEST_RELEASE, announcedIn } from '@/data/features';
+import { announcedIn } from '@/data/features';
+import { formatWebinarWhen, webinarCountdown } from '@/data/releases';
+import { useLatestRelease, useUpcomingWebinar } from '@/components/ReleaseStore';
 import { announceHeadline, announceSummary } from '@/data/knowledge';
 import { useFeatureStore } from '@/components/FeatureStore';
 import type { Feature } from '@/types/Feature';
@@ -48,6 +50,50 @@ const ReleaseItem = ({
   </button>
 );
 
+/* The webinar as an offer: a solid card, the same blue as the band in the hub,
+   so it reads as one campaign wherever it turns up. Title, when, how soon, and
+   a register button that is a real button rather than a link-coloured word. It
+   opens in a new tab, so the popup and floater stay put for a reader who comes
+   back. */
+const WebinarOffer = ({
+  webinar,
+  onOpen,
+  flat = false,
+}: {
+  webinar: { title: string; url: string; startsAt: string };
+  onOpen: () => void;
+  flat?: boolean;
+}) => (
+  <div
+    className={[
+      'flex items-center gap-3 bg-brand p-3 text-white',
+      flat ? 'mb-4 rounded-lg' : 'm-2 rounded-md',
+    ].join(' ')}
+  >
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[.16]">
+      <Video size={18} />
+    </span>
+    <span className="min-w-0">
+      <span className="block text-[11px] font-bold uppercase tracking-[.08em] opacity-85">
+        Live webinar
+      </span>
+      <span className="block truncate text-sm font-semibold">{webinar.title}</span>
+      <span className="block text-xs tabular-nums">
+        {formatWebinarWhen(webinar.startsAt)} · <b>{webinarCountdown(webinar.startsAt)}</b>
+      </span>
+    </span>
+    <a
+      href={webinar.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onOpen}
+      className="ml-auto inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg bg-white px-4 text-sm font-semibold text-brand no-underline transition-colors hover:bg-brand-soft"
+    >
+      Register now <ArrowUpRight size={14} />
+    </a>
+  </div>
+);
+
 const WhatsNewButton = () => {
   const navigate = useNavigate();
   const { features, resetDemo } = useFeatureStore();
@@ -60,18 +106,23 @@ const WhatsNewButton = () => {
      does a released feature the creator did not flag as news. Both rules live
      in announcedIn, which the Overview's release band reads too - so the two
      surfaces cannot disagree about what shipped. */
-  const latest = announcedIn(features, LATEST_RELEASE);
+  const releaseMonth = useLatestRelease();
+  const latest = announcedIn(features, releaseMonth);
+  const webinar = useUpcomingWebinar(releaseMonth);
 
+  /* The key holds the month whose popup was seen, so each new release - and its
+     webinar - gets its own first-run popup instead of staying silent behind a
+     flag set months ago. */
   useEffect(() => {
-    if (localStorage.getItem(SEEN_KEY) === '1') return;
+    if (!releaseMonth || localStorage.getItem(SEEN_KEY) === releaseMonth) return;
     const t = window.setTimeout(() => setPopupOpen(true), 600);
     return () => window.clearTimeout(t);
-  }, []);
+  }, [releaseMonth]);
 
   const closePopup = useCallback(() => {
     setPopupOpen(false);
-    localStorage.setItem(SEEN_KEY, '1');
-  }, []);
+    if (releaseMonth) localStorage.setItem(SEEN_KEY, releaseMonth);
+  }, [releaseMonth]);
 
   const closeFloater = useCallback(() => setFloaterOpen(false), []);
 
@@ -103,13 +154,13 @@ const WhatsNewButton = () => {
   const goToFeature = (id: string) => {
     closeFloater();
     closePopup();
-    navigate(`/release-hub/features/${id}`);
+    navigate(`/product-hub/features/${id}`);
   };
 
   const goToRelease = () => {
     closeFloater();
     closePopup();
-    navigate(`/release-hub/releases?month=${encodeURIComponent(LATEST_RELEASE)}`);
+    navigate(`/product-hub/releases?month=${encodeURIComponent(releaseMonth)}`);
   };
 
   const handleReset = () => {
@@ -165,7 +216,7 @@ const WhatsNewButton = () => {
             <div>
               <div className="flex items-center gap-2 text-base font-semibold text-purple-900">
                 <Sparkles size={16} />
-                {LATEST_RELEASE} Release
+                {releaseMonth} Release
               </div>
               <p className="mt-0.5 text-13 text-ink-600">
                 {announceSummary(latest)} are live.
@@ -186,6 +237,12 @@ const WhatsNewButton = () => {
               <ReleaseItem key={f.id} feature={f} onSelect={() => goToFeature(f.id)} />
             ))}
           </div>
+
+          {webinar && (
+            <div className="border-t border-ink-150">
+              <WebinarOffer webinar={webinar} onOpen={closeFloater} />
+            </div>
+          )}
 
           <div className="flex items-center gap-3 border-t border-ink-150 bg-ink-50 px-4 py-3">
             <button
@@ -212,13 +269,14 @@ const WhatsNewButton = () => {
         onClose={closePopup}
         tone="news"
         isRelease
-        tag={`${LATEST_RELEASE} release`}
+        tag={`${releaseMonth} release`}
         title={announceHeadline(latest)}
         intro={`${announceSummary(latest)} are live. Open any one to see what changed.`}
         icon={<Sparkles size={20} />}
         ctaLabel="View the full release"
         onCta={goToRelease}
         dismissLabel="Got it - find this under What's New"
+        extra={webinar && <WebinarOffer flat webinar={webinar} onOpen={closePopup} />}
       >
         <div className="mb-5">
           {latest.map((f) => (

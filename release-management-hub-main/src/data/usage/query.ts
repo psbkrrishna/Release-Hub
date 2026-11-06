@@ -1,7 +1,8 @@
-import { DAYS, isoOfDay, usageData, type UsageData } from '@/data/usage/generate';
+import { DAYS, dayOf, isoOfDay, usageData, type UsageData } from '@/data/usage/generate';
 import type {
   AdoptionFilters, AdoptionList, Level, Period, TrendMetric, UsageStatus,
 } from '@/types/Usage';
+import { only } from '@/types/Usage';
 
 /* ---------------------------------------------------------------------------
    Selectors over the usage data - the one interface the adoption page reads.
@@ -12,14 +13,52 @@ import type {
    these signatures and nothing on the page would change.
    --------------------------------------------------------------------------- */
 
-export const PERIOD_DAYS: Record<Period, number> = { '30d': 30, '90d': 90, '180d': 180, '12m': 365 };
+/* ---- Periods --------------------------------------------------------------
+   A period is either relative - "30d", the last 30 days - or exact -
+   "2026-08-01~2026-09-15". Either way it is bounded to the data window (the
+   last DAYS days), and compared with the same number of days just before it. */
 
-export const PERIOD_LABEL: Record<Period, string> = {
-  '30d': 'Last 30 days',
-  '90d': 'Last 90 days',
-  '180d': 'Last 180 days',
-  '12m': 'Last 12 months',
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The days a period covers, as day indexes, and how many there are. */
+export const periodRange = (p: Period): { start: number; end: number; n: number } => {
+  const last = DAYS - 1;
+  const rel = /^(\d{1,3})d$/.exec(p);
+  if (rel) {
+    const n = Math.min(DAYS, Math.max(1, Number(rel[1])));
+    return { start: last - n + 1, end: last, n };
+  }
+  const [a, b] = p.split('~');
+  if (ISO.test(a ?? '') && ISO.test(b ?? '')) {
+    const start = Math.max(0, dayOf(a));
+    const end = Math.min(last, dayOf(b));
+    if (start <= end) return { start, end, n: end - start + 1 };
+  }
+  return { start: last - 29, end: last, n: 30 };
 };
+
+/** Whether a period string is one this data can answer. */
+export const isValidPeriod = (p: string) => {
+  const rel = /^(\d{1,3})d$/.exec(p);
+  if (rel) return Number(rel[1]) >= 1 && Number(rel[1]) <= DAYS;
+  const [a, b] = p.split('~');
+  if (!ISO.test(a ?? '') || !ISO.test(b ?? '')) return false;
+  return dayOf(a) >= 0 && dayOf(b) <= DAYS - 1 && dayOf(a) <= dayOf(b);
+};
+
+export const isRelative = (p: Period) => /^\d{1,3}d$/.test(p);
+
+/** "Last 30 days", or "Aug 1 to Sep 15". */
+export const periodLabel = (p: Period) => {
+  const { start, end, n } = periodRange(p);
+  return isRelative(p) ? `Last ${n} days` : `${shortDate(isoOfDay(start))} to ${shortDate(isoOfDay(end))}`;
+};
+
+/** The length, for "vs previous 30 days". */
+export const periodWord = (p: Period) => `${periodRange(p).n} days`;
+
+/** The first and last day there is data for. */
+export const dataWindow = () => ({ first: isoOfDay(0), last: isoOfDay(DAYS - 1) });
 
 /** Usage at or above this change, period on period, counts as growing. */
 const GROWING = 0.15;
@@ -69,27 +108,43 @@ export const featureTitle = (id?: string) => (id ? ix().d.features[ix().feature.
 export const eventLabel = (key?: string) => (key ? ix().d.events[ix().event.get(key) ?? -1]?.label : undefined);
 export const userOf = (id?: string) => (id ? ix().d.users[ix().user.get(id) ?? -1] : undefined);
 export const featureModuleOf = (id?: string) => (id ? ix().d.features[ix().feature.get(id) ?? -1]?.module : undefined);
+/** A feature's module and release month, for a drawer subtitle. */
+export const featureInfo = (id?: string) => {
+  const f = id ? ix().d.features[ix().feature.get(id) ?? -1] : undefined;
+  return f ? { title: f.title, module: f.module, releaseMonth: f.releaseMonth } : undefined;
+};
 export const eventFeatureOf = (key?: string) => (key ? ix().d.events[ix().event.get(key) ?? -1]?.featureId : undefined);
-export const isReleased = (featureId?: string) =>
-  !featureId || Boolean(ix().d.features[ix().feature.get(featureId) ?? -1]?.published);
+/** False only when every feature asked for is unreleased - there is no usage
+ *  to show for a draft. */
+export const isReleased = (featureIds?: string[]) =>
+  !featureIds?.length || featureIds.some((id) => Boolean(ix().d.features[ix().feature.get(id) ?? -1]?.published));
 
-/** What the toolbar's selects offer. Each narrows by the filter above it. */
+const has = (set: string[] | undefined, v: string) => !set?.length || set.includes(v);
+
+/** Event indexes of the Action filter, or null when it is empty. */
+const eventSet = (filters: AdoptionFilters) =>
+  filters.events?.length ? new Set(filters.events.map((k) => ix().event.get(k) ?? -1)) : null;
+
+/** One customer, and not exactly one feature: the page becomes that
+ *  customer's account, listing their features. */
+export const isAccountView = (filters: AdoptionFilters) => Boolean(only(filters.customers) && !only(filters.features));
+
+/** What each filter offers. Feature options narrow to the chosen modules,
+ *  action options to the chosen features (or modules). */
 export const filterOptions = (filters: AdoptionFilters) => {
   const { d, modules } = ix();
   const features = d.features
-    .filter((f) => f.published && (!filters.module || f.module === filters.module))
+    .filter((f) => f.published && has(filters.modules, f.module))
     .sort((a, b) => a.module.localeCompare(b.module) || a.title.localeCompare(b.title))
-    .map((f) => ({ value: f.id, label: f.title, module: f.module }));
+    .map((f) => ({ value: f.id, label: f.title, group: f.module }));
   const customers = [...d.customers]
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((c) => ({ value: c.id, label: c.name }));
-  /* Every action at the level in scope, grouped under its feature. */
   const events = d.events
     .filter((e) => {
       const f = d.features[ix().feature.get(e.featureId) ?? -1];
       if (!f?.published) return false;
-      if (filters.feature) return e.featureId === filters.feature;
-      return !filters.module || f.module === filters.module;
+      return filters.features?.length ? filters.features.includes(e.featureId) : has(filters.modules, f.module);
     })
     .map((e) => ({ value: e.key, label: e.label, group: featureTitle(e.featureId) }));
   return { modules: modules.map((m) => ({ value: m, label: m })), features, customers, events };
@@ -172,7 +227,9 @@ interface Scan {
 
 const cache = new Map<string, Scan>();
 const keyOf = (f: AdoptionFilters) =>
-  [f.period, f.module, f.feature, f.customer, f.event, f.user].map((v) => v ?? '').join('|');
+  [f.period, f.modules, f.features, f.customers, f.events, f.user]
+    .map((v) => (Array.isArray(v) ? [...v].sort().join(',') : v ?? ''))
+    .join('|');
 
 /** Top POWER_SHARE of each customer's active users by event volume - at least
  *  one per active customer, so a small account still has a champion. */
@@ -205,10 +262,9 @@ const scan = (filters: AdoptionFilters): Scan => {
   const NF = d.features.length;
   const NE = d.events.length;
   const NM = modules.length;
-  const END = DAYS - 1;
-
-  const n = PERIOD_DAYS[filters.period];
-  const curStart = END - n + 1;
+  /* The period, and the same number of days just before it. END is the
+     period's last day - the data's last day for a relative period. */
+  const { start: curStart, end: END, n } = periodRange(filters.period);
   const prevStart = curStart - n;
   const lo = Math.max(0, prevStart);
 
@@ -226,14 +282,21 @@ const scan = (filters: AdoptionFilters): Scan => {
   const featureIn = new Uint8Array(NF);
   d.features.forEach((f, i) => {
     if (!f.published) return;
-    if (filters.module && f.module !== filters.module) return;
-    if (filters.feature && f.id !== filters.feature) return;
+    if (!has(filters.modules, f.module)) return;
+    if (!has(filters.features, f.id)) return;
     featureIn[i] = 1;
   });
-  const ce = filters.customer ? customer.get(filters.customer) ?? -2 : -1;
-  const ev = filters.event ? event.get(filters.event) ?? -2 : -1;
+  /** A membership mask for a filter set, or null when the set is empty. */
+  const mask = (ids: string[] | undefined, map: Map<string, number>, size: number) => {
+    if (!ids?.length) return null;
+    const m = new Uint8Array(size);
+    ids.forEach((id) => { const i = map.get(id); if (i !== undefined) m[i] = 1; });
+    return m;
+  };
+  const custSel = mask(filters.customers, customer, NC);
+  const evSel = mask(filters.events, event, NE);
   const us = filters.user ? user.get(filters.user) ?? -2 : -1;
-  const customerIn = (c: number) => ce === -1 || c === ce;
+  const customerIn = (c: number) => (!custSel || custSel[c] === 1) && (us < 0 || d.userCustomer[us] === c);
 
   const s: Scan = {
     n, curStart, prevStart, grain, buckets, featureIn, customerIn,
@@ -299,14 +362,16 @@ const scan = (filters: AdoptionFilters): Scan => {
 
   for (let i = 0; i < d.count; i++) {
     const day = d.factDay[i];
+    // Nothing after an exact period's last day counts.
+    if (day > END) continue;
     const e = d.factEvent[i];
     const f = d.eventFeature[e];
     if (!featureIn[f]) continue;
-    if (ev !== -1 && e !== ev) continue;
+    if (evSel && !evSel[e]) continue;
     const u = d.factUser[i];
     if (us !== -1 && u !== us) continue;
     const c = d.userCustomer[u];
-    if (ce !== -1 && c !== ce) continue;
+    if (custSel && !custSel[c]) continue;
     const cnt = d.factCount[i];
     const m = featureModule[f];
     const p = f * NC + c;
@@ -362,17 +427,17 @@ const scan = (filters: AdoptionFilters): Scan => {
   }
 
   /* Enablement and eligibility within scope. A user filter narrows to that
-     user's customer. */
-  const onlyCustomer = us >= 0 ? d.userCustomer[us] : ce;
+     user's customer (customerIn does both). */
   const modEnabledSeen = new Uint8Array(NM * NC);
   for (let f = 0; f < NF; f++) {
     if (!featureIn[f]) continue;
     const m = featureModule[f];
     s.modFeatures[m] += 1;
     for (let c = 0; c < NC; c++) {
-      if (onlyCustomer >= 0 && c !== onlyCustomer) continue;
+      if (!customerIn(c)) continue;
+      // Switched on by the period's last day; later enablements don't count yet.
       const day = d.enabledDay[f * NC + c];
-      if (day >= 0) {
+      if (day >= 0 && day <= END) {
         s.featEnabled[f] += 1;
         s.custEnabledCount[c] += 1;
         if (s.custEnabledDay[c] < 0 || day < s.custEnabledDay[c]) s.custEnabledDay[c] = day;
@@ -521,11 +586,11 @@ export const getPersonKpis = (filters: AdoptionFilters): Kpi[] => {
   const hasPrev = s.prevStart >= 0;
   const last = s.userLast[u];
   const features = new Set<number>();
-  const { d, event } = ix();
-  const ev = filters.event ? event.get(filters.event) : undefined;
+  const { d } = ix();
+  const evs = eventSet(filters);
   for (let i = 0; i < d.count; i++) {
     if (d.factUser[i] !== u || d.factDay[i] < s.curStart) continue;
-    if (ev !== undefined && d.factEvent[i] !== ev) continue;
+    if (evs && !evs.has(d.factEvent[i])) continue;
     const f = d.eventFeature[d.factEvent[i]];
     if (s.featureIn[f]) features.add(f);
   }
@@ -827,7 +892,7 @@ export const getBreakdown = (filters: AdoptionFilters, level: Level): BreakdownR
   // event
   return d.events
     .map((e, ei) => ({ e, ei }))
-    .filter(({ ei }) => s.featureIn[d.eventFeature[ei]] && (!filters.event || d.events[ei].key === filters.event))
+    .filter(({ ei }) => s.featureIn[d.eventFeature[ei]] && has(filters.events, d.events[ei].key))
     .map(({ e, ei }) => ({
       id: e.key,
       level: 'event' as const,
@@ -912,7 +977,7 @@ export interface FunnelStep {
  * customer in scope, the same steps count that customer's features instead.
  */
 export const getFunnel = (filters: AdoptionFilters): { unit: 'customers' | 'features'; steps: FunnelStep[] } => {
-  const accountView = Boolean(filters.customer && !filters.feature);
+  const accountView = isAccountView(filters);
   const rows = accountView ? getCustomerFeatures(filters, true) : getBreakdown(filters, 'customer');
   const n = (k: AdoptionList) => rows.filter((r) => r.lists?.includes(k)).length;
   const what = accountView ? 'Released features' : 'Customers';
@@ -934,9 +999,10 @@ export const getFunnel = (filters: AdoptionFilters): { unit: 'customers' | 'feat
  *  the account funnel can start from every released feature. */
 export const getCustomerFeatures = (filters: AdoptionFilters, includeUnavailable = false): BreakdownRow[] => {
   const { d, customer } = ix();
-  const c = filters.customer ? customer.get(filters.customer) : undefined;
+  const id = only(filters.customers);
+  const c = id ? customer.get(id) : undefined;
   if (c === undefined) return [];
-  const s = scan({ period: filters.period, customer: filters.customer, module: filters.module, event: filters.event });
+  const s = scan({ ...filters, user: undefined });
   const hasPrev = s.prevStart >= 0;
   const NC = d.customers.length;
   const rows: BreakdownRow[] = [];
@@ -979,12 +1045,12 @@ export const getUserActivity = (filters: AdoptionFilters): ActivityRow[] => {
   const u = filters.user ? user.get(filters.user) : undefined;
   if (u === undefined) return [];
   const s = scan(filters);
-  const ev = filters.event ? event.get(filters.event) : undefined;
+  const evs = eventSet(filters);
   const rows: ActivityRow[] = [];
   for (let i = 0; i < d.count; i++) {
     if (d.factUser[i] !== u || d.factDay[i] < s.curStart) continue;
     const e = d.factEvent[i];
-    if (ev !== undefined && e !== ev) continue;
+    if (evs && !evs.has(e)) continue;
     const f = d.eventFeature[e];
     if (!s.featureIn[f]) continue;
     rows.push({

@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import Tooltip from '@/components/primitives/Tooltip';
 import type { FunnelStep } from '@/data/usage/query';
 import type { AdoptionList } from '@/types/Usage';
@@ -17,22 +18,26 @@ const FunnelPanel = ({
   unit,
   active,
   onPick,
+  hint = 'Select a number to list them below.',
 }: {
   steps: FunnelStep[];
   unit: 'customers' | 'features';
   /** The step the table is filtered to, if any. */
   active: AdoptionList;
   onPick: (key: AdoptionList) => void;
+  /** What selecting a number does - it differs inside a drawer. */
+  hint?: string;
 }) => {
+  const titleId = useId();
   const top = Math.max(1, steps[0]?.count ?? 1);
   return (
     <section
-      aria-labelledby="funnel-title"
+      aria-labelledby={titleId}
       style={{ background: T.card, border: `1px solid ${T.bd2}`, borderRadius: RADIUS.control, padding: SPACE.x4, display: 'flex', flexDirection: 'column', gap: SPACE.x3 }}
     >
       <div>
-        <h2 id="funnel-title" style={{ margin: 0, ...TYPE.cardTitle }}>{unit === 'features' ? 'Feature funnel' : 'Customer funnel'}</h2>
-        <p style={{ margin: `${SPACE.x1}px 0 0`, ...TYPE.helper, fontSize: 12 }}>Select a number to list them below.</p>
+        <h2 id={titleId} style={{ margin: 0, ...TYPE.cardTitle }}>{unit === 'features' ? 'Feature funnel' : 'Customer funnel'}</h2>
+        <p style={{ margin: `${SPACE.x1}px 0 0`, ...TYPE.helper, fontSize: 12 }}>{hint}</p>
       </div>
       {steps.map((s, i) => {
         const prev = i ? steps[i - 1] : null;

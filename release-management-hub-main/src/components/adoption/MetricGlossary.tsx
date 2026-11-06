@@ -19,7 +19,7 @@ const TERMS: Array<[string, string]> = [
   ['Change', 'Actions this period against the period of the same length just before it.'],
   ['Growing / Declining', 'Up 15% or more, or down 25% or more, on the previous period.'],
   ['Stopped using', 'Used it before, but not in the selected period.'],
-  ['Level', 'The platform, one module or one feature. At module or platform level, a customer counts when any feature in scope applies.'],
+  ['Filters', 'Module, feature, customer and action each take several values. No modules, or every module, means the whole platform. A customer counts when any feature in scope applies.'],
   ['Customer funnel', 'All customers, then those who can use it, switched it on, use it, and are reference-ready. Each % is of the step above.'],
   ['Can use it', 'Switched on, or available to switch on. "No access" means neither.'],
   ['Next steps', 'To start, declining, could switch on and reference-ready: table filters listing the companies to contact.'],

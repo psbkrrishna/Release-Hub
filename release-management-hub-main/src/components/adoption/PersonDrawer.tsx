@@ -5,7 +5,7 @@ import DataTable from '@/components/adoption/DataTable';
 import Drawer from '@/components/adoption/Drawer';
 import KpiRow from '@/components/adoption/KpiRow';
 import { activityColumns } from '@/components/adoption/columns';
-import { customerName, getPersonKpis, getUserActivity, userOf } from '@/data/usage/query';
+import { customerName, getPersonKpis, getUserActivity, periodWord, userOf } from '@/data/usage/query';
 import type { Period } from '@/types/Usage';
 import { SPACE, TYPE } from '@/styles/zerra';
 
@@ -25,7 +25,10 @@ const PersonDrawer = ({
   level?: number;
   onClose: () => void;
 }) => {
-  const scope = useMemo(() => ({ period, feature: featureId, user: personId ?? undefined }), [period, featureId, personId]);
+  const scope = useMemo(
+    () => ({ period, features: featureId ? [featureId] : undefined, user: personId ?? undefined }),
+    [period, featureId, personId],
+  );
   const kpis = useMemo(() => (personId ? getPersonKpis(scope) : []), [scope, personId]);
   const activity = useMemo(() => (personId ? getUserActivity(scope) : []), [scope, personId]);
   const person = userOf(personId ?? undefined);
@@ -39,7 +42,7 @@ const PersonDrawer = ({
       title={person.name}
       subtitle={`${person.role} · ${customerName(person.customerId)}`}
     >
-      <KpiRow minTile={120} kpis={featureId ? kpis.filter((k) => k.key !== 'features') : kpis} periodWord={period === '12m' ? '12 months' : `${parseInt(period, 10)} days`} />
+      <KpiRow minTile={120} kpis={featureId ? kpis.filter((k) => k.key !== 'features') : kpis} periodWord={periodWord(period)} />
       <section style={{ display: 'flex', flexDirection: 'column', gap: SPACE.x2 }}>
         <h3 style={{ margin: 0, ...TYPE.cardTitle }}>What they did</h3>
         <div style={{ margin: `0 -${SPACE.x4}px` }}>

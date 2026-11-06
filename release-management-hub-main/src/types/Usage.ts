@@ -44,8 +44,10 @@ export interface FeatureEvent {
   label: string;
 }
 
-/** How far back the page looks. Each period is compared with the one before it. */
-export type Period = '30d' | '90d' | '180d' | '12m';
+/** The days the page looks at: "30d" for the last 30 days, or
+ *  "2026-08-01~2026-09-15" for exact dates. Each period is compared with the
+ *  same number of days just before it. */
+export type Period = string;
 
 /** The levels the breakdown table can group by, from broadest to narrowest. */
 export type Level = 'customer' | 'module' | 'feature' | 'event' | 'user';
@@ -59,16 +61,21 @@ export type AdoptionList = 'all' | 'can-use' | 'on' | 'using' | 'start' | 'decli
 
 export type TrendMetric = 'users' | 'customers' | 'events';
 
-/** What narrows the data. Every field but the period is optional; none set is
- *  the overall view. */
+/** What narrows the data. Each filter is a set, and an empty (or missing)
+ *  set means no filter - so no modules, or every module, is the platform. */
 export interface AdoptionFilters {
   period: Period;
-  module?: string;
-  feature?: string;
-  customer?: string;
-  event?: string;
+  modules?: string[];
+  features?: string[];
+  customers?: string[];
+  /** Action keys. */
+  events?: string[];
+  /** One person, for their drawer. */
   user?: string;
 }
+
+/** The single value of a set, when it holds exactly one. */
+export const only = (values?: string[]) => (values && values.length === 1 ? values[0] : undefined);
 
 /** Where a customer's usage is heading, period on period. */
 export type UsageStatus = 'growing' | 'steady' | 'declining' | 'stopped' | 'not-started' | 'eligible' | 'none';

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DownloadSimple, LockSimple, MagnifyingGlass, RocketLaunch, UsersThree, X } from '@phosphor-icons/react';
 import Button from '@/components/primitives/Button';
-import Crumb from '@/components/primitives/Crumb';
 import EmptyState from '@/components/primitives/EmptyState';
 import { inputStyle } from '@/components/primitives/fieldStyles';
 import { useFeatureStore } from '@/components/FeatureStore';
 import ContactCard from '@/components/adoption/ContactCard';
 import CustomerDrawer from '@/components/adoption/CustomerDrawer';
+import { ActionDrawer, FeatureDrawer, ModuleDrawer } from '@/components/adoption/EntityDrawers';
 import DataTable from '@/components/adoption/DataTable';
 import FilterBar from '@/components/adoption/FilterBar';
 import FunnelPanel from '@/components/adoption/FunnelPanel';
@@ -14,26 +14,29 @@ import MetricGlossary from '@/components/adoption/MetricGlossary';
 import MetricLine from '@/components/adoption/MetricLine';
 import Note from '@/components/adoption/Note';
 import PersonDrawer from '@/components/adoption/PersonDrawer';
-import ScopeSentence from '@/components/adoption/ScopeSentence';
+import ReportHeader from '@/components/adoption/ReportHeader';
 import TrendPanel from '@/components/adoption/TrendPanel';
 import {
   accountColumns, actionColumns, customerColumns, customerExportColumns, featureColumns, moduleColumns, type Column,
 } from '@/components/adoption/columns';
-import { formatDate } from '@/data/features';
 import {
-  asOf, customerName, customerOf, eventLabel, featureTitle, getBreakdown, getCustomerFeatures, getFunnel, getKpis,
-  getTrend, isReleased, toCsv, type BreakdownRow,
+  asOf, customerOf, getBreakdown, getCustomerFeatures, getFunnel, getKpis,
+  getTrend, isAccountView, isReleased, periodWord, toCsv, type BreakdownRow,
 } from '@/data/usage/query';
 import { listsApply, useAdoptionFilters } from '@/hooks/useAdoptionFilters';
-import type { AdoptionList, Breakdown, Period } from '@/types/Usage';
+import { scopeText } from '@/components/adoption/ScopeSentence';
+import { only, type AdoptionList, type Breakdown } from '@/types/Usage';
 import { RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
 
 /* ---------------------------------------------------------------------------
-   Feature adoption - for the platform, a module, or one feature.
+   Feature adoption - for the platform, any modules, features or customers.
 
    Laid out as the guidelines' analytics report (Hiring Funnel Reports):
-     - a sentence header: "Adoption of <level>, by <breakdown>";
-     - a sticky filter bar: customer, action, period;
+     - the report header: "Feature adoption for [Customers ▾]" - the group
+       by is the header's selector;
+     - the filter bar under it, sticky with the header: saved views, quick
+       filters, the date range, All filters, applied chips, Save as view and
+       Clear;
      - the charts first - the customer funnel from the whole base, and the
        trend - with the usage numbers on one line under them;
      - one table, with the same numbers on every row, filtered by a funnel
@@ -42,7 +45,6 @@ import { RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
    over it. Nothing else leaves the page.
    --------------------------------------------------------------------------- */
 
-const PERIOD_WORD: Record<Period, string> = { '30d': '30 days', '90d': '90 days', '180d': '180 days', '12m': '12 months' };
 const BY_TITLE: Record<Breakdown, string> = { customers: 'Customers', modules: 'Modules', features: 'Features', actions: 'Actions' };
 
 /** The next-step filters, in the order they are worked. */
@@ -70,7 +72,13 @@ const LIST_STEP: Partial<Record<AdoptionList, string>> = {
   references: 'Ask the SPOC for an introduction',
 };
 
-type Layer = { kind: 'customer'; id: string; featureId?: string } | { kind: 'person'; id: string; featureId?: string };
+/** What can be open in a drawer, each over the one it came from. */
+type Layer =
+  | { kind: 'customer'; id: string; featureId?: string }
+  | { kind: 'person'; id: string; featureId?: string }
+  | { kind: 'module'; id: string }
+  | { kind: 'feature'; id: string }
+  | { kind: 'action'; id: string };
 
 const download = (name: string, text: string) => {
   // A BOM so Excel reads the file as UTF-8.
@@ -95,12 +103,13 @@ const AdoptionPage = () => {
   /* Arriving from the Releases table keeps that page's scroll position. */
   useEffect(() => { window.scrollTo(0, 0); }, []);
   /* A new scope closes whatever was open over the old one. */
-  useEffect(() => { setLayers([]); setQuery(''); }, [filters.feature, filters.module, filters.customer]);
+  const scopeKey = [filters.modules, filters.features, filters.customers].map((s) => (s ?? []).join(',')).join('|');
+  useEffect(() => { setLayers([]); setQuery(''); }, [scopeKey]);
 
-  const released = isReleased(filters.feature);
-  const accountView = Boolean(filters.customer && !filters.feature);
-  const levelName = featureTitle(filters.feature) ?? (filters.module ? `${filters.module} module` : 'Platform');
-  const scopedCustomer = customerOf(filters.customer);
+  const released = isReleased(filters.features);
+  const accountView = isAccountView(filters);
+  const oneFeature = only(filters.features);
+  const scopedCustomer = customerOf(only(filters.customers));
 
   const funnel = useMemo(() => getFunnel(filters), [filters]);
   const trend = useMemo(() => getTrend(filters, metric), [filters, metric]);
@@ -144,21 +153,21 @@ const AdoptionPage = () => {
   const pop = () => setLayers((ls) => ls.slice(0, -1));
   const closeAll = () => setLayers([]);
 
-  /* Modules and features narrow the level; an action applies the Action
-     filter; a company opens in a drawer. */
+  /* One rule for every row: clicking it opens its drawer and leaves the page
+     as it is. Filtering the page is the explicit button in that drawer. */
   const openRow = (r: BreakdownRow) => {
-    if (by === 'modules') update({ module: r.id });
-    else if (by === 'features') update({ feature: r.id });
-    else if (by === 'actions') update({ event: r.id });
-    else push({ kind: 'customer', id: r.id, featureId: filters.feature });
+    if (by === 'modules') push({ kind: 'module', id: r.id });
+    else if (by === 'features') push({ kind: 'feature', id: r.id });
+    else if (by === 'actions') push({ kind: 'action', id: r.id });
+    else push({ kind: 'customer', id: r.id, featureId: oneFeature });
   };
+  /** A drawer's "Filter page to this ..." button. */
+  const filterTo = (patch: Parameters<typeof update>[0]) => { closeAll(); setQuery(''); update(patch); };
 
   const exportTable = () => {
     const cols = columns.map((c) => ({ header: c.csvHeader ?? c.header, value: c.csv as (r: BreakdownRow) => unknown }));
     const text = toCsv(shown, by === 'customers' ? [...cols, ...customerExportColumns] : cols);
-    const parts = [levelName, customerName(filters.customer), eventLabel(filters.event), by, list !== 'all' ? list : '']
-      .filter(Boolean)
-      .map((s) => slug(s!));
+    const parts = [scopeText(filters), by, list !== 'all' ? list : ''].filter(Boolean).map((s) => slug(s));
     download(`adoption-${parts.join('-')}-${asOf()}.csv`, text);
     toast(`Exported ${shown.length.toLocaleString('en-IN')} ${shown.length === 1 ? 'row' : 'rows'}`);
   };
@@ -215,28 +224,14 @@ const AdoptionPage = () => {
   );
 
   return (
-    /* Centred: on a wide screen the content holds a readable column. */
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.x4, maxWidth: 1200, margin: '0 auto' }}>
-      <header style={{ display: 'flex', flexDirection: 'column', gap: SPACE.x1 }}>
-        <Crumb levels={[{ label: 'Releases', path: '/product-hub/releases' }, { label: 'Feature adoption' }]} />
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: SPACE.x4 }}>
-          <h1 style={{ margin: 0, ...TYPE.pageTitle }}>Feature adoption</h1>
-          <button
-            type="button"
-            onClick={() => setGlossary(true)}
-            style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', color: T.brand, fontSize: 13, fontWeight: 600 }}
-          >
-            About these numbers
-          </button>
-        </div>
-        <ScopeSentence filters={filters} by={by} onChange={(p) => { setQuery(''); update(p); }} />
-        <span style={{ ...TYPE.helper, fontSize: 12 }}>
-          Data to {formatDate(asOf())}. Changes compare with the {PERIOD_WORD[filters.period]} before.
-        </span>
-      </header>
-
+    <>
+    {/* The report header and its filter bar run the full width and stick;
+        the content under them holds a centred column. */}
+    <ReportHeader by={by} onBy={(b) => { setQuery(''); update({ by: b }); }} onAbout={() => setGlossary(true)}>
       <FilterBar filters={filters} onChange={update} />
+    </ReportHeader>
 
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.x4, maxWidth: 1200, margin: `${SPACE.x4}px auto 0` }}>
       {scopedCustomer && <ContactCard customer={scopedCustomer} />}
 
       {!released ? (
@@ -244,7 +239,7 @@ const AdoptionPage = () => {
           <EmptyState
             icon={<RocketLaunch size={28} />}
             title="Not released yet"
-            action={<Button variant="secondary" onClick={() => update({ feature: undefined })}>Show the platform</Button>}
+            action={<Button variant="secondary" onClick={() => update({ features: undefined })}>Show the platform</Button>}
           >
             Usage appears after the feature is published and customers switch it on.
           </EmptyState>
@@ -261,7 +256,7 @@ const AdoptionPage = () => {
             </div>
           </div>
 
-          <MetricLine kpis={metrics} periodWord={PERIOD_WORD[filters.period]} />
+          <MetricLine kpis={metrics} periodWord={periodWord(filters.period)} />
 
           {/* One table, same numbers per row, filtered in place. */}
           <section
@@ -313,7 +308,7 @@ const AdoptionPage = () => {
               rows={shown}
               columns={columns}
               onOpen={openRow}
-              openLabel={(r) => (by === 'customers' ? `Open ${r.name}` : by === 'actions' ? `Filter by ${r.name}` : `Show ${r.name}`)}
+              openLabel={(r) => `Open ${r.name}`}
               empty={emptyTable}
               resetKey={`${JSON.stringify(filters)}|${by}|${list}|${q}`}
             />
@@ -321,26 +316,69 @@ const AdoptionPage = () => {
         </>
       )}
 
-      {layers.map((l, i) =>
-        l.kind === 'customer' ? (
-          <CustomerDrawer
-            key={`customer-${l.id}-${i}`}
-            customerId={l.id}
-            featureId={l.featureId}
-            period={filters.period}
-            level={i}
-            onClose={pop}
-            onOpenPerson={(id) => push({ kind: 'person', id, featureId: l.featureId })}
-            onOpenFeature={(id) => { closeAll(); update({ feature: id }); }}
-            onOpenAccount={(id) => { closeAll(); update({ customer: id, feature: undefined }); }}
-          />
-        ) : (
+      {layers.map((l, i) => {
+        const common = {
+          filters,
+          level: i,
+          onClose: pop,
+          onOpenCustomer: (id: string, featureId?: string) => push({ kind: 'customer', id, featureId: featureId ?? oneFeature }),
+        };
+        if (l.kind === 'module') {
+          return (
+            <ModuleDrawer
+              key={`module-${l.id}-${i}`}
+              {...common}
+              module={l.id}
+              onOpenFeature={(id) => push({ kind: 'feature', id })}
+              onFilter={() => filterTo({ modules: [l.id] })}
+            />
+          );
+        }
+        if (l.kind === 'feature') {
+          return (
+            <FeatureDrawer
+              key={`feature-${l.id}-${i}`}
+              {...common}
+              feature={l.id}
+              onOpenAction={(key) => push({ kind: 'action', id: key })}
+              onFilter={() => filterTo({ features: [l.id] })}
+              onFilterList={(k) => filterTo({ features: [l.id], by: 'customers', list: k })}
+            />
+          );
+        }
+        if (l.kind === 'action') {
+          return (
+            <ActionDrawer
+              key={`action-${l.id}-${i}`}
+              {...common}
+              action={l.id}
+              onFilter={() => filterTo({ events: [l.id] })}
+            />
+          );
+        }
+        if (l.kind === 'customer') {
+          return (
+            <CustomerDrawer
+              key={`customer-${l.id}-${i}`}
+              customerId={l.id}
+              featureId={l.featureId}
+              period={filters.period}
+              level={i}
+              onClose={pop}
+              onOpenPerson={(id) => push({ kind: 'person', id, featureId: l.featureId })}
+              onOpenFeature={(id) => push({ kind: 'feature', id })}
+              onOpenAccount={(id) => filterTo({ customers: [id], features: undefined })}
+            />
+          );
+        }
+        return (
           <PersonDrawer key={`person-${l.id}-${i}`} personId={l.id} featureId={l.featureId} period={filters.period} level={i} onClose={pop} />
-        ),
-      )}
+        );
+      })}
 
       <MetricGlossary open={glossary} onClose={() => setGlossary(false)} asOf={asOf()} />
     </div>
+    </>
   );
 };
 

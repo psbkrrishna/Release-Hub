@@ -9,7 +9,7 @@ import KpiRow from '@/components/adoption/KpiRow';
 import Note from '@/components/adoption/Note';
 import { Change, STATUS, accountColumns, peopleColumns } from '@/components/adoption/columns';
 import {
-  customerOf, featureTitle, getBreakdown, getCustomerFeatures, getKpis, type BreakdownRow,
+  customerOf, featureTitle, getBreakdown, getCustomerFeatures, getKpis, periodWord, type BreakdownRow,
 } from '@/data/usage/query';
 import type { Period } from '@/types/Usage';
 import { RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
@@ -58,7 +58,7 @@ const CustomerDrawer = ({
   onOpenAccount: (id: string) => void;
 }) => {
   const scope = useMemo(
-    () => ({ period, customer: customerId ?? undefined, feature: featureId }),
+    () => ({ period, customers: customerId ? [customerId] : undefined, features: featureId ? [featureId] : undefined }),
     [period, customerId, featureId],
   );
   const customer = customerOf(customerId ?? undefined);
@@ -66,7 +66,7 @@ const CustomerDrawer = ({
     () => (customerId && featureId ? getBreakdown(scope, 'customer')[0] : undefined),
     [scope, customerId, featureId],
   );
-  const features = useMemo(() => (customerId ? getCustomerFeatures({ period, customer: customerId }) : []), [period, customerId]);
+  const features = useMemo(() => (customerId ? getCustomerFeatures({ period, customers: [customerId] }) : []), [period, customerId]);
   /* Everyone using it, power users first - the people the SPOC can
      introduce. */
   const people = useMemo(
@@ -132,7 +132,7 @@ const CustomerDrawer = ({
         )
       )}
 
-      <KpiRow kpis={kpis} minTile={120} periodWord={period === '12m' ? '12 months' : `${parseInt(period, 10)} days`} />
+      <KpiRow kpis={kpis} minTile={120} periodWord={periodWord(period)} />
 
       {dropped.length > 0 && (
         <Section title="What dropped">

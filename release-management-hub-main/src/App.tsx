@@ -1,11 +1,10 @@
 import { Toaster } from 'sonner';
-import { ChartBar } from '@phosphor-icons/react';
 import { ROOT, T, RADIUS } from '@/styles/zerra';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Routes, Route, useLocation } from 'react-router-dom';
-import { HUB, LEGACY_HUB } from '@/lib/routes';
-import EmptyState from '@/components/primitives/EmptyState';
+import { ADOPTION, HUB, LEGACY_HUB } from '@/lib/routes';
 import Navigation from './components/Navigation';
+import AdoptionPage from './pages/adoption/AdoptionPage';
 import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import Index from './pages/Index';
@@ -27,6 +26,14 @@ import FeatureStore from './components/FeatureStore';
 import ReleaseStore from './components/ReleaseStore';
 
 const queryClient = new QueryClient();
+
+/* The token block also goes on <html>. Tooltips, menus and drawers portal
+   into <body>, outside the wrapper below, and without this every var(--…)
+   inside them resolved to nothing - a tooltip was white text on no
+   background. The wrapper keeps its copy; this only extends the reach. */
+Object.entries(ROOT).forEach(([k, v]) => {
+  if (k.startsWith('--')) document.documentElement.style.setProperty(k, String(v));
+});
 
 const LegacyHubRedirect = () => {
   const { pathname, search, hash } = useLocation();
@@ -112,14 +119,12 @@ const App = () => (
               <Route path="knowledge-base" element={<Navigate to="/product-hub/knowledge" replace />} />
 
               <Route path="performance-reviews" element={<PerformanceReviews />} />
-              <Route
-                path="insights"
-                element={
-                  <EmptyState icon={<ChartBar size={28} />} title="Insights">
-                    Placeholder for future analytics views.
-                  </EmptyState>
-                }
-              />
+              {/* Analytics opens on feature adoption, its only view so far.
+                  The Releases table's usage numbers link straight into it. */}
+              <Route path="insights">
+                <Route index element={<Navigate to={ADOPTION} replace />} />
+                <Route path="adoption" element={<AdoptionPage />} />
+              </Route>
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

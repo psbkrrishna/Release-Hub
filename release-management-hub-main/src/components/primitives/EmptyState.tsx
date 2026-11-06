@@ -20,7 +20,9 @@ const EmptyState = ({
   action?: ReactNode;
 }) => (
   <div style={{ padding: `${SPACE.x10}px ${SPACE.x5}px`, textAlign: 'center' }}>
-    <div style={{ color: T.tx4, marginBottom: SPACE.x3 }}>{icon}</div>
+    {/* Flex, not text-align: the base styles make an svg a block, which
+        text-align cannot centre. */}
+    <div style={{ display: 'flex', justifyContent: 'center', color: T.tx4, marginBottom: SPACE.x3 }}>{icon}</div>
     <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: T.tx }}>{title}</h4>
     {children && (
       <p

@@ -23,6 +23,7 @@ import { useFeatureStore } from '@/components/FeatureStore';
 import { MODULES, formatDate, sortReleaseMonths, supportQueue } from '@/data/features';
 import { openNotesFile, useReleaseNotesTarget } from '@/components/ReleaseStore';
 import ReleaseDetailsStrip from '@/components/ReleaseDetailsStrip';
+import UsageLink from '@/components/adoption/UsageLink';
 import type { Feature } from '@/types/Feature';
 
 /* ---------------------------------------------------------------------------
@@ -514,10 +515,20 @@ const Index = () => {
           </td>
           {isCreator ? (
             <>
-              <td className={TD_NUM}>{f.enabledCustomers ?? 0}</td>
-              <td className={TD_NUM}>{f.activeCustomers ?? 0}</td>
-              <td className={TD_NUM}>{(f.mauLast30Days ?? 0).toLocaleString()}</td>
-              <td className={TD_NUM}>{f.dauLast30DayAvg ?? 0}</td>
+              <td className={TD_NUM}>
+                <UsageLink feature={f}>{f.enabledCustomers ?? 0}</UsageLink>
+              </td>
+              <td className={TD_NUM}>
+                <UsageLink feature={f}>{f.activeCustomers ?? 0}</UsageLink>
+              </td>
+              <td className={TD_NUM}>
+                <UsageLink feature={f}>
+                  {(f.mauLast30Days ?? 0).toLocaleString()}
+                </UsageLink>
+              </td>
+              <td className={TD_NUM}>
+                <UsageLink feature={f}>{f.dauLast30DayAvg ?? 0}</UsageLink>
+              </td>
               <td className={`${TD_MID} sticky right-0 z-[2] w-[52px] min-w-[52px] text-right ${STICKY_BG} ${SEAM_L}`}>
                 <RowMenu label={f.title} items={menuFor(f)} />
               </td>

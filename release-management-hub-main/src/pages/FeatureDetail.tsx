@@ -15,6 +15,8 @@ import { useFeatureStore } from '@/components/FeatureStore';
 import { formatDate, valueOf } from '@/data/features';
 import { moduleByName, plural } from '@/data/knowledge';
 import { notesLinkProps, useReleaseNotesTarget } from '@/components/ReleaseStore';
+import UsageLink from '@/components/adoption/UsageLink';
+import { adoptionUrl } from '@/lib/routes';
 import { RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
 
 /* ---------------------------------------------------------------------------
@@ -315,13 +317,32 @@ const FeatureDetail = () => {
 
           {isCreator && (
             <Panel>
-              <h3 style={{ margin: `0 0 ${SPACE.x3}px`, ...TYPE.sectionTitle }}>Adoption</h3>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  gap: SPACE.x3,
+                  marginBottom: SPACE.x3,
+                }}
+              >
+                <h3 style={{ margin: 0, ...TYPE.sectionTitle }}>Adoption</h3>
+                {feature.published && (
+                  <a
+                    href={adoptionUrl({ feature: feature.id })}
+                    onClick={(e) => { e.preventDefault(); navigate(adoptionUrl({ feature: feature.id })); }}
+                    style={{ fontSize: 13, fontWeight: 600, color: T.brand, textDecoration: 'none' }}
+                  >
+                    View adoption
+                  </a>
+                )}
+              </div>
               <dl className="m-0">
                 {([
-                  ['Enabled customers', feature.enabledCustomers ?? 0, true],
-                  ['Active customers', feature.activeCustomers ?? 0, true],
-                  ['MAU (last 30 days)', (feature.mauLast30Days ?? 0).toLocaleString(), true],
-                  ['DAU (30-day avg)', feature.dauLast30DayAvg ?? 0, true],
+                  ['Enabled customers', <UsageLink feature={feature}>{feature.enabledCustomers ?? 0}</UsageLink>, true],
+                  ['Active customers', <UsageLink feature={feature}>{feature.activeCustomers ?? 0}</UsageLink>, true],
+                  ['MAU (last 30 days)', <UsageLink feature={feature}>{(feature.mauLast30Days ?? 0).toLocaleString()}</UsageLink>, true],
+                  ['DAU (30-day avg)', <UsageLink feature={feature}>{feature.dauLast30DayAvg ?? 0}</UsageLink>, true],
                   ['Feature flag', feature.productGate, false],
                 ] as const).map(([term, value, isNumber]) => (
                   <div

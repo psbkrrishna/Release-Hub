@@ -61,6 +61,22 @@ const DESCRIPTIONS: Record<string, string> = {
     'Onboarding tasks are raised automatically from the offer - equipment, access, introductions, paperwork - and routed to whoever owns each one. Progress is visible to the new joiner and their manager, so a blocked task is obvious before day one.',
 };
 
+/* Daily active users for the seed rows, replacing the authored figures. Those
+   were lower than MAU / 30 for five of the eight - fewer person-days in the
+   month than people active in it, which no usage can produce - so the adoption
+   page, which derives both from the same events, could never show them. These
+   put the average active user on the feature two to three days a month. */
+const DAU_LAST_30: Record<string, number> = {
+  'FEAT-001': 98,
+  'FEAT-002': 175,
+  'FEAT-004': 248,
+  'FEAT-005': 64,
+  'FEAT-006': 139,
+  'FEAT-008': 101,
+  'FEAT-009': 236,
+  'FEAT-011': 152,
+};
+
 /** The value bullets to show for a feature. `announcementBullets` is the seed
  *  rows' original field and stands in until a feature is edited. */
 export const valueOf = (f: Feature): string[] =>
@@ -113,6 +129,7 @@ const shipped = (f: SeedFeature): Feature => ({
   status: f.supportNeeded && !f.isEnabled ? 'Contact CSM' : f.status,
   published: true,
   releaseMonth: releaseMonthOf(f.prodEnablementDate),
+  dauLast30DayAvg: DAU_LAST_30[f.id] ?? f.dauLast30DayAvg,
 });
 
 /* Earlier releases. The hub spans more than one release, so the month filter
@@ -147,7 +164,7 @@ const earlierReleases: Feature[] = [
     enabledCustomers: 69,
     activeCustomers: 58,
     mauLast30Days: 1710,
-    dauLast30DayAvg: 64,
+    dauLast30DayAvg: 131,
   },
   {
     id: 'FEAT-014',
@@ -178,7 +195,7 @@ const earlierReleases: Feature[] = [
     enabledCustomers: 96,
     activeCustomers: 91,
     mauLast30Days: 2380,
-    dauLast30DayAvg: 74,
+    dauLast30DayAvg: 203,
   },
   {
     id: 'FEAT-015',
@@ -211,7 +228,7 @@ const earlierReleases: Feature[] = [
     enabledCustomers: 34,
     activeCustomers: 27,
     mauLast30Days: 820,
-    dauLast30DayAvg: 26,
+    dauLast30DayAvg: 57,
   },
   {
     id: 'FEAT-016',
@@ -242,7 +259,7 @@ const earlierReleases: Feature[] = [
     enabledCustomers: 104,
     activeCustomers: 98,
     mauLast30Days: 3410,
-    dauLast30DayAvg: 186,
+    dauLast30DayAvg: 286,
   },
   {
     id: 'FEAT-017',
@@ -273,7 +290,7 @@ const earlierReleases: Feature[] = [
     enabledCustomers: 81,
     activeCustomers: 70,
     mauLast30Days: 1930,
-    dauLast30DayAvg: 58,
+    dauLast30DayAvg: 149,
   },
   {
     id: 'FEAT-018',
@@ -305,7 +322,7 @@ const earlierReleases: Feature[] = [
     enabledCustomers: 47,
     activeCustomers: 36,
     mauLast30Days: 1120,
-    dauLast30DayAvg: 31,
+    dauLast30DayAvg: 82,
   },
 ];
 

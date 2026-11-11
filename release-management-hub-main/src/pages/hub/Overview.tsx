@@ -5,7 +5,7 @@ import {
   FileText, Link as LinkIcon, PlayCircle, RocketLaunch, VideoCamera,
 } from '@phosphor-icons/react';
 import HubSearch from '@/components/hub/HubSearch';
-import ManageInConfigure from '@/components/hub/ManageInConfigure';
+import CreatorTabs from '@/components/hub/CreatorTabs';
 import Hoverable from '@/components/primitives/Hoverable';
 import { TicketsTable } from '@/components/hub/Tickets';
 import { useTickets } from '@/components/TicketStore';
@@ -242,7 +242,7 @@ const ReleasePill = ({ month, count, onClick }: { month: string; count: number; 
 
 const Overview = () => {
   const navigate = useNavigate();
-  const { visibleFeatures } = useFeatureStore();
+  const { visibleFeatures, isCreator } = useFeatureStore();
   const { tickets, openCreate } = useTickets();
   const latestMonth = useLatestRelease();
   const webinar = useUpcomingWebinar(latestMonth);
@@ -314,19 +314,19 @@ const Overview = () => {
 
   return (
     <>
+      {/* Creators: the Configuration / Preview tabs sit above the hero. */}
+      <CreatorTabs standalone />
       {/* ---- Hero ---------------------------------------------------------
           Edge to edge: the negative margin cancels the shell's 16px padding.
           The bottom 152px is where the cards below overlap the fade. */}
       <section
         aria-label="Search the Product Hub"
         style={{
-          position: 'relative', background: HERO_C_BG, margin: '-16px -16px 0', padding: '56px 32px 152px',
+          position: 'relative', background: HERO_C_BG, margin: isCreator ? '0 -16px 0' : '-16px -16px 0', padding: '56px 32px 152px',
           display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
         }}
       >
         <div style={{ position: 'absolute', top: 24, right: 32, display: 'flex', gap: 8 }}>
-          {/* Creators only: the way from the help centre to where it's managed. */}
-          <ManageInConfigure onNavy />
           <Hoverable as="button" type="button" onClick={() => navigate('/product-hub/tickets')} style={ghostOnNavy(false)} hoverStyle={{ opacity: 0.88 }}>
             Track tickets
           </Hoverable>

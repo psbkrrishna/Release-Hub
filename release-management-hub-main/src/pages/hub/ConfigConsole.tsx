@@ -6,6 +6,7 @@ import {
 } from '@phosphor-icons/react';
 import Hoverable from '@/components/primitives/Hoverable';
 import UsageLink from '@/components/adoption/UsageLink';
+import CreatorTabs from '@/components/hub/CreatorTabs';
 import Button from '@/components/primitives/Button';
 import IconButton from '@/components/primitives/IconButton';
 import { inputStyle, selectStyle } from '@/components/primitives/fieldStyles';
@@ -79,7 +80,7 @@ const Metric = ({ value, share, title, link }: { value?: string; share?: number;
   /* A feature's usage number opens its adoption report; help content has no
      report yet, so its numbers stay plain. */
   const shown = link && value !== undefined
-    ? <span onClick={(e) => e.stopPropagation()}><UsageLink feature={link.feature} metric={link.metric} trail={[{ label: 'Configure', path: '/configure' }]}>{value}</UsageLink></span>
+    ? <span onClick={(e) => e.stopPropagation()}><UsageLink feature={link.feature} metric={link.metric} trail={[{ label: 'Configure', path: '/product-hub/configure' }]}>{value}</UsageLink></span>
     : value;
   return (
   <div role="cell" title={link ? undefined : title} style={{ padding: '10px 12px', alignSelf: 'stretch', display: 'flex', alignItems: 'center', cursor: 'default' }}>
@@ -348,32 +349,18 @@ const ConfigConsole = () => {
   const confFeature = confirm && (confirm.kind === 'publish' || confirm.kind === 'delete') ? features.find((f) => f.id === confirm.id) : undefined;
   const confContent = confirm && (confirm.kind === 'publishContent' || confirm.kind === 'deleteContent') ? contents.find((c) => c.id === confirm.id) : undefined;
 
-  const tabs = [
-    { key: 'feat' as const, label: 'Features & releases', count: features.length },
-    { key: 'content' as const, label: 'Help content', count: contents.length },
-  ];
 
   return (
     <>
       {/* ---- Header: breadcrumb, title, actions, tabs ------------------- */}
       <header style={{ margin: '-16px -16px 0', background: T.card, borderBottom: `1px solid ${T.bd2}` }}>
-        <div style={{ padding: '8px 16px' }}>
-          <nav aria-label="Breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 4, lineHeight: '16px', fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
-            <a href="/configure" onClick={(e) => e.preventDefault()}>Configure</a>
-            <CaretRight size={10} weight="bold" color="var(--tx4)" />
-            <span style={{ color: T.tx3 }}>Releases</span>
-          </nav>
+        <div style={{ padding: '12px 16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
               <h1 style={{ margin: 0, ...TYPE.pageTitle }}>Get help configuration</h1>
               <span style={{ fontSize: 12, color: T.tx3 }}>Create, edit and publish the features and release details customers see in Get help</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginLeft: 'auto' }}>
-              <span title="Opens Get help as customers see it. Unpublished items are marked.">
-                <Button variant="secondary" onClick={() => navigate('/product-hub/overview')}>
-                  <ArrowSquareOut size={16} />Preview
-                </Button>
-              </span>
               <Button
                 variant="secondary"
                 onClick={() => setRelDrawer({ month: createMonths[0] ?? months[0], create: true })}
@@ -397,26 +384,7 @@ const ConfigConsole = () => {
               </Button>
             </div>
           </div>
-        </div>
-        <div role="tablist" aria-label="Get help configuration" style={{ display: 'flex', gap: 24, padding: '0 16px' }}>
-          {tabs.map((t) => {
-            const sel = tab === t.key;
-            return (
-              <Hoverable
-                as="button"
-                type="button"
-                role="tab"
-                key={t.key}
-                aria-selected={sel}
-                onClick={() => setTab(t.key)}
-                style={{ height: 40, padding: 0, border: 'none', borderBottom: `2px solid ${sel ? T.brand : 'transparent'}`, background: 'transparent', color: sel ? T.brand : T.tx3, fontFamily: 'inherit', fontSize: 14, fontWeight: sel ? 600 : 500, display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                hoverStyle={{ color: T.brand }}
-              >
-                {t.label}
-                <span style={{ display: 'inline-flex', alignItems: 'center', height: 18, padding: '0 6px', borderRadius: RADIUS.pill, background: sel ? T.brandSoft : T.su2, color: sel ? T.brand : T.tx3, fontSize: 11, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{t.count}</span>
-              </Hoverable>
-            );
-          })}
+          <CreatorTabs />
         </div>
       </header>
 

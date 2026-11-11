@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowSquareOut, CalendarBlank, CaretRight, Hash, SlidersHorizontal, SquaresFour } from '@phosphor-icons/react';
 import Hoverable from '@/components/primitives/Hoverable';
-import ManageInConfigure from '@/components/hub/ManageInConfigure';
+import CreatorTabs from '@/components/hub/CreatorTabs';
 import { useFeatureStore } from '@/components/FeatureStore';
 import { useTickets } from '@/components/TicketStore';
 import { useShell } from '@/components/shell/ShellContext';
@@ -59,7 +59,7 @@ const HubHeaderV2 = ({ setSlot }: { setSlot: (el: HTMLElement | null) => void })
       ref={headerRef}
       style={{
         position: 'sticky', top: shellTop, zIndex: 100, background: 'var(--card)', borderBottom: '1px solid var(--bd2)',
-        padding: '8px 16px 12px', margin: '-16px -16px 16px',
+        padding: isCreator ? '8px 16px 0' : '8px 16px 12px', margin: '-16px -16px 16px',
       }}
     >
       {crumbs.length > 0 && (
@@ -126,10 +126,9 @@ const HubHeaderV2 = ({ setSlot }: { setSlot: (el: HTMLElement | null) => void })
             </Hoverable>
           )}
           <div ref={setSlot} style={{ display: 'contents' }} />
-          {/* Last in the row, on every page Configure manages (creators only). */}
-          <ManageInConfigure />
         </div>
       </div>
+      <CreatorTabs />
     </header>
   );
 };

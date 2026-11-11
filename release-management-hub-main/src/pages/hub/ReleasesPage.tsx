@@ -355,7 +355,7 @@ const ReleasesPage = () => {
           <div role="menu" style={{ position: 'fixed', top: menu.top, left: menu.left, zIndex: 301, width: 200, background: 'var(--card)', border: '1px solid var(--bd)', borderRadius: 8, boxShadow: 'var(--elev3)', padding: 4, animation: 'riseIn 120ms ease' }}>
             {[
               { label: 'View feature details', icon: ArrowRight, onClick: () => open(menu.f) },
-              { label: 'Manage in Configure', icon: ArrowSquareOut, onClick: () => navigate(`/configure?edit=${encodeURIComponent(menu.f.id)}`) },
+              { label: 'Manage in Configure', icon: ArrowSquareOut, onClick: () => navigate(`/product-hub/configure?edit=${encodeURIComponent(menu.f.id)}`) },
             ].map((mi) => (
               <Hoverable
                 as="button"

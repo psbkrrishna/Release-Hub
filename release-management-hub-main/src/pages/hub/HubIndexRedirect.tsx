@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
+import { useFeatureStore } from '@/components/FeatureStore';
 
 /* /product-hub used to BE the release table, and links to it are still in the
    wild - the release banner, What's New, and the "View this release" button on
@@ -11,6 +12,8 @@ import { Navigate, useLocation } from 'react-router-dom';
 const HubIndexRedirect = () => {
   const { search } = useLocation();
   const wantsRelease = new URLSearchParams(search).has('month');
+  const { isCreator } = useFeatureStore();
+  if (isCreator && !wantsRelease) return <Navigate replace to="/product-hub/configure" />;
 
   return (
     <Navigate replace to={wantsRelease ? `/product-hub/releases${search}` : '/product-hub/overview'} />

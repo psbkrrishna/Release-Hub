@@ -40,19 +40,19 @@ const ReleasesRoute = () => {
   return isImplementation ? <Index /> : <ReleasesPage />;
 };
 
-/* Configure (the rail entry) is where creators manage Get help - the Product
-   Hub Configuration design. Other roles have nothing to configure here. */
+/* Configuration is the creator's home inside Get help (Product Hub
+   Configuration design). Other roles have no configuration view, so they land
+   on the Overview instead. */
 const ConfigureRoute = () => {
   const { isCreator } = useFeatureStore();
-  if (isCreator) return <ConfigConsole />;
-  return (
-    <div style={{ padding: '64px 16px', textAlign: 'center' }}>
-      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)' }}>Get help configuration is for Zwayam creators</div>
-      <div style={{ fontSize: 13, color: 'var(--tx3)', marginTop: 4 }}>Switch the demo role to Creator (internal) to manage features, releases and help content.</div>
-    </div>
-  );
+  return isCreator ? <ConfigConsole /> : <Navigate to="/product-hub/overview" replace />;
 };
 
+/* The old top-level /configure address, kept so bookmarks and links land. */
+const LegacyConfigure = () => {
+  const { search } = useLocation();
+  return <Navigate to={`/product-hub/configure${search}`} replace />;
+};
 const queryClient = new QueryClient();
 
 /* The token block also goes on <html>. Tooltips, menus and drawers portal
@@ -117,6 +117,7 @@ const App = () => (
                   and the feature table all point at it. */}
               <Route path="product-hub" element={<ReleaseHubLayout />}>
                 <Route index element={<HubIndexRedirect />} />
+                <Route path="configure" element={<ConfigureRoute />} />
                 <Route path="overview" element={<Overview />} />
                 {/* The first tab shipped as "home" before it was renamed. */}
                 <Route path="home" element={<Navigate to="/product-hub/overview" replace />} />
@@ -149,7 +150,7 @@ const App = () => (
                   Bookmarks and the left rail's old entry both land here. */}
               <Route path="knowledge-base" element={<Navigate to="/product-hub/knowledge" replace />} />
 
-              <Route path="configure" element={<ConfigureRoute />} />
+              <Route path="configure" element={<LegacyConfigure />} />
               <Route path="performance-reviews" element={<PerformanceReviews />} />
               {/* Analytics opens on feature adoption, its only view so far.
                   The Releases table's usage numbers link straight into it. */}

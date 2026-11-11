@@ -4,6 +4,7 @@ import { Sparkle, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import Chatbot from '@/components/Chatbot';
 import IconButton from '@/components/primitives/IconButton';
+import { useUserRole } from '@/components/UserRoleProvider';
 import { ShellProvider, useShell } from '@/components/shell/ShellContext';
 import SideRail, { type RailLabel } from '@/components/shell/SideRail';
 import { ReleaseModal, TopBar, WebinarBanner } from '@/components/shell/TopBar';
@@ -18,15 +19,13 @@ import { ReleaseModal, TopBar, WebinarBanner } from '@/components/shell/TopBar';
 const ROUTES: Partial<Record<RailLabel, string>> = {
   Dashboard: '/dashboard',
   Insights: '/insights/adoption',
-  'Get help': '/product-hub/overview',
-  Configure: '/configure',
+  'Get help': '/product-hub',
 };
 
 const activeFor = (path: string): RailLabel | '' => {
   if (path.startsWith('/product-hub')) return 'Get help';
   if (path.startsWith('/dashboard')) return 'Dashboard';
   if (path.startsWith('/insights')) return 'Insights';
-  if (path.startsWith('/configure')) return 'Configure';
   return '';
 };
 
@@ -34,6 +33,16 @@ const Shell = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { shellTop } = useShell();
+  const { userRole } = useUserRole();
+
+  /* Switching to Creator while in Get help lands on Configuration, the creator's
+     home there - not on whichever customer page was open. */
+  useEffect(() => {
+    if (userRole === 'creator' && location.pathname.startsWith('/product-hub') && !location.pathname.startsWith('/product-hub/configure')) {
+      navigate('/product-hub/configure', { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userRole]);
   const [zeva, setZeva] = useState(false);
   /* The release pop-up opens once per session, on first landing on the
      dashboard - the way the design times it. */

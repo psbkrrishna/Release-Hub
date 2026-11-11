@@ -174,6 +174,9 @@ export const TopBar = ({ onZeva, zevaOpen }: { onZeva: () => void; zevaOpen: boo
         <button type="button" onClick={() => navigate('/dashboard')} aria-label="Zwayam home" style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', display: 'inline-flex' }}>
           <img src="/zwayam-logo.png" alt="Zwayam" style={{ height: 36, width: 'auto', display: 'block' }} />
         </button>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {/* The demo persona picker, with the bar's other controls. */}
         <div style={{ position: 'relative' }}>
           <select
             aria-label="Demo role"
@@ -185,8 +188,6 @@ export const TopBar = ({ onZeva, zevaOpen }: { onZeva: () => void; zevaOpen: boo
           </select>
           <CaretDown size={14} color="#fff" style={{ position: 'absolute', right: 10, top: 9, pointerEvents: 'none' }} />
         </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <Hoverable
           style={{ display: 'inline-flex', alignItems: 'center', gap: 2, height: 32, padding: '0 8px 0 12px', borderRadius: 999, color: '#fff', cursor: 'pointer' }}
           hoverStyle={{ background: 'rgba(255,255,255,0.12)' }}

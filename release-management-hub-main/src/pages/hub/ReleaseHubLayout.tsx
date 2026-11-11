@@ -11,7 +11,8 @@ import HubHeaderV2, { HubActionSlotContext, useActionSlotState } from '@/compone
 const ReleaseHubLayout = () => {
   const [slot, setSlot] = useActionSlotState();
   const { pathname } = useLocation();
-  const isOverview = pathname.replace(/\/+$/, '').endsWith('/overview');
+  const path = pathname.replace(/\/+$/, '');
+  const isOverview = path.endsWith('/overview') || path.endsWith('/configure');
 
   return (
     <HubActionSlotContext.Provider value={slot}>

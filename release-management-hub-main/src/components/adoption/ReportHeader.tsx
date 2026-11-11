@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CaretDown, CaretRight, Check } from '@phosphor-icons/react';
 import { formatDate } from '@/data/features';
 import { asOf } from '@/data/usage/query';
@@ -26,23 +26,10 @@ const GROUPS: Array<{ value: Breakdown; label: string }> = [
   { value: 'actions', label: 'Actions' },
 ];
 
-const useStickyTop = () => {
-  const [top, setTop] = useState(56);
-  useEffect(() => {
-    const measure = () => {
-      const banner = document.querySelector('.z-banner') as HTMLElement | null;
-      setTop(banner ? Math.round(banner.getBoundingClientRect().bottom) : 56);
-    };
-    measure();
-    window.addEventListener('scroll', measure, { passive: true });
-    window.addEventListener('resize', measure);
-    return () => {
-      window.removeEventListener('scroll', measure);
-      window.removeEventListener('resize', measure);
-    };
-  }, []);
-  return top;
-};
+/* The shell publishes its own height as --shell-top: 56px, or 100px while the
+   webinar banner shows. Reading it keeps the report header flush under
+   whichever is fixed above, with nothing to measure. */
+const useStickyTop = () => 'var(--shell-top, 56px)';
 
 /** The header's selector: 36px, --su1 fill, 18px/700 value, caret. Its menu
  *  is a plain menu - 32px rows, the current one brand with a check. */
@@ -142,23 +129,30 @@ const ReportHeader = ({
 }) => {
   const top = useStickyTop();
   const navigate = useNavigate();
+  /* Kept from the first render: filter changes rewrite the query string, and
+     router state does not survive those. */
+  const state = useLocation().state as { trail?: Array<{ label: string; path: string }> } | null;
+  const [trail] = useState(() => state?.trail ?? []);
   const column = { maxWidth: 1200, margin: '0 auto' };
 
   return (
     <div style={{ position: 'sticky', top, zIndex: 40, margin: '-16px -16px 0' }}>
       <div style={{ background: T.card, borderBottom: `1px solid ${T.bd2}`, padding: '8px 16px 12px' }}>
         <div style={{ ...column, display: 'flex', flexDirection: 'column', gap: SPACE.x1 }}>
-          <nav aria-label="Breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: SPACE.x1, fontSize: 12, fontWeight: 500, lineHeight: '16px', color: T.tx3 }}>
-            <a
-              href="/product-hub/releases"
-              onClick={(e) => { e.preventDefault(); navigate('/product-hub/releases'); }}
-              style={{ color: T.brand, textDecoration: 'none' }}
-            >
-              Releases
-            </a>
-            <CaretRight size={10} weight="bold" color="var(--tx4)" />
-            <span>Feature adoption</span>
-          </nav>
+          {/* A trail only when the report was opened from Get help (a usage
+              number, or "View adoption"); from the rail it is a top-level page
+              and the guidelines give it no breadcrumb. */}
+          {trail.length > 0 && (
+            <nav aria-label="Breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: SPACE.x1, fontSize: 12, fontWeight: 500, lineHeight: '16px', color: T.tx3 }}>
+              {trail.map((c) => (
+                <span key={c.path} style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.x1 }}>
+                  <a href={c.path} onClick={(e) => { e.preventDefault(); navigate(c.path); }} style={{ color: T.brand, textDecoration: 'none' }}>{c.label}</a>
+                  <CaretRight size={10} weight="bold" color="var(--tx4)" />
+                </span>
+              ))}
+              <span>Feature adoption</span>
+            </nav>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.x4, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.x2, minWidth: 0 }}>
               <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: T.tx, whiteSpace: 'nowrap' }}>Feature adoption</h1>

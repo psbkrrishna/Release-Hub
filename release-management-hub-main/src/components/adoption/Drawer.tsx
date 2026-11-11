@@ -79,7 +79,7 @@ const Drawer = ({
   /* Portalled to <body>; the tokens reach it from <html> (see App.tsx). The
      font does not, so it is restated. */
   return createPortal(
-    <div style={{ fontFamily: ROOT.fontFamily, color: T.tx, position: 'fixed', inset: 0, zIndex: 120 + level * 2 }}>
+    <div style={{ fontFamily: ROOT.fontFamily, color: T.tx, position: 'fixed', inset: 0, zIndex: 400 + level * 2 }}>
       <div
         onClick={onClose}
         style={{

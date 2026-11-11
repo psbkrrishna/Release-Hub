@@ -103,7 +103,7 @@ export default {
         topbar: "100",
         floater: "110",
         rowmenu: "115",
-        modal: "120",
+        modal: "450",
         spotlight: "130",
       },
       maxWidth: {

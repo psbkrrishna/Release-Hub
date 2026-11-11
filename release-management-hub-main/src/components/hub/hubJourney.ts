@@ -35,7 +35,7 @@ export interface Journey {
 }
 
 const SUBTEXT = {
-  overview: 'What shipped in the latest release, and where to find everything else.',
+  overview: "Search guides and videos, or check on tickets you've raised.",
   releases: 'Every feature by release month, with its rollout status.',
   documentation: 'Guides, release notes, newsletters and videos for every product module.',
   releaseNotes: 'What changed in each release, month by month.',
@@ -46,7 +46,7 @@ const SUBTEXT = {
 const TO_RELEASES: JourneyCta = { label: 'Releases', path: `${HUB}/releases` };
 const TO_DOCS: JourneyCta = { label: 'Documentation', path: `${HUB}/knowledge` };
 
-const ROOT = (): JourneyCrumb => ({ label: 'Home', path: `${HUB}/overview` });
+const ROOT = (): JourneyCrumb => ({ label: 'Get help', path: `${HUB}/overview` });
 
 const DOCS: JourneyCrumb = { label: 'Documentation', path: `${HUB}/knowledge` };
 
@@ -60,6 +60,15 @@ export const resolveJourney = (pathname: string, visibleFeatures: Feature[]): Jo
       title: 'Releases',
       subtext: SUBTEXT.releases,
       ctas: [TO_DOCS],
+    };
+  }
+
+  if (area === 'tickets') {
+    return {
+      crumbs: [ROOT(), { label: 'My tickets' }],
+      title: 'My tickets',
+      subtext: "Questions you've raised and where each one stands.",
+      ctas: [],
     };
   }
 
@@ -78,12 +87,16 @@ export const resolveJourney = (pathname: string, visibleFeatures: Feature[]): Jo
   }
 
   if (area === 'knowledge') {
-    if (!section) {
+    /* Every documentation section (a module, or one of the three lists) is
+       "Documentation" in the header - the section's own name heads the
+       content beside the left nav, as in the Release Hub V2 design. */
+    const isList = (section === 'release-notes' || section === 'newsletters') && !id;
+    if (!section || section === 'videos' || isList || (section === 'modules' && !docId)) {
       return {
         crumbs: [ROOT(), { label: 'Documentation' }],
         title: 'Documentation',
         subtext: SUBTEXT.documentation,
-        ctas: [TO_RELEASES],
+        ctas: [],
       };
     }
 
@@ -169,7 +182,7 @@ export const resolveJourney = (pathname: string, visibleFeatures: Feature[]): Jo
 
   return {
     crumbs: [],
-    title: 'Product Hub',
+    title: 'Get help',
     subtext: SUBTEXT.overview,
     ctas: [TO_RELEASES, TO_DOCS],
   };

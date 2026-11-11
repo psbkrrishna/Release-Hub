@@ -75,6 +75,15 @@ export interface ReleaseWebinar {
   /** Local date-time, "YYYY-MM-DDTHH:mm". Once it passes, the webinar is no
    *  longer promoted anywhere. */
   startsAt: string;
+  /** The rest of the release drawer's webinar step. Optional, so seed records
+   *  and older saves still type-check. */
+  endsAt?: string;
+  timeZone?: string;
+  venue?: string;
+  agenda?: string;
+  speakers?: Array<{ name: string; role: string }>;
+  /** Blob URL of the uploaded banner image, for the session. */
+  bannerUrl?: string;
 }
 
 /** An uploaded release notes document. `url` is a blob URL for the session: with

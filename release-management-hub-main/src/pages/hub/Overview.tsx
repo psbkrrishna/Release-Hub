@@ -1,324 +1,424 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowRight, FileText, Mail, Play, BarChart3, Users, SlidersHorizontal,
-} from 'lucide-react';
-import type { ComponentType } from 'react';
-import { PencilSimple } from '@phosphor-icons/react';
-import Button from '@/components/primitives/Button';
-import ReleaseDetailsModal from '@/components/ReleaseDetailsModal';
+  type Icon as PhIcon, ArrowRight, ArrowUpRight, BookOpen, Books, CalendarBlank, CaretRight, Clock, EnvelopeSimpleOpen,
+  FileText, Link as LinkIcon, PlayCircle, RocketLaunch, VideoCamera,
+} from '@phosphor-icons/react';
 import HubSearch from '@/components/hub/HubSearch';
-import { SearchHeroArt, ReleaseGiftArt } from '@/components/hub/illustrations';
+import ManageInConfigure from '@/components/hub/ManageInConfigure';
+import Hoverable from '@/components/primitives/Hoverable';
+import { TicketsTable } from '@/components/hub/Tickets';
+import { useTickets } from '@/components/TicketStore';
 import { useFeatureStore } from '@/components/FeatureStore';
-import { releaseNoteGroups, releasePitch, type PitchIcon } from '@/data/knowledge';
-import { RADIUS, SPACE, T, TYPE, sx } from '@/styles/zerra';
+import { useLatestRelease, useUpcomingWebinar } from '@/components/ReleaseStore';
+import { KB_MODULES, plural, releaseNoteGroups, sortedNewsletters } from '@/data/knowledge';
+import { formatWebinarWhen, webinarCountdown } from '@/data/releases';
+import { groupOf } from '@/data/tickets';
+import { HERO_C_BG, RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
 
 /* ---------------------------------------------------------------------------
-   The Overview: search, the latest release, then the way into everything else.
+   The Overview, as "Home C · Bold hero, ticket cards" in the Release Hub V2
+   design.
 
-   Search leads because it is the one thing equally useful the day after a
-   release and three months later. The release band is derived from the newest
-   release that actually has published features, so it still reads correctly in
-   a quiet month and disappears rather than sitting empty when nothing has
-   shipped.
+   A navy hero carries the page's one job - search - with the release (or its
+   webinar) as a pill above the question, and ticket actions top-right. Three
+   cards overlap the hero's fade into the page: recent releases, the most used
+   guides and video walkthroughs. Below them, the customer's open tickets and a
+   row of quick links to every section.
 
-   Both bands carry a hairline border now. Without one they were two large
-   tinted rectangles floating on a near-white page, and the eye had nothing to
-   tell it where either one ended.
+   The hub's own header is not rendered here (ReleaseHubLayout skips it on this
+   route), so the hero runs edge to edge under the top bar.
    --------------------------------------------------------------------------- */
 
-type Icon = ComponentType<{ size?: number | string; className?: string }>;
+type Icon = PhIcon;
 
-const PITCH_ICON: Record<PitchIcon, { icon: Icon; tint: string }> = {
-  insight: { icon: BarChart3, tint: 'bg-purple-50 text-purple-500' },
-  people: { icon: Users, tint: 'bg-brand-soft text-brand' },
-  controls: { icon: SlidersHorizontal, tint: 'bg-green-50 text-green-600' },
+interface CardRow {
+  key: string;
+  title: string;
+  meta: string;
+  meta2?: string;
+  isNew?: boolean;
+  icon: Icon;
+  onClick: () => void;
+}
+
+const Dot = ({ color = T.tx5 }: { color?: string }) => (
+  <span aria-hidden style={{ width: 4, height: 4, borderRadius: '50%', background: color, flex: 'none' }} />
+);
+
+/** "View all →", the brand text button the cards and section heads share. */
+const ViewAll = ({ onClick, size = 13 }: { onClick: () => void; size?: number }) => (
+  <Hoverable
+    as="button"
+    type="button"
+    onClick={onClick}
+    style={{
+      marginLeft: 'auto', height: 32, padding: '0 8px', borderRadius: RADIUS.control, border: 'none',
+      background: 'transparent', color: T.brand, fontFamily: 'inherit', fontSize: size, fontWeight: 600,
+      display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', cursor: 'pointer',
+    }}
+    hoverStyle={{ background: T.brandSoft }}
+  >
+    View all<ArrowRight size={12} weight="bold" />
+  </Hoverable>
+);
+
+/** One of the three cards that overlap the hero. */
+const HomeCard = ({ title, count, onAll, rows }: { title: string; count: string; onAll: () => void; rows: CardRow[] }) => (
+  <div
+    style={{
+      display: 'flex', flexDirection: 'column', minWidth: 0, background: T.card, border: `1px solid ${T.bd2}`,
+      borderRadius: RADIUS.panel, boxShadow: T.elev2, overflow: 'clip',
+    }}
+  >
+    <div style={{ minHeight: 48, padding: '0 8px 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ fontSize: 15, lineHeight: '20px', fontWeight: 700, color: T.tx }}>{title}</span>
+      <Dot />
+      <span style={{ fontSize: 13, color: T.tx3, whiteSpace: 'nowrap' }}>{count}</span>
+      <ViewAll onClick={onAll} />
+    </div>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      {rows.map(({ key, title: t, meta, meta2, isNew, icon: RowIcon, onClick }) => (
+        <Hoverable
+          as="button"
+          type="button"
+          key={key}
+          onClick={onClick}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', border: 'none',
+            borderTop: `1px solid ${T.bd}`, background: T.card, fontFamily: 'inherit', textAlign: 'left',
+            cursor: 'pointer', transition: 'background 120ms ease',
+          }}
+          hoverStyle={{ background: T.su1 }}
+        >
+          <span style={{ width: 32, height: 32, borderRadius: RADIUS.control, background: T.su2, color: T.tx3, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <RowIcon size={16} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <span title={t} style={{ fontSize: 14, lineHeight: '20px', fontWeight: 500, color: T.tx, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{t}</span>
+              {isNew && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: RADIUS.pill, background: T.brandSolid, color: '#FFFFFF', border: `1px solid ${T.brandSolid}`, fontSize: 12, fontWeight: 500, flex: 'none' }}>New</span>
+              )}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, lineHeight: '16px', color: T.tx3, whiteSpace: 'nowrap', minWidth: 0 }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{meta}</span>
+              {meta2 && (<><Dot /><span>{meta2}</span></>)}
+            </span>
+          </span>
+          <CaretRight size={10} weight="bold" color="var(--tx4)" style={{ flex: 'none' }} />
+        </Hoverable>
+      ))}
+    </div>
+  </div>
+);
+
+/** The translucent pill above the hero title: the webinar while one is ahead,
+ *  otherwise the latest release. */
+const heroPillStyle = (hover: boolean) => ({
+  display: 'inline-flex', alignItems: 'center', gap: 8, height: 32, padding: '0 12px 0 6px', whiteSpace: 'nowrap' as const,
+  borderRadius: RADIUS.pill, border: `1px solid ${hover ? 'rgba(255,255,255,0.56)' : 'rgba(255,255,255,0.32)'}`,
+  background: hover ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.12)', color: '#FFFFFF', fontFamily: 'inherit',
+  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  transform: hover ? 'translateY(-1px)' : 'translateY(0)', boxShadow: hover ? '0 6px 16px rgba(0,0,0,0.24)' : 'none',
+  transition: 'transform 180ms cubic-bezier(0.2,0,0,1), background 160ms ease, border-color 160ms ease, box-shadow 180ms ease',
+});
+
+const WebinarPill = ({ month }: { month: string }) => {
+  const webinar = useUpcomingWebinar(month);
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => { if (!wrap.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', away);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc); };
+  }, [open]);
+
+  if (!webinar) return null;
+
+  return (
+    <div ref={wrap} style={{ position: 'relative', display: 'inline-flex', marginBottom: SPACE.x6 }}>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={heroPillStyle(hover)}
+      >
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px', borderRadius: RADIUS.pill, background: '#FFFFFF', color: T.succText, fontSize: 12, fontWeight: 700, transform: hover ? 'scale(1.06)' : 'none', transition: 'transform 240ms cubic-bezier(0.34,1.56,0.64,1)' }}>
+          <VideoCamera size={12} weight="fill" />Webinar
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <span>{webinar.title}</span>
+          <span aria-hidden style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.7 }} />
+          <span>{webinarCountdown(webinar.startsAt)}</span>
+        </span>
+        <ArrowRight size={12} weight="bold" style={{ transform: hover ? 'translateX(4px)' : 'none', transition: 'transform 220ms cubic-bezier(0.34,1.56,0.64,1)' }} />
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Webinar details"
+          style={{
+            position: 'absolute', top: 'calc(100% + 6px)', left: '50%', transform: 'translateX(-50%)', zIndex: 70,
+            width: 380, maxWidth: 'calc(100vw - 32px)', background: T.card, border: `1px solid ${T.bd}`,
+            borderRadius: RADIUS.control, boxShadow: T.elev3, textAlign: 'left', color: T.tx, animation: 'riseIn 160ms ease',
+          }}
+        >
+          <div style={{ padding: '16px 16px 12px', display: 'flex', flexDirection: 'column', gap: 8, borderBottom: `1px solid ${T.bd}` }}>
+            <span style={{ alignSelf: 'flex-start', height: 20, padding: '0 8px', borderRadius: RADIUS.pill, background: T.succSoft, border: `1px solid ${T.succBorder}`, color: T.succText, fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center' }}>
+              {month} release
+            </span>
+            <span style={{ fontSize: 16, lineHeight: '22px', fontWeight: 700 }}>{webinar.title}</span>
+            <span style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', fontSize: 13, color: T.tx3 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><CalendarBlank size={14} color="var(--tx4)" />{formatWebinarWhen(webinar.startsAt)}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Clock size={14} color="var(--tx4)" />45 min · {webinarCountdown(webinar.startsAt)}</span>
+            </span>
+          </div>
+          <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={TYPE.eyebrow}>What we'll cover</span>
+            {['What shipped this release and why', 'A live walkthrough of the headline features', 'Your questions, answered live'].map((t) => (
+              <span key={t} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, lineHeight: '18px', color: T.tx2 }}>
+                <RocketLaunch size={14} color="var(--tx4)" style={{ marginTop: 2, flex: 'none' }} />{t}
+              </span>
+            ))}
+          </div>
+          <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, borderTop: `1px solid ${T.bd}` }}>
+            <Hoverable
+              as="a"
+              href={webinar.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ height: 36, padding: '0 16px', borderRadius: RADIUS.control, display: 'inline-flex', alignItems: 'center', gap: 8, background: T.brandSolid, color: '#FFFFFF', ...TYPE.button }}
+              hoverStyle={{ background: T.brandSolidHover, color: '#FFFFFF' }}
+            >
+              Register<ArrowUpRight size={16} weight="bold" />
+            </Hoverable>
+            <Hoverable
+              as="button"
+              type="button"
+              onClick={() => { navigator.clipboard?.writeText(webinar.url); setCopied(true); window.setTimeout(() => setCopied(false), 1600); }}
+              style={{ height: 36, padding: '0 12px', borderRadius: RADIUS.control, display: 'inline-flex', alignItems: 'center', gap: 8, border: `1px solid ${T.bd2}`, background: T.card, color: T.tx2, cursor: 'pointer', fontFamily: 'inherit', ...TYPE.button }}
+              hoverStyle={{ background: T.su2 }}
+            >
+              <LinkIcon size={16} />{copied ? 'Link copied' : 'Copy link'}
+            </Hoverable>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
-/* Product & Feature Documentation is gone from here: it has a tab of its own,
-   and a quick link to a tab two inches above it is not a shortcut. What is
-   left is the three destinations that have no tab - which is what makes this
-   row worth keeping. */
-const QUICK_LINKS = [
-  {
-    icon: FileText,
-    tint: 'bg-purple-50 text-purple-500',
-    title: 'Release notes',
-    sub: "See what's new and why it matters.",
-    path: '/product-hub/knowledge/release-notes',
-  },
-  {
-    icon: Mail,
-    tint: 'bg-green-50 text-green-600',
-    title: 'Newsletters',
-    sub: 'Catch up on the latest updates.',
-    path: '/product-hub/knowledge/newsletters',
-  },
-  {
-    icon: Play,
-    tint: 'bg-amber-50 text-amber-700',
-    title: 'Video library',
-    sub: 'Watch walkthroughs and demos.',
-    path: '/product-hub/knowledge/videos',
-  },
-];
-
-/* ---------------------------------------------------------------------------
-   One thing the release delivers, as a card you can obviously press.
-
-   These used to be three rows of icon-and-text sitting straight on the lilac
-   band, which is why they disappeared into it: nothing about them said they
-   were targets. A white card on the tinted ground, with the interaction
-   rules' own hover - --brand-border plus the soft blue fill - says it without
-   any extra copy.
-
-   A pointer whose feature this role cannot open renders as a plain card: no
-   hover, no caret, no link to a page that would turn the reader away.
-   --------------------------------------------------------------------------- */
-const PitchCard = ({
-  icon: Icon,
-  tint,
-  title,
-  sub,
-  onOpen,
-}: {
-  icon: Icon;
-  tint: string;
-  title: string;
-  sub: string;
-  onOpen?: () => void;
-}) => {
+const ReleasePill = ({ month, count, onClick }: { month: string; count: number; onClick: () => void }) => {
   const [hover, setHover] = useState(false);
-
-  const base = {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: SPACE.x3,
-    width: '100%',
-    textAlign: 'left' as const,
-    background: T.card,
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: T.bd2,
-    borderRadius: RADIUS.control,
-    padding: SPACE.x4,
-    transition: 'background 120ms ease, border-color 120ms ease',
-  };
-
-  const body = (
-    <>
-      <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tint}`}
-      >
-        <Icon size={18} />
-      </span>
-      <span style={{ minWidth: 0, flex: 1 }}>
-        <span
-          style={sx(
-            { display: 'block', ...TYPE.cardTitle, lineHeight: 1.35 },
-            hover && !!onOpen && { color: T.brand },
-          )}
-        >
-          {title}
-        </span>
-        <span style={{ display: 'block', marginTop: 2, ...TYPE.helper }}>{sub}</span>
-      </span>
-      {onOpen && (
-        <ArrowRight
-          size={16}
-          style={{ flexShrink: 0, marginTop: 2, color: hover ? T.brand : T.tx4 }}
-        />
-      )}
-    </>
-  );
-
-  if (!onOpen) return <div style={base}>{body}</div>;
-
   return (
     <button
       type="button"
-      onClick={onOpen}
+      onClick={onClick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      style={sx(base, { cursor: 'pointer' }, hover && {
-        borderColor: T.brandBorder,
-        background: T.brandSoft,
-      })}
+      style={{ ...heroPillStyle(hover), marginBottom: SPACE.x6 }}
     >
-      {body}
+      <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: RADIUS.pill, background: '#FFFFFF', color: T.brand, fontSize: 12, fontWeight: 600, transform: hover ? 'scale(1.06)' : 'none', transition: 'transform 240ms cubic-bezier(0.34,1.56,0.64,1)' }}>New</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        <span>{month} release</span>
+        <span aria-hidden style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.7 }} />
+        <span>{plural(count, 'feature')}</span>
+      </span>
+      <ArrowRight size={12} weight="bold" style={{ transform: hover ? 'translateX(4px)' : 'none', transition: 'transform 220ms cubic-bezier(0.34,1.56,0.64,1)' }} />
     </button>
   );
 };
 
 const Overview = () => {
   const navigate = useNavigate();
-  const { visibleFeatures, isCreator } = useFeatureStore();
-  const [editingRelease, setEditingRelease] = useState(false);
+  const { visibleFeatures } = useFeatureStore();
+  const { tickets, openCreate } = useTickets();
+  const latestMonth = useLatestRelease();
+  const webinar = useUpcomingWebinar(latestMonth);
 
-  const latest = useMemo(() => releaseNoteGroups(visibleFeatures)[0], [visibleFeatures]);
-  const pitch = latest ? releasePitch(latest) : null;
+  const groups = useMemo(() => releaseNoteGroups(visibleFeatures), [visibleFeatures]);
+  const latest = groups[0];
+  const videos = useMemo(() => visibleFeatures.filter((f) => f.demoVideo), [visibleFeatures]);
+  const active = tickets.filter((t) => groupOf(t.raw) !== 'resolved');
 
-  /* A pitch names features by id, and those ids are written down rather than
-     derived - so check each one against what this role can actually open. */
-  const visibleIds = useMemo(() => new Set(visibleFeatures.map((f) => f.id)), [visibleFeatures]);
+  const goReleases = (month?: string) =>
+    navigate(month ? `/product-hub/releases?month=${encodeURIComponent(month)}` : '/product-hub/releases');
+
+  const cards: Array<{ title: string; count: string; onAll: () => void; rows: CardRow[] }> = [
+    {
+      title: 'Recent releases',
+      count: plural(groups.length, 'release'),
+      onAll: () => goReleases(),
+      rows: groups.slice(0, 4).map((g, i) => ({
+        key: g.slug,
+        title: g.month,
+        meta: plural(g.features.length, 'feature'),
+        isNew: i === 0,
+        icon: RocketLaunch,
+        onClick: () => goReleases(g.month),
+      })),
+    },
+    {
+      title: 'Documentation',
+      count: 'Most used',
+      onAll: () => navigate('/product-hub/knowledge'),
+      rows: KB_MODULES.filter((m) => m.docs.length).slice(0, 4).map((m) => ({
+        key: m.docs[0].id,
+        title: m.docs[0].title,
+        meta: m.name,
+        meta2: `${m.docs[0].minutes} min read`,
+        icon: FileText,
+        onClick: () => navigate(`/product-hub/knowledge/modules/${m.slug}/documents/${m.docs[0].id}`),
+      })),
+    },
+    {
+      title: 'Video walkthroughs',
+      count: plural(videos.length, 'video'),
+      onAll: () => navigate('/product-hub/knowledge/videos'),
+      rows: videos.slice(0, 4).map((f) => ({
+        key: f.id,
+        title: f.title,
+        meta: f.productModule,
+        meta2: f.releaseMonth,
+        icon: PlayCircle,
+        onClick: () => navigate(`/product-hub/features/${f.id}`),
+      })),
+    },
+  ];
+
+  const quick: Array<{ icon: Icon; title: string; sub: string; path: string }> = [
+    { icon: RocketLaunch, title: 'Releases', sub: plural(visibleFeatures.length, 'feature'), path: '/product-hub/releases' },
+    { icon: BookOpen, title: 'Release notes', sub: plural(groups.length, 'release'), path: '/product-hub/knowledge/release-notes' },
+    { icon: Books, title: 'Documentation', sub: plural(KB_MODULES.length, 'module'), path: '/product-hub/knowledge' },
+    { icon: PlayCircle, title: 'Video library', sub: plural(videos.length, 'video'), path: '/product-hub/knowledge/videos' },
+    { icon: EnvelopeSimpleOpen, title: 'Newsletters', sub: plural(sortedNewsletters().length, 'issue'), path: '/product-hub/knowledge/newsletters' },
+  ];
+
+  const ghostOnNavy = (hover: boolean) => ({
+    height: 36, padding: '0 16px', borderRadius: RADIUS.control, border: '1px solid rgba(255,255,255,0.32)',
+    background: 'rgba(255,255,255,0.12)', color: '#FFFFFF', fontFamily: 'inherit', ...TYPE.button,
+    display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' as const, cursor: 'pointer',
+    opacity: hover ? 0.88 : 1,
+  });
 
   return (
     <>
-      {/* ---- Search hero ------------------------------------------------
-          20px on every side, and the illustration is absolutely positioned
-          against the panel's bottom-right corner rather than being a flex
-          child - so the padding is genuinely uniform and the art cannot push
-          the copy around. The text column reserves room for it above
-          1181px, which is the only width the art appears at. */}
+      {/* ---- Hero ---------------------------------------------------------
+          Edge to edge: the negative margin cancels the shell's 16px padding.
+          The bottom 152px is where the cards below overlap the fade. */}
       <section
-        className="mb-4 rounded-xl border border-warm-200 bg-warm-50"
-        style={{ position: 'relative', overflow: 'hidden', padding: SPACE.x5 }}
+        aria-label="Search the Product Hub"
+        style={{
+          position: 'relative', background: HERO_C_BG, margin: '-16px -16px 0', padding: '56px 32px 152px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+        }}
       >
-        <div className="relative z-[1] min-[1181px]:pr-[470px]">
-          <p className="mb-2.5 text-xs font-semibold uppercase tracking-[.1em] text-ink-600">
-            Explore. Learn. Get more from Zwayam.
-          </p>
-          <h2 className="mb-6 text-32 font-bold leading-tight tracking-[-0.02em] text-blue-900 min-[861px]:text-44">
-            How can we help you today?
-          </h2>
-          {/* The hero field and the toolbar field are the same component, so
-              a result behaves identically wherever it is found. */}
-          <div className="max-w-[845px]">
-            <HubSearch
-              variant="hero"
-              suggestions={['Performance review', 'Onboarding checklist', 'Reports']}
-            />
-          </div>
+        <div style={{ position: 'absolute', top: 24, right: 32, display: 'flex', gap: 8 }}>
+          {/* Creators only: the way from the help centre to where it's managed. */}
+          <ManageInConfigure onNavy />
+          <Hoverable as="button" type="button" onClick={() => navigate('/product-hub/tickets')} style={ghostOnNavy(false)} hoverStyle={{ opacity: 0.88 }}>
+            Track tickets
+          </Hoverable>
+          <Hoverable
+            as="button"
+            type="button"
+            onClick={openCreate}
+            style={{ ...ghostOnNavy(false), border: '1px solid transparent', background: '#FFFFFF', color: T.hcNavy }}
+            hoverStyle={{ opacity: 0.9 }}
+          >
+            Create ticket
+          </Hoverable>
         </div>
 
-        {/* Decorative, and the first thing to go when the column narrows.
-            450x220 is the asset's own 1792/877, so contain neither crops it
-            nor leaves a cream band above and below it. */}
-        <SearchHeroArt className="pointer-events-none absolute bottom-0 right-0 hidden h-[220px] w-[450px] min-[1181px]:block" />
+        {webinar ? (
+          <WebinarPill month={latestMonth} />
+        ) : (
+          latest && <ReleasePill month={latest.month} count={latest.features.length} onClick={() => goReleases(latest.month)} />
+        )}
+
+        <h1 style={{ margin: 0, fontSize: 36, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: '44px', color: '#FFFFFF' }}>
+          How can we help you today?
+        </h1>
+        <p style={{ margin: '4px 0 0', fontSize: 16, lineHeight: '24px', color: T.hcNavyText }}>
+          Search features, guides, release notes and videos in one place.
+        </p>
+        <div style={{ width: '100%', maxWidth: 680, marginTop: 32 }}>
+          <HubSearch variant="heroC" suggestions={['Performance review', 'Onboarding checklist', 'Custom reports', 'Interview scheduling']} />
+        </div>
       </section>
 
-      {/* ---- Latest release ---------------------------------------------
-          Laid out as a header row and then a row of three cards, rather than
-          two columns with the pitch on one side and a list on the other. The
-          old split gave the three pointers a narrow column and no surface of
-          their own; across the full width they are three equal targets. */}
-      {latest && pitch && (
-        <section
-          className="mb-6 rounded-xl border border-lilac-200 bg-lilac-50"
-          style={{ padding: SPACE.x5 }}
-        >
-          <div className="flex items-center gap-6">
-            <div className="min-w-0 flex-1">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[.1em] text-ink-600">
-                Latest release
-              </p>
-              <h2 className="mb-2 text-22 font-bold leading-tight tracking-[-0.01em] text-ink-900">
-                {latest.month} Release
-              </h2>
-              {/* 720px, up from 520. A measure exists so the eye does not lose
-                  its place returning across many lines of prose, and a
-                  one-sentence lede has no return sweep to protect - the old cap
-                  was splitting it into two short lines inside a column two to
-                  four times as wide.
+      {/* ---- Cards, tickets, quick links -------------------------------- */}
+      <div
+        style={{
+          width: '100%', maxWidth: 1200, margin: '-120px auto 0', boxSizing: 'border-box', padding: '0 16px 32px',
+          display: 'flex', flexDirection: 'column', gap: 32, position: 'relative', zIndex: 1,
+        }}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(calc(33.333% - 11px), (900px - 100%) * 999, 100%), 1fr))', gap: 16, alignItems: 'stretch' }}>
+          {cards.map((c) => <HomeCard key={c.title} {...c} />)}
+        </div>
 
-                  Raised rather than removed: every written headline measures
-                  under 600px so this never binds one, but releasePitch also
-                  derives a headline from counts and module names when a release
-                  has no written pitch, and nothing bounds that one's length.
-                  Uncapped it would run the full 1015px column, which is a real
-                  measure violation at ~155 characters a line. */}
-              <p className="mb-4 max-w-[720px] text-sm text-ink-700">{pitch.headline}</p>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  onClick={() =>
-                    navigate(`/product-hub/releases?month=${encodeURIComponent(latest.month)}`)
-                  }
-                >
-                  Explore what&apos;s new <ArrowRight size={16} />
-                </Button>
-                {isCreator && (
-                  <Button variant="ghost" compact onClick={() => setEditingRelease(true)}>
-                    <PencilSimple size={14} weight="bold" />Edit release details
-                  </Button>
-                )}
-              </div>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 32, marginBottom: 8 }}>
+            <h2 style={{ margin: 0, fontSize: 18, lineHeight: '24px', fontWeight: 700, color: T.tx }}>Active tickets</h2>
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 20, height: 20, padding: '0 6px', borderRadius: RADIUS.pill, background: T.brandSoft, color: T.brand, border: `1px solid ${T.brandBorder}`, fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+              {active.length}
+            </span>
+            <ViewAll size={14} onClick={() => navigate('/product-hub/tickets')} />
+          </div>
+          {active.length ? (
+            <TicketsTable rows={active.slice(0, 6)} onOpen={(t) => navigate(`/product-hub/tickets?id=${t.id}`)} />
+          ) : (
+            <div style={{ border: `1px solid ${T.bd}`, borderRadius: RADIUS.panel, background: T.card, padding: '24px 16px', textAlign: 'center' }}>
+              <div style={{ ...TYPE.cellPrimary }}>No open tickets</div>
+              <div style={{ ...TYPE.helper, marginTop: 4 }}>Anything you raise with support shows up here until it is resolved.</div>
             </div>
-
-            {/* 240x150 is the asset's own 1586/992, for the same reason. */}
-            <ReleaseGiftArt className="hidden h-[150px] w-[240px] shrink-0 min-[1181px]:block" />
-          </div>
-
-          {/* 1 / 2 / 4 columns. The row holds four cards now - the announced
-              features of the release, however many that is - and a 3-column
-              grid left the fourth stranded on its own line. Two-up is balanced
-              at every mid width, four-up only once there is room for it.
-
-              Guarded, because the count is editorial now: a release with every
-              feature un-flagged has no highlights, and an empty grid would
-              still add its top margin to the band. */}
-          {pitch.highlights.length > 0 && (
-          <div className="mt-5 grid grid-cols-1 items-stretch gap-4 min-[601px]:grid-cols-2 min-[1281px]:grid-cols-4">
-            {pitch.highlights.map((h) => {
-              const { icon, tint } = PITCH_ICON[h.icon];
-              return (
-                <PitchCard
-                  key={h.title}
-                  icon={icon}
-                  tint={tint}
-                  title={h.title}
-                  sub={h.sub}
-                  onOpen={
-                    visibleIds.has(h.featureId)
-                      ? () => navigate(`/product-hub/features/${h.featureId}`)
-                      : undefined
-                  }
-                />
-              );
-            })}
-          </div>
           )}
-        </section>
-      )}
+        </div>
 
-      {latest && isCreator && (
-        <ReleaseDetailsModal
-          open={editingRelease}
-          month={latest.month}
-          onClose={() => setEditingRelease(false)}
-        />
-      )}
-
-      {/* ---- Quick links ------------------------------------------------
-          Tertiary, and labelled as such: an eyebrow rather than a 22px
-          heading with a sentence under it. These are shortcuts at the foot of
-          the page, not a third section competing with the release. */}
-      <h2 style={{ margin: `0 0 ${SPACE.x3}px`, ...TYPE.eyebrow }}>Quick links</h2>
-
-      <div className="grid grid-cols-1 gap-3 min-[601px]:grid-cols-3">
-        {QUICK_LINKS.map(({ icon: Icon, tint, title, sub, path }) => (
-          /* 12px on every side, and both lines truncate rather than wrap - a
-             quick link that grows to three lines stops being quick. */
-          <button
-            key={path}
-            type="button"
-            onClick={() => navigate(path)}
-            className="group flex items-center gap-3 rounded-lg border border-ink-150 bg-white p-3 text-left transition-colors hover:border-brand-border hover:bg-brand-soft"
-          >
-            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${tint}`}>
-              <Icon size={16} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-ink-900 group-hover:text-brand-text">
-                {title}
-              </span>
-              <span className="block truncate text-13 text-ink-600">{sub}</span>
-            </span>
-            <ArrowRight
-              size={16}
-              className="shrink-0 text-ink-400 transition-colors group-hover:text-brand"
-            />
-          </button>
-        ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <h2 style={{ margin: 0, fontSize: 18, lineHeight: '24px', fontWeight: 700, color: T.tx, minHeight: 32, display: 'flex', alignItems: 'center' }}>Quick links</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(calc(20% - 13px), (900px - 100%) * 999, 100%), 1fr))', gap: 16 }}>
+            {quick.map(({ icon: QIcon, title, sub, path }) => (
+              <Hoverable
+                as="button"
+                type="button"
+                key={path}
+                onClick={() => navigate(path)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, padding: '12px 16px', border: `1px solid ${T.bd}`,
+                  borderRadius: RADIUS.panel, background: T.card, boxShadow: T.elev1, fontFamily: 'inherit', textAlign: 'left',
+                  cursor: 'pointer', transition: 'border-color 120ms ease, background 120ms ease',
+                }}
+                hoverStyle={{ borderColor: T.brandBorder, background: T.brandSoft }}
+              >
+                {(h: boolean) => (
+                  <>
+                    <span style={{ width: 32, height: 32, borderRadius: RADIUS.control, background: h ? T.card : T.su2, color: h ? T.brand : T.tx3, transition: 'background 120ms ease, color 120ms ease', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                      <QIcon size={16} />
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ fontSize: 14, lineHeight: '20px', fontWeight: 600, color: T.tx, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
+                      <span style={{ fontSize: 12, lineHeight: '16px', color: T.tx3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</span>
+                    </span>
+                    <CaretRight size={10} weight="bold" color="var(--tx4)" style={{ flex: 'none' }} />
+                  </>
+                )}
+              </Hoverable>
+            ))}
+          </div>
+        </div>
       </div>
     </>
   );

@@ -50,6 +50,21 @@
         75% { transform: translateX(4px); }
       }
 
+      /* Home C hero search: a gradient stroke draws round the field, then a
+         soft ring radiates from it. Lt is the variant tuned for the navy hero. */
+      @keyframes rhFill {
+        0% { stroke-dasharray: 0 100; opacity: 1; animation-timing-function: cubic-bezier(0.65,0,0.35,1); }
+        40% { stroke-dasharray: 100 0; opacity: 1; }
+        58% { stroke-dasharray: 100 0; opacity: 1; }
+        68% { stroke-dasharray: 100 0; opacity: 0; }
+        100% { stroke-dasharray: 100 0; opacity: 0; }
+      }
+      @keyframes rhRadiateLt {
+        0%, 39% { box-shadow: 0 0 0 0 rgba(167,150,255,0); }
+        41% { box-shadow: 0 0 0 0 rgba(167,150,255,0.75); }
+        68%, 100% { box-shadow: 0 0 0 16px rgba(167,150,255,0); }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
           animation-duration: .01ms !important;

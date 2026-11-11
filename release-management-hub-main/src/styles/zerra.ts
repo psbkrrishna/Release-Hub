@@ -68,6 +68,19 @@ export const ROOT: CSSProperties = {
   '--elev2': '0 2px 8px rgba(16,24,40,0.08)',
   '--elev3': '0 12px 32px rgba(16,24,40,0.16)',
   '--ring': 'rgba(13,89,163,0.32)',
+  // Home C hero (Release Hub V2 design): the navy band and its search accent
+  '--hc-navy': '#142740',
+  '--hc-navy-text': '#C9D6E6',
+  '--ai-grad-a': '#C959ED',
+  '--ai-grad-b': '#4763FA',
+  '--ai-ring': 'rgba(91,69,214,0.24)',
+  '--succ-softHover': '#D9EBDA',
+  '--succ-solidHover': '#2C7330',
+  '--succ-strong': '#235C26',
+  '--bd3': '#C4C4CA',
+  '--indigo-border': '#C9C5FF',
+  '--switch-off': '#C7C7CC',
+  '--knob': '#FFFFFF',
 
   fontFamily: "'Source Sans 3', -apple-system, sans-serif",
   background: 'var(--bg)',
@@ -115,7 +128,20 @@ export const T = {
   elev2: 'var(--elev2)',
   elev3: 'var(--elev3)',
   ring: 'var(--ring)',
+  hcNavy: 'var(--hc-navy)',
+  hcNavyText: 'var(--hc-navy-text)',
+  aiRing: 'var(--ai-ring)',
 } as const;
+
+/** The Home C hero band, verbatim from the Release Hub V2 design: deep navy at
+ *  the top, a soft blue glow top-right, fading into the page background at the
+ *  bottom so the cards that overlap it sit on --bg. The guidelines allow one
+ *  hero gradient on an intro surface; this is that surface. */
+export const HERO_C_BG =
+  'radial-gradient(90% 70% at 80% 0%, rgba(64,110,170,0.35) 0%, rgba(64,110,170,0) 70%), ' +
+  'linear-gradient(180deg, #0F1D31 0%, #15294A calc(100% - 300px), #22395E calc(100% - 240px), ' +
+  '#3D5A82 calc(100% - 190px), #6F87A8 calc(100% - 145px), #A9BACF calc(100% - 100px), ' +
+  '#D5DEE9 calc(100% - 60px), #F0F3F7 calc(100% - 25px), #FAFAFA 100%)';
 
 /** The typography scale. One entry per role in the guidelines' table - a
  *  component picks a role, it does not pick a font size. */

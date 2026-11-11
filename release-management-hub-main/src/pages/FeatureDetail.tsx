@@ -1,371 +1,204 @@
+import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  MagnifyingGlass as Search, ArrowRight, Calendar, SlidersHorizontal, CheckCircle,
-  Play, BookOpen, FileText, ArrowSquareOut as ExternalLink, Info, RocketLaunch as Rocket,
-} from '@phosphor-icons/react';
-import type { ComponentType } from 'react';
-import Button from '@/components/primitives/Button';
-import Panel from '@/components/primitives/Panel';
-import Badge from '@/components/primitives/Badge';
-import FeatureTag from '@/components/hub/FeatureTag';
-import HubCrumb from '@/components/hub/HubCrumb';
-import { useHubVersion } from '@/components/HubVersionProvider';
-import EmptyState from '@/components/primitives/EmptyState';
-import { useFeatureStore } from '@/components/FeatureStore';
-import { formatDate, valueOf } from '@/data/features';
-import { moduleByName, plural } from '@/data/knowledge';
-import { notesLinkProps, useReleaseNotesTarget } from '@/components/ReleaseStore';
+import { toast } from 'sonner';
 import UsageLink from '@/components/adoption/UsageLink';
 import { adoptionUrl } from '@/lib/routes';
-import { RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
+import { ArrowRight, BookOpen, Books, CaretRight, CheckCircle, FileText, Headset, Info, LockSimple, PlayCircle } from '@phosphor-icons/react';
+import Hoverable from '@/components/primitives/Hoverable';
+import { useFeatureStore } from '@/components/FeatureStore';
+import { useUserRole } from '@/components/UserRoleProvider';
+import { useReleaseNotesTarget, openNotesFile } from '@/components/ReleaseStore';
+import { valueOf } from '@/data/features';
+import { moduleByName, plural } from '@/data/knowledge';
+import { statusOf } from '@/lib/featureUi';
 
 /* ---------------------------------------------------------------------------
-   One feature.
-
-   The page reads top to bottom in the order the questions get asked: what is
-   it and is it on (header), which release brought it (banner), what changed
-   and what it gets you (main), where to read more (references).
+   A feature, from the Release Hub V2 design. The header (title, tag and
+   status pills, facts row) is the hub header's; this is the body: the release
+   note strip, What's new and Value delivered, and on the right Enablement (or
+   Adoption for creators), Resources and, for creators, the feature flag.
    --------------------------------------------------------------------------- */
 
-/** A fact about the feature, as the guidelines' neutral --su2 chip. Facts are
- *  static configuration, so they are never tinted - the badges above the title
- *  are the only coloured things in the header, and they carry state. */
-const MetaChip = ({
-  icon: Icon,
-  children,
-}: {
-  icon: ComponentType<{ size?: number | string }>;
-  children: React.ReactNode;
-}) => (
-  <span
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 6,
-      height: 24,
-      padding: `0 ${SPACE.x2}px`,
-      borderRadius: RADIUS.tag,
-      background: T.su2,
-      color: T.tx3,
-      fontSize: 12,
-      fontWeight: 600,
-      fontVariantNumeric: 'tabular-nums',
-      whiteSpace: 'nowrap',
-    }}
-  >
-    <Icon size={13} />
-    {children}
-  </span>
-);
+const card = { background: 'var(--card)', border: '1px solid var(--bd2)', borderRadius: 8 } as const;
+const cardHead = { padding: '12px 16px', borderBottom: '1px solid var(--bd)', fontSize: 14, fontWeight: 700, color: 'var(--tx)' } as const;
 
-/** What happens to this feature at release, in the customer's words. */
-const DEFAULT_LABEL: Record<string, string> = {
-  'Default On': 'Default: On',
-  'Default Off': 'Default: Off',
-  'Non Deferrable': 'Not deferrable',
-};
+const Note = ({ icon: Icon, title, text }: { icon: typeof Info; title: string; text: string }) => (
+  <div style={{ display: 'flex', gap: 8, background: 'var(--su2)', borderRadius: 8, padding: '8px 12px', fontSize: 14, lineHeight: 1.5, color: 'var(--tx2)' }}>
+    <Icon size={16} color="var(--tx3)" style={{ flex: 'none', marginTop: 3 }} />
+    <span><b style={{ color: 'var(--tx)', fontWeight: 600 }}>{title}</b> {text}</span>
+  </div>
+);
 
 const FeatureDetail = () => {
   const { featureId } = useParams();
   const navigate = useNavigate();
-  const { byId, visibleFeatures, isCreator, toast } = useFeatureStore();
-  const { version } = useHubVersion();
-  const feature = featureId ? byId(featureId) : undefined;
-  const notes = useReleaseNotesTarget(feature?.releaseMonth ?? '');
+  const { visibleFeatures, isCreator, toggleEnabled } = useFeatureStore();
+  const { userRole } = useUserRole();
+  const f = visibleFeatures.find((x) => x.id === featureId);
+  const notes = useReleaseNotesTarget(f?.releaseMonth ?? '');
 
-  // A draft is only the creator's to see; anyone else lands back on the hub.
-  if (!feature || (!feature.published && !isCreator)) {
+  const sibs = useMemo(() => (f ? visibleFeatures.filter((x) => x.releaseMonth === f.releaseMonth && x.id !== f.id).length : 0), [f, visibleFeatures]);
+
+  if (!f) {
     return (
-      <EmptyState
-        icon={<Search size={26} />}
-        title="That feature isn't available"
-        action={
-          <Button variant="secondary" onClick={() => navigate('/product-hub/releases')}>
-            <ArrowRight size={18} />Back to Releases
-          </Button>
-        }
-      >
-        It may have been removed, or it hasn't been published yet.
-      </EmptyState>
+      <div style={{ padding: '48px 16px', textAlign: 'center' }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)' }}>This feature isn't available</div>
+        <div style={{ fontSize: 13, color: 'var(--tx3)', marginTop: 4 }}>It may be unpublished, or the link is out of date.</div>
+      </div>
     );
   }
 
-  const openRes = (label: string, url?: string) =>
-    toast(url ? `${label} → ${url}` : `${label} not attached to this feature.`, 'info');
+  const value = valueOf(f).slice(0, 3);
+  const trail = [
+    { label: 'Get help', path: '/product-hub/overview' },
+    { label: 'Releases', path: '/product-hub/releases' },
+    { label: f.title, path: `/product-hub/features/${f.id}` },
+  ];
+  const km = moduleByName(f.productModule);
+  const resources: Array<{ icon: typeof Info; label: string; meta: string; onClick: () => void }> = [];
+  if (f.published) resources.push({ icon: BookOpen, label: `${f.releaseMonth} release notes`, meta: 'PDF', onClick: () => (notes.file ? openNotesFile(notes.file) : navigate(notes.path)) });
+  if (f.demoVideo) resources.push({ icon: PlayCircle, label: 'Demo video', meta: 'Video', onClick: () => toast(`Opening the ${f.title} demo`) });
+  if (f.configurationDoc && isCreator) resources.push({ icon: FileText, label: 'Configuration document', meta: 'Internal', onClick: () => toast('Opening the configuration document') });
+  if (km) resources.push({ icon: Books, label: `${f.productModule} guides`, meta: plural(km.docs.length, 'guide'), onClick: () => navigate(`/product-hub/knowledge/modules/${km.slug}`) });
 
-  const [summary, ...rest] = (feature.summary || '').split('\n');
-  const more = rest.join(' ');
-  const value = valueOf(feature);
-  const inRelease = visibleFeatures.filter((f) => f.releaseMonth === feature.releaseMonth).length;
-
-  const statusTag =
-    feature.status === 'Enabled' ? <Badge variant="success">Enabled</Badge>
-    : feature.status === 'Enablement requested' ? <Badge variant="warning">Enablement requested</Badge>
-    : feature.status === 'Contact CSM' ? <Badge variant="warning">Contact CSM</Badge>
-    : <Badge variant="static">Disabled</Badge>;
-
-  /* Resource links share a shape, so they share one class string rather than
-     three near-identical ones. */
-  const resLink = 'flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-brand no-underline hover:bg-brand-soft';
-
-  const kbModule = moduleByName(feature.productModule);
+  const enablement = () => {
+    if (isCreator) {
+      const stats: Array<[string, number | undefined]> = [
+        ['Enabled customers', f.enabledCustomers], ['Active customers', f.activeCustomers],
+        ['MAU · last 30 days', f.mauLast30Days], ['DAU · 30-day avg', f.dauLast30DayAvg],
+      ];
+      return (
+        <>
+          {!f.published && <Note icon={Info} title="Not live yet." text="Adoption appears once the feature is published." />}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'var(--bd)', border: '1px solid var(--bd2)', borderRadius: 8, overflow: 'hidden' }}>
+            {stats.map(([label, v]) => (
+              <div key={label} style={{ background: 'var(--card)', padding: '10px 12px' }}>
+                <div style={{ fontSize: 12, color: 'var(--tx3)' }}>{label}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--tx)', fontVariantNumeric: 'tabular-nums' }}>
+                  <UsageLink feature={f} metric={label} trail={trail}>{f.published ? (v ?? 0).toLocaleString('en-IN') : '-'}</UsageLink>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      );
+    }
+    const st = statusOf(f, userRole);
+    if (st.kind === 'mandatory') return <Note icon={LockSimple} title="Enabled · Required by Zwayam." text="This feature is on for every customer and can't be turned off." />;
+    if (st.kind === 'badge' && (st.label === 'Contact CSM' || st.label === 'Enablement requested'))
+      return <Note icon={st.headset ? Headset : Info} title={`${st.label}.`} text={st.label === 'Contact CSM' ? 'Your customer success manager sets this up for you.' : 'Zwayam is turning this on for your organisation.'} />;
+    const can = st.kind === 'toggle';
+    const on = f.isEnabled;
+    return (
+      <div
+        onClick={() => can && toggleEnabled(f.id)}
+        title={can ? undefined : 'Only customer admins can change this'}
+        style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: can ? 'pointer' : 'not-allowed' }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)' }}>{on ? 'On for your organisation' : 'Off for your organisation'}</div>
+          <div style={{ fontSize: 13, color: 'var(--tx3)', lineHeight: 1.4 }}>
+            {!can ? 'Only customer admins can change this.' : on ? 'Turn it off to hide it from everyone in your organisation.' : 'Turn it on to make it available to everyone in your organisation.'}
+          </div>
+        </div>
+        <span
+          role="switch"
+          tabIndex={can ? 0 : -1}
+          aria-checked={on}
+          aria-disabled={!can}
+          aria-label="Turn on for your organisation"
+          onKeyDown={(e) => { if (can && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); toggleEnabled(f.id); } }}
+          style={{ position: 'relative', display: 'inline-block', flex: 'none', width: 52, height: 28, borderRadius: 999, background: on ? 'var(--brand-solid)' : 'var(--switch-off)', opacity: can ? 1 : 0.42, transition: 'background 120ms ease' }}
+        >
+          <span style={{ position: 'absolute', top: 2, left: on ? 26 : 2, width: 24, height: 24, borderRadius: 999, background: 'var(--knob)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', transition: 'left 120ms ease' }} />
+        </span>
+      </div>
+    );
+  };
 
   return (
-    <>
-      <HubCrumb
-        levels={[
-          { label: 'Releases', path: '/product-hub/releases' },
-          { label: feature.title },
-        ]}
-      />
-
-      {/* ---- Header ------------------------------------------------------
-          The feature's own name is the page title here, with its state above
-          it and its facts below it. It used to sit on a brand-soft panel,
-          which made the whole header read as a banner about the feature
-          rather than as the page's own head. */}
-      <Panel style={{ marginBottom: SPACE.x4 }}>
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <FeatureTag tag={feature.featureTag} />
-          <Badge variant="static">{feature.productModule}</Badge>
-          {feature.published ? statusTag : <Badge variant="warning">Unpublished</Badge>}
-        </div>
-
-        {/* h2: the shell owns the page's h1. Styled as a page title. In V2
-            the page header carries it instead. */}
-        {version !== 'v2' && (
-          <h2 style={{ margin: `0 0 ${SPACE.x2}px`, ...TYPE.pageTitle, lineHeight: 1.25 }}>
-            {feature.title}
-          </h2>
-        )}
-
-        <p style={{ margin: 0, maxWidth: '70ch', ...TYPE.body }}>
-          {[summary, more].filter(Boolean).join(' ')}
-        </p>
-
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: SPACE.x2,
-            marginTop: SPACE.x3,
-          }}
-        >
-          <MetaChip icon={Calendar}>
-            {feature.published ? 'Released' : 'Planned for'} {formatDate(feature.prodEnablementDate)}
-          </MetaChip>
-          <MetaChip icon={Rocket}>{plural(inRelease, 'feature')} in this release</MetaChip>
-          {feature.featureType && (
-            <MetaChip icon={SlidersHorizontal}>
-              {DEFAULT_LABEL[feature.featureType] ?? feature.featureType}
-            </MetaChip>
-          )}
-          <MetaChip icon={FileText}>{feature.id}</MetaChip>
-        </div>
-      </Panel>
-
-      {/* ---- Release banner ----------------------------------------------
-          Full content width, one line, one action - the guidelines' banner.
-          This was a card in the right-hand column, three lines tall, below
-          everything else on the page; the release a feature shipped in is a
-          fact about the whole page, so it belongs across the top of it. */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: SPACE.x2,
-          marginBottom: SPACE.x4,
-          background: T.brandSoft,
-          borderWidth: 1,
-          borderStyle: 'solid',
-          borderColor: T.brandBorder,
-          borderRadius: RADIUS.control,
-          padding: `${SPACE.x2}px ${SPACE.x3}px`,
-        }}
-      >
-        <Info size={16} style={{ flexShrink: 0, color: T.brand }} />
-        <span
-          style={{
-            minWidth: 0,
-            flex: 1,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            fontSize: 13,
-            color: T.tx2,
-          }}
-        >
-          Included in the {feature.releaseMonth} release.
+    <section data-screen-label="Feature detail" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div role="note" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)', margin: '-16px -16px 0', padding: '8px 16px', fontSize: 13, color: 'var(--tx2)' }}>
+        <Info size={16} color="var(--brand)" aria-hidden style={{ flex: 'none' }} />
+        <span style={{ flex: 1, minWidth: 0 }}>
+          Included in the <b style={{ color: 'var(--tx)', fontWeight: 600 }}>{f.releaseMonth}</b> release with {sibs ? plural(sibs, 'other feature') : 'no other features'}.
         </span>
-        <button
-          type="button"
-          onClick={() =>
-            navigate(`/product-hub/releases?month=${encodeURIComponent(feature.releaseMonth)}`)
-          }
-          className="inline-flex shrink-0 items-center gap-1 rounded text-13 font-semibold text-brand hover:underline"
+        <a
+          href={`/product-hub/releases?month=${encodeURIComponent(f.releaseMonth)}`}
+          onClick={(e) => { e.preventDefault(); navigate(`/product-hub/releases?month=${encodeURIComponent(f.releaseMonth)}`); }}
+          style={{ fontSize: 13, fontWeight: 600, color: 'var(--brand)', display: 'inline-flex', alignItems: 'center', gap: 4, flex: 'none' }}
         >
-          View release <ArrowRight size={13} />
-        </button>
+          View this release<CaretRight size={10} weight="bold" />
+        </a>
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-4 min-[901px]:grid-cols-[1.6fr_1fr]">
-        <div>
-          <Panel>
-            <h3 style={{ margin: `0 0 ${SPACE.x3}px`, ...TYPE.sectionTitle }}>What&apos;s new</h3>
-            {/* The summary is the header's description now, so this is the
-                long-form explanation only. Repeating the summary here put the
-                same two sentences twice on one screen; a feature that has no
-                long form falls back to it rather than showing an empty
-                section. */}
-            <p className="mb-3 max-w-prose text-ink-700">
-              {feature.description || [summary, more].filter(Boolean).join(' ')}
-            </p>
-
-            {value.length > 0 && (
-              <>
-                <h3 style={{ margin: `${SPACE.x5}px 0 ${SPACE.x3}px`, ...TYPE.sectionTitle }}>
-                  Value delivered
-                </h3>
-                <ul className="mb-4 flex max-w-prose list-none flex-col gap-2 p-0">
-                  {value.map((b) => (
-                    <li
-                      key={b}
-                      className="flex items-start gap-3 rounded-md border border-ink-150 bg-ink-25 p-3 text-sm"
-                    >
-                      <CheckCircle size={18} className="shrink-0 text-green-600" />
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-            {/* The page's one primary action. */}
-            <Button
-              onClick={() =>
-                feature.productRoute
-                  ? navigate(feature.productRoute)
-                  : toast(`Opening ${feature.productModule} — this is where the capability lives.`)
-              }
-            >
-              View live <ArrowRight size={18} />
-            </Button>
-          </Panel>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <Panel>
-            <h3 style={{ margin: `0 0 ${SPACE.x3}px`, ...TYPE.sectionTitle }}>References</h3>
-            <div className="flex flex-col gap-0.5">
-              {feature.demoVideo && (
-                <a
-                  className={resLink}
-                  href="#"
-                  onClick={(e) => { e.preventDefault(); openRes('Demo video', feature.demoVideo); }}
-                >
-                  <Play size={18} />Watch demo
-                  <ExternalLink size={14} className="ml-auto text-ink-500" />
-                </a>
-              )}
-              {/* The release's one notes link when it has one, otherwise the
-                  generated document for this feature's month. */}
-              {notes.file ? (
-                <a className={resLink} {...notesLinkProps(notes.file)}>
-                  <BookOpen size={18} />Read release notes
-                  <ExternalLink size={14} className="ml-auto text-ink-500" />
-                </a>
-              ) : (
-                <a
-                  className={resLink}
-                  href={notes.path}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate(notes.path);
-                  }}
-                >
-                  <BookOpen size={18} />Read release notes
-                  <ArrowRight size={14} className="ml-auto text-ink-500" />
-                </a>
-              )}
-              {feature.configurationDoc && (
-                <a
-                  className={resLink}
-                  href="#"
-                  onClick={(e) => { e.preventDefault(); openRes('Config document', feature.configurationDoc); }}
-                >
-                  <FileText size={18} />Configuration document
-                  <ExternalLink size={14} className="ml-auto text-ink-500" />
-                </a>
-              )}
-              {/* The other half of the hub: how the module works, rather than
-                  what changed in it this release. */}
-              {kbModule && (
-                <a
-                  className={resLink}
-                  href={`/product-hub/knowledge/modules/${kbModule.slug}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate(`/product-hub/knowledge/modules/${kbModule.slug}`);
-                  }}
-                >
-                  <BookOpen size={18} />{feature.productModule} documentation
-                  <ArrowRight size={14} className="ml-auto text-ink-500" />
-                </a>
-              )}
-            </div>
-          </Panel>
-
-          {isCreator && (
-            <Panel>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  gap: SPACE.x3,
-                  marginBottom: SPACE.x3,
-                }}
-              >
-                <h3 style={{ margin: 0, ...TYPE.sectionTitle }}>Adoption</h3>
-                {feature.published && (
-                  <a
-                    href={adoptionUrl({ feature: feature.id })}
-                    onClick={(e) => { e.preventDefault(); navigate(adoptionUrl({ feature: feature.id })); }}
-                    style={{ fontSize: 13, fontWeight: 600, color: T.brand, textDecoration: 'none' }}
-                  >
-                    View adoption
-                  </a>
-                )}
-              </div>
-              <dl className="m-0">
-                {([
-                  ['Enabled customers', <UsageLink feature={feature}>{feature.enabledCustomers ?? 0}</UsageLink>, true],
-                  ['Active customers', <UsageLink feature={feature}>{feature.activeCustomers ?? 0}</UsageLink>, true],
-                  ['MAU (last 30 days)', <UsageLink feature={feature}>{(feature.mauLast30Days ?? 0).toLocaleString()}</UsageLink>, true],
-                  ['DAU (30-day avg)', <UsageLink feature={feature}>{feature.dauLast30DayAvg ?? 0}</UsageLink>, true],
-                  ['Feature flag', feature.productGate, false],
-                ] as const).map(([term, value, isNumber]) => (
-                  <div
-                    key={term}
-                    className="flex justify-between gap-4 border-b border-ink-150 py-3 text-sm last:border-b-0"
-                  >
-                    <dt className="text-ink-500">{term}</dt>
-                    <dd
-                      className={[
-                        'm-0 text-right',
-                        isNumber ? 'font-medium tabular-nums' : 'font-normal text-ink-500',
-                      ].join(' ')}
-                    >
-                      {value}
-                    </dd>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 16, alignItems: 'start' }}>
+        <div style={{ ...card, gridColumn: 'span 2', minWidth: 0 }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--bd)' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--tx)' }}>What's new</div>
+            <p style={{ margin: '4px 0 0', fontSize: 14, lineHeight: 1.5, color: 'var(--tx2)', textWrap: 'pretty' as never }}>{f.description || f.summary}</p>
+          </div>
+          {value.length > 0 && (
+            <div style={{ padding: '16px 20px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--tx)' }}>Value delivered</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                {value.map((v) => (
+                  <div key={v} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 14, lineHeight: 1.5, color: 'var(--tx2)' }}>
+                    <CheckCircle size={18} weight="fill" color="var(--succ)" style={{ flex: 'none', marginTop: 1 }} />{v}
                   </div>
                 ))}
-              </dl>
-            </Panel>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+          <div style={card}>
+            <div style={{ ...cardHead, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ flex: 1 }}>{isCreator ? 'Adoption' : 'Enablement'}</span>
+              {isCreator && f.published && (
+                <Hoverable
+                  as="a"
+                  href={adoptionUrl({ feature: f.id })}
+                  onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate(adoptionUrl({ feature: f.id }), { state: { trail } }); }}
+                  style={{ height: 28, padding: '0 8px', margin: '-4px -8px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--brand)' }}
+                  hoverStyle={{ background: 'var(--brand-soft)' }}
+                >
+                  View adoption<ArrowRight size={12} weight="bold" />
+                </Hoverable>
+              )}
+            </div>
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>{enablement()}</div>
+          </div>
+          <div style={card}>
+            <div style={cardHead}>Resources</div>
+            <div style={{ padding: 4, display: 'flex', flexDirection: 'column' }}>
+              {resources.map((r) => (
+                <Hoverable
+                  as="a"
+                  href="#"
+                  key={r.label}
+                  onClick={(e: React.MouseEvent) => { e.preventDefault(); r.onClick(); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 40, padding: '4px 12px', borderRadius: 8, fontSize: 14, fontWeight: 600, color: 'var(--brand)' }}
+                  hoverStyle={{ background: 'var(--brand-soft)' }}
+                >
+                  <r.icon size={16} style={{ flex: 'none' }} />
+                  <span style={{ flex: 1, minWidth: 0 }}>{r.label}</span>
+                  <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--tx3)' }}>{r.meta}</span>
+                </Hoverable>
+              ))}
+              {resources.length === 0 && <div style={{ padding: 12, fontSize: 13, color: 'var(--tx3)' }}>No resources attached yet.</div>}
+            </div>
+          </div>
+          {isCreator && f.productGate && (
+            <div style={{ ...card, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--tx2)' }}>Feature flag (internal)</div>
+              <code style={{ fontFamily: 'inherit', fontSize: 13, color: 'var(--tx)', background: 'var(--su2)', borderRadius: 6, padding: '4px 8px', alignSelf: 'flex-start' }}>{f.productGate}</code>
+            </div>
           )}
         </div>
       </div>
-    </>
+    </section>
   );
 };
 

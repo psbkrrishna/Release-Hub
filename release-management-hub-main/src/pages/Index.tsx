@@ -516,18 +516,18 @@ const Index = () => {
           {isCreator ? (
             <>
               <td className={TD_NUM}>
-                <UsageLink feature={f}>{f.enabledCustomers ?? 0}</UsageLink>
+                <UsageLink feature={f} metric="Enabled customers">{f.enabledCustomers ?? 0}</UsageLink>
               </td>
               <td className={TD_NUM}>
-                <UsageLink feature={f}>{f.activeCustomers ?? 0}</UsageLink>
+                <UsageLink feature={f} metric="Active customers">{f.activeCustomers ?? 0}</UsageLink>
               </td>
               <td className={TD_NUM}>
-                <UsageLink feature={f}>
+                <UsageLink feature={f} metric="MAU · last 30 days">
                   {(f.mauLast30Days ?? 0).toLocaleString()}
                 </UsageLink>
               </td>
               <td className={TD_NUM}>
-                <UsageLink feature={f}>{f.dauLast30DayAvg ?? 0}</UsageLink>
+                <UsageLink feature={f} metric="DAU · 30-day avg">{f.dauLast30DayAvg ?? 0}</UsageLink>
               </td>
               <td className={`${TD_MID} sticky right-0 z-[2] w-[52px] min-w-[52px] text-right ${STICKY_BG} ${SEAM_L}`}>
                 <RowMenu label={f.title} items={menuFor(f)} />

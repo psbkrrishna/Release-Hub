@@ -14,7 +14,6 @@ import ReleaseHubLayout from './pages/hub/ReleaseHubLayout';
 import HubIndexRedirect from './pages/hub/HubIndexRedirect';
 import Overview from './pages/hub/Overview';
 import ModuleLayout from './pages/hub/ModuleLayout';
-import KnowledgeHome from './pages/hub/KnowledgeHome';
 import KnowledgeSection from './pages/hub/KnowledgeSection';
 import ModuleDocs from './pages/hub/ModuleDocs';
 import DocumentDetail from './pages/hub/DocumentDetail';
@@ -24,6 +23,35 @@ import UserRoleProvider from './components/UserRoleProvider';
 import HubVersionProvider from './components/HubVersionProvider';
 import FeatureStore from './components/FeatureStore';
 import ReleaseStore from './components/ReleaseStore';
+import TicketStore from './components/TicketStore';
+import { CreateTicketModal } from './components/hub/Tickets';
+import TicketsPage from './pages/hub/TicketsPage';
+import ConfigConsole from './pages/hub/ConfigConsole';
+import { useFeatureStore } from './components/FeatureStore';
+
+import ReleasesPage from './pages/hub/ReleasesPage';
+import { DOCS_HOME } from './components/hub/docsNavData';
+
+/* Releases per the Release Hub V2 design: customers, customer admins and
+   creators each get their table there. The implementation team keeps its
+   support queue, which the design does not cover. */
+const ReleasesRoute = () => {
+  const { isImplementation } = useFeatureStore();
+  return isImplementation ? <Index /> : <ReleasesPage />;
+};
+
+/* Configure (the rail entry) is where creators manage Get help - the Product
+   Hub Configuration design. Other roles have nothing to configure here. */
+const ConfigureRoute = () => {
+  const { isCreator } = useFeatureStore();
+  if (isCreator) return <ConfigConsole />;
+  return (
+    <div style={{ padding: '64px 16px', textAlign: 'center' }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)' }}>Get help configuration is for Zwayam creators</div>
+      <div style={{ fontSize: 13, color: 'var(--tx3)', marginTop: 4 }}>Switch the demo role to Creator (internal) to manage features, releases and help content.</div>
+    </div>
+  );
+};
 
 const queryClient = new QueryClient();
 
@@ -73,6 +101,8 @@ const App = () => (
         <HubVersionProvider>
         <FeatureStore>
         <ReleaseStore>
+        <TicketStore>
+          <CreateTicketModal />
           <Routes>
             <Route element={<Navigation />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
@@ -90,7 +120,8 @@ const App = () => (
                 <Route path="overview" element={<Overview />} />
                 {/* The first tab shipped as "home" before it was renamed. */}
                 <Route path="home" element={<Navigate to="/product-hub/overview" replace />} />
-                <Route path="releases" element={<Index />} />
+                <Route path="releases" element={<ReleasesRoute />} />
+                <Route path="tickets" element={<TicketsPage />} />
                 <Route path="features/:featureId" element={<FeatureDetail />} />
                 {/* The documentation tab's landing page is a plain page:
                     search, then the modules. Everything below it - a module,
@@ -98,7 +129,7 @@ const App = () => (
                     that adds the left nav, so the nav survives navigation
                     between those pages instead of remounting under each. */}
                 <Route path="knowledge">
-                  <Route index element={<KnowledgeHome />} />
+                  <Route index element={<Navigate to={DOCS_HOME} replace />} />
                   <Route element={<ModuleLayout />}>
                     <Route path="release-notes" element={<KnowledgeSection section="release-notes" />} />
                     {/* A release's notes, and a newsletter issue, each render in
@@ -118,6 +149,7 @@ const App = () => (
                   Bookmarks and the left rail's old entry both land here. */}
               <Route path="knowledge-base" element={<Navigate to="/product-hub/knowledge" replace />} />
 
+              <Route path="configure" element={<ConfigureRoute />} />
               <Route path="performance-reviews" element={<PerformanceReviews />} />
               {/* Analytics opens on feature adoption, its only view so far.
                   The Releases table's usage numbers link straight into it. */}
@@ -128,6 +160,7 @@ const App = () => (
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
+        </TicketStore>
         </ReleaseStore>
         </FeatureStore>
         </HubVersionProvider>

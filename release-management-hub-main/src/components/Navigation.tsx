@@ -1,281 +1,103 @@
-import { useState, type ComponentType } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import {
-  LayoutGrid, Briefcase, FileText, Settings, UserCircle, ClipboardList, Building2,
-  Users, Sparkles, BarChart3, Rocket, BookOpen, Settings2, HelpCircle,
-  PanelLeft, Languages, MessageCircle, Bell, X,
-} from 'lucide-react';
+import { Sparkle, X } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import Chatbot from '@/components/Chatbot';
-import ReleaseBanner from '@/components/ReleaseBanner';
-import { useLatestRelease } from '@/components/ReleaseStore';
-import WhatsNewButton from '@/components/WhatsNewButton';
 import IconButton from '@/components/primitives/IconButton';
-import { caretBackgroundLight } from '@/components/primitives/fieldStyles';
-import { useUserRole, type UserRole } from '@/components/UserRoleProvider';
-import { useHubVersion, type HubVersion } from '@/components/HubVersionProvider';
+import { ShellProvider, useShell } from '@/components/shell/ShellContext';
+import SideRail, { type RailLabel } from '@/components/shell/SideRail';
+import { ReleaseModal, TopBar, WebinarBanner } from '@/components/shell/TopBar';
 
-/* Icons are component references now, not name strings. The previous version
-   built class names as `ph ph-${icon}`, which meant seven of the rail's icons
-   never appeared in a search for the icon set - worth avoiding again. */
-type RailItem = {
-  icon: ComponentType<{ size?: number | string; className?: string }>;
-  label: string;
-  path?: string;
-  isNew?: boolean;
+/* ---------------------------------------------------------------------------
+   The app shell, as the Release Hub V2 design draws it: a 56px brand top bar,
+   the green webinar banner under it while a webinar is ahead, the collapsible
+   Side Rail, and the page offset by both. "Get help" is the rail entry for the
+   whole help centre - what used to be the Product Hub.
+   --------------------------------------------------------------------------- */
+
+const ROUTES: Partial<Record<RailLabel, string>> = {
+  Dashboard: '/dashboard',
+  Insights: '/insights/adoption',
+  'Get help': '/product-hub/overview',
+  Configure: '/configure',
 };
 
-const topRail: RailItem[] = [
-  { icon: LayoutGrid, label: 'Dashboard', path: '/dashboard' },
-  { icon: Briefcase, label: 'Jobs' },
-  { icon: FileText, label: 'Documents' },
-  { icon: Settings, label: 'Configuration' },
-  { icon: UserCircle, label: 'Candidates' },
-  { icon: ClipboardList, label: 'Performance', path: '/performance-reviews', isNew: true },
-  { icon: Building2, label: 'Organisation' },
-  { icon: Users, label: 'People' },
-  { icon: Sparkles, label: 'AI tools' },
-];
+const activeFor = (path: string): RailLabel | '' => {
+  if (path.startsWith('/product-hub')) return 'Get help';
+  if (path.startsWith('/dashboard')) return 'Dashboard';
+  if (path.startsWith('/insights')) return 'Insights';
+  if (path.startsWith('/configure')) return 'Configure';
+  return '';
+};
 
-/* One entry for the whole hub. The Knowledge Hub used to have its own rail
-   entry, which made switching to that tab look like leaving for a different
-   destination - it is a tab within the Product Hub, so the rail stays put. */
-const lowerRail: RailItem[] = [
-  { icon: BarChart3, label: 'Analytics', path: '/insights' },
-  { icon: Rocket, label: 'Product Hub', path: '/product-hub' },
-];
-
-const footRail: RailItem[] = [
-  { icon: Settings2, label: 'Settings' },
-  { icon: HelpCircle, label: 'Help' },
-];
-
-const ROLES: Array<{ value: UserRole; label: string }> = [
-  { value: 'customer', label: 'Customer' },
-  { value: 'customer-admin', label: 'Customer Admin' },
-  { value: 'creator', label: 'Creator (Internal)' },
-  { value: 'implementation', label: 'Implementation Team' },
-];
-
-const Navigation = () => {
+const Shell = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { userRole, setUserRole } = useUserRole();
-  const { version, setVersion } = useHubVersion();
-  const [railCollapsed, setRailCollapsed] = useState(false);
-  // The rail widens on hover to reveal labels and overlays the canvas rather
-  // than reflowing it, so the shell keeps its 72px offset either way.
-  const [railExpanded, setRailExpanded] = useState(false);
-  const [kbOpen, setKbOpen] = useState(false);
-  /* The key holds the month that was dismissed, not a flag, so the next
-     release's banner - and the webinar it carries - appears again by itself. */
-  const latestMonth = useLatestRelease();
-  const [dismissedMonth, setDismissedMonth] = useState(() => localStorage.getItem('annDismissed'));
-  const bannerDismissed = !latestMonth || dismissedMonth === latestMonth;
+  const { shellTop } = useShell();
+  const [zeva, setZeva] = useState(false);
+  /* The release pop-up opens once per session, on first landing on the
+     dashboard - the way the design times it. */
+  const [relModal, setRelModal] = useState(false);
+  const [relSeen, setRelSeen] = useState(false);
 
-  /* The announcement is redundant inside the Product Hub - that whole
-     destination is the release, and its Overview leads with the same news. It
-     stays on every other page, where it is the way in. */
-  const onProductHub = location.pathname.startsWith('/product-hub');
-  const showBanner = !bannerDismissed && !onProductHub;
+  /* Published for sticky layers below the shell (table heads, docs nav). */
+  useEffect(() => { document.documentElement.style.setProperty('--shell-top', `${shellTop}px`); }, [shellTop]);
 
-  /* The banner's height used to be a CSS variable so the shell and the
-     assistant could both react to it. With no stylesheet to hold that
-     variable, the offset is computed here and passed down as classes - one
-     place, still only stated once. Keyed to whether the banner is actually
-     showing, not just whether it was dismissed, or the hub would reserve
-     space for a banner it never renders. */
-  const topOffset = showBanner ? 'top-shell-top' : 'top-topbar';
-  const shellPadTop = showBanner ? 'pt-shell-top' : 'pt-topbar';
+  useEffect(() => {
+    if (location.pathname.startsWith('/dashboard') && !relSeen) {
+      const t = window.setTimeout(() => setRelModal(true), 380);
+      return () => window.clearTimeout(t);
+    }
+  }, [location.pathname, relSeen]);
 
-  /* Active on its own page and anywhere beneath it, so every tab of the
-     Product Hub keeps its one rail entry lit. */
-  const isActive = ({ path }: RailItem) => {
-    if (!path) return false;
-    return location.pathname === path || location.pathname.startsWith(`${path}/`);
-  };
-
-  const dismissBanner = () => {
-    localStorage.setItem('annDismissed', latestMonth);
-    setDismissedMonth(latestMonth);
-  };
-
-  const railButton = (item: RailItem) => {
-    const { icon: Icon, label, path, isNew } = item;
-    const active = isActive(item);
-    return (
-      <button
-        key={label}
-        type="button"
-        className={[
-          'relative mx-3 flex shrink-0 items-center gap-3 rounded-lg p-2.5 text-sm transition-colors',
-          railExpanded ? 'justify-start' : 'justify-center',
-          active ? 'bg-brand text-white' : 'text-ink-700 hover:bg-brand hover:text-white',
-        ].join(' ')}
-        title={railExpanded ? undefined : label}
-        aria-label={label}
-        aria-current={active ? 'page' : undefined}
-        onClick={() => path && navigate(path)}
-      >
-        <Icon size={24} className="shrink-0" />
-        {railExpanded && <span className="overflow-hidden whitespace-nowrap">{label}</span>}
-        {isNew && (
-          <span
-            className={[
-              'rounded bg-purple-500 px-[3px] py-px text-[9px] font-bold leading-[1.2] tracking-[.02em] text-white',
-              railExpanded ? 'ml-auto' : 'absolute right-2 top-0.5',
-            ].join(' ')}
-          >
-            NEW
-          </span>
-        )}
-      </button>
-    );
+  const onNavigate = (label: RailLabel) => {
+    const to = ROUTES[label];
+    if (to) navigate(to);
+    else toast(`${label} isn't part of this prototype`);
   };
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-topbar flex h-topbar items-center gap-4 bg-brand px-4 text-white">
-        <IconButton
-          tone="onBrand"
-          className="rounded-lg"
-          onClick={() => setRailCollapsed((v) => !v)}
-          aria-label={railCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          title={railCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <PanelLeft size={18} />
-        </IconButton>
+      <TopBar onZeva={() => setZeva((v) => !v)} zevaOpen={zeva} />
+      <WebinarBanner />
+      <SideRail active={activeFor(location.pathname)} top={shellTop} onNavigate={onNavigate} />
 
-        <button
-          className="flex shrink-0 cursor-pointer items-center gap-3 border-none bg-transparent p-0 text-inherit"
-          onClick={() => navigate('/dashboard')}
-        >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[.16] text-base font-bold">
-            Z
-          </span>
-          <span className="text-base font-semibold tracking-[-0.01em]">Zwayam</span>
-        </button>
-
-        <div className="ml-auto flex items-center gap-3">
-          <WhatsNewButton />
-          <IconButton tone="onBrand" className="rounded-lg" title="Language" aria-label="Language">
-            <Languages size={18} />
-          </IconButton>
-          <IconButton
-            tone="onBrand"
-            className="rounded-lg"
-            title="Knowledge Assistant"
-            aria-label="Knowledge Assistant"
-            onClick={() => setKbOpen((v) => !v)}
-          >
-            <MessageCircle size={18} />
-          </IconButton>
-          <IconButton tone="onBrand" className="relative rounded-lg" title="Notifications" aria-label="Notifications">
-            <Bell size={18} />
-            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-amber-500" />
-          </IconButton>
-          <IconButton tone="onBrand" className="rounded-lg" title="Profile" aria-label="Profile">
-            <UserCircle size={18} />
-          </IconButton>
-
-          <div className="flex items-center gap-2 text-sm text-white/85">
-            <span>Version:</span>
-            <select
-              className="h-8 min-w-[72px] cursor-pointer appearance-none rounded-md border border-white/[.34] bg-white/[.12] pl-3 pr-4 text-base font-medium text-white"
-              style={caretBackgroundLight}
-              value={version}
-              onChange={(e) => setVersion(e.target.value as HubVersion)}
-              aria-label="Hub version"
-            >
-              <option value="v1" className="bg-white text-ink-900">V1</option>
-              <option value="v2" className="bg-white text-ink-900">V2</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-white/85">
-            <span>Demo Role:</span>
-            <select
-              className="h-8 min-w-[168px] cursor-pointer appearance-none rounded-md border border-white/[.34] bg-white/[.12] pl-3 pr-4 text-base font-medium text-white"
-              style={caretBackgroundLight}
-              value={userRole}
-              onChange={(e) => setUserRole(e.target.value as UserRole)}
-              aria-label="Demo role"
-            >
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value} className="bg-white text-ink-900">
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </header>
-
-      {showBanner && <ReleaseBanner railCollapsed={railCollapsed} onDismiss={dismissBanner} />}
-
-      <aside
-        className={[
-          'fixed bottom-0 left-0 top-topbar z-rail flex flex-col items-stretch gap-2 overflow-hidden',
-          'border-r border-ink-150 bg-white py-3 shadow-rail transition-[width] duration-200',
-          railCollapsed ? 'w-0' : railExpanded ? 'w-rail-open' : 'w-rail',
-        ].join(' ')}
-        onMouseEnter={() => setRailExpanded(true)}
-        onMouseLeave={() => setRailExpanded(false)}
-      >
-        {topRail.map(railButton)}
-        <div className="mx-3 my-2 h-px bg-ink-150" />
-        {lowerRail.map(railButton)}
-        <div className="mt-auto flex flex-col gap-1">{footRail.map(railButton)}</div>
-      </aside>
-
-      <div
-        className={[
-          'transition-[padding]',
-          shellPadTop,
-          railCollapsed ? 'pl-0' : 'pl-rail',
-          /* The assistant only gets its own column once there is room for it;
-             below that it overlays the canvas instead. */
-          kbOpen ? 'min-[1181px]:pr-kb' : '',
-        ].join(' ')}
-      >
-        {/* 16px on every side, the same at every width. It used to grow to
-            24px horizontally and drop 48px at the bottom, which is what made
-            the page read as unevenly padded. */}
-        <main style={{ padding: 16, background: 'var(--bg)', minHeight: 'calc(100vh - 56px)' }}>
+      <div style={{ marginLeft: 'var(--rail-w, 64px)', paddingTop: shellTop, transition: 'margin-left 180ms cubic-bezier(0.4,0,0.2,1)', paddingRight: zeva ? 380 : 0 }}>
+        <main style={{ padding: 16, background: 'var(--bg)', minHeight: `calc(100vh - ${shellTop}px)`, boxSizing: 'border-box' }}>
           <Outlet />
         </main>
       </div>
 
-      {kbOpen && (
+      {zeva && (
         <aside
-          className={[
-            'fixed bottom-0 right-0 z-kb flex w-[min(340px,100%)] flex-col border-l border-ink-150 bg-white',
-            'shadow-elev3 min-[1181px]:w-kb min-[1181px]:shadow-none',
-            topOffset,
-          ].join(' ')}
+          aria-label="Zēva"
+          style={{ position: 'fixed', top: shellTop, right: 0, bottom: 0, width: 'min(380px, 100%)', zIndex: 180, display: 'flex', flexDirection: 'column', background: 'var(--card)', borderLeft: '1px solid var(--bd2)', fontFamily: "'Source Sans 3', -apple-system, sans-serif" }}
         >
-          <div className="flex items-center gap-3 bg-brand px-5 py-4 text-white">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[.18]">
-              <Sparkles size={16} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--bd2)' }}>
+            <span style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--brand-soft)', color: 'var(--brand)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sparkle size={16} weight="fill" />
             </span>
-            <div>
-              <div className="text-sm font-semibold">Knowledge Assistant</div>
-              <div className="text-xs text-white/[.78]">Ask about this release</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--tx)' }}>Zēva</div>
+              <div style={{ fontSize: 12, color: 'var(--tx3)' }}>Ask about this release</div>
             </div>
-            <IconButton
-              tone="onBrand"
-              style={{ marginLeft: 'auto' }}
-              onClick={() => setKbOpen(false)}
-              title="Close assistant"
-              aria-label="Close assistant"
-            >
+            <IconButton size="compact" onClick={() => setZeva(false)} title="Close Zēva" aria-label="Close Zēva">
               <X size={16} />
             </IconButton>
           </div>
           <Chatbot />
         </aside>
       )}
+
+      <ReleaseModal open={relModal} onClose={() => { setRelModal(false); setRelSeen(true); }} />
     </>
   );
 };
+
+const Navigation = () => (
+  <ShellProvider>
+    <Shell />
+  </ShellProvider>
+);
 
 export default Navigation;

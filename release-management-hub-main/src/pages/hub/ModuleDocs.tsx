@@ -1,253 +1,127 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  FileText, Play, ArrowRight, CaretRight,
-  MagnifyingGlass as Search, Clock, RocketLaunch as Rocket, MonitorPlay,
-} from '@phosphor-icons/react';
-import type { ComponentType } from 'react';
-import Panel from '@/components/primitives/Panel';
-import FeatureTag from '@/components/hub/FeatureTag';
-import Button from '@/components/primitives/Button';
-import HubCrumb from '@/components/hub/HubCrumb';
-import { useHubVersion } from '@/components/HubVersionProvider';
-import EmptyState from '@/components/primitives/EmptyState';
+import { CaretRight, FileText, PlayCircle, Ticket } from '@phosphor-icons/react';
+import Hoverable from '@/components/primitives/Hoverable';
 import { useFeatureStore } from '@/components/FeatureStore';
+import { useTickets } from '@/components/TicketStore';
 import { moduleBySlug, plural } from '@/data/knowledge';
-import { formatDate } from '@/data/features';
-import { RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
 
-/* ---------------------------------------------------------------------------
-   One module: its documents, its videos, and every feature that has shipped in
-   it. That last section is the point of merging the two halves - from a module
-   you can reach the feature, and from the feature you can reach the module.
+/* A module in Documentation, as the Release Hub V2 design shows it: Guides,
+   the features that shipped in the module, its videos, and a way to raise a
+   ticket when none of it answers the question. */
 
-   Its own page, with the module list as a rail down the left rather than a
-   panel at the foot of the right-hand column. Navigation belongs beside the
-   content, not after all of it.
-   --------------------------------------------------------------------------- */
-
-/** A count, as the guidelines' neutral --su2 chip. These are facts about the
- *  module, so none of them is tinted. */
-const MetaChip = ({
-  icon: Icon,
-  children,
-}: {
-  icon: ComponentType<{ size?: number | string }>;
-  children: React.ReactNode;
-}) => (
-  <span
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 6,
-      height: 24,
-      padding: `0 ${SPACE.x2}px`,
-      borderRadius: RADIUS.tag,
-      background: T.su2,
-      color: T.tx3,
-      fontSize: 12,
-      fontWeight: 600,
-      fontVariantNumeric: 'tabular-nums',
-      whiteSpace: 'nowrap',
-    }}
-  >
-    <Icon size={13} />
+export const SecHead = ({ title, sub, children }: { title: string; sub?: string; children?: React.ReactNode }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 240 }}>
+      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, lineHeight: '24px', color: 'var(--tx)' }}>{title}</h2>
+      {sub && <p style={{ margin: 0, fontSize: 13, lineHeight: 1.4, color: 'var(--tx3)' }}>{sub}</p>}
+    </div>
     {children}
-  </span>
+  </div>
 );
+
+const card = { background: 'var(--card)', border: '1px solid var(--bd2)', borderRadius: 8 } as const;
+const head = { padding: '12px 16px', borderBottom: '1px solid var(--bd)', fontSize: 14, fontWeight: 700, color: 'var(--tx)' } as const;
+const rowBtn = { width: '100%', display: 'flex', alignItems: 'center', gap: 12, border: 'none', borderRadius: 8, background: 'transparent', fontFamily: 'inherit', textAlign: 'left' as const, cursor: 'pointer' };
 
 const ModuleDocs = () => {
   const { moduleSlug } = useParams();
   const navigate = useNavigate();
-  const { visibleFeatures, toast } = useFeatureStore();
-  const { version } = useHubVersion();
+  const { visibleFeatures } = useFeatureStore();
+  const { openCreate } = useTickets();
+  const m = moduleBySlug(moduleSlug);
 
-  const module = moduleBySlug(moduleSlug);
+  if (!m) return <SecHead title="Module not found" sub="Pick a module from the list on the left." />;
 
-  if (!module) {
-    return (
-      <EmptyState
-        icon={<Search size={26} />}
-        title="That module isn't in the documentation"
-        action={
-          <Button variant="secondary" onClick={() => navigate('/product-hub/knowledge')}>
-            <ArrowRight size={18} />Back to all modules
-          </Button>
-        }
-      >
-        It may have been renamed. Every module is listed on the documentation home.
-      </EmptyState>
-    );
-  }
-
-  const open = (label: string, url?: string) =>
-    toast(url ? `${label} → ${url}` : `${label} isn't attached yet.`, 'info');
-
-  const features = visibleFeatures
-    .filter((f) => f.productModule === module.name)
-    .sort((a, b) => b.prodEnablementDate.localeCompare(a.prodEnablementDate));
+  const feats = visibleFeatures.filter((f) => f.published && f.productModule === m.name);
+  const vids = feats.filter((f) => f.demoVideo);
 
   return (
     <>
-      {/* ---- Page header -------------------------------------------------
-          Crumb, the module's name as the title, and its counts as neutral
-          chips beneath. The brand-soft hero tile this replaced said nothing
-          the title did not, and pushed the documents below the fold. */}
-      <HubCrumb
-        levels={[
-          { label: 'Documentation', path: '/product-hub/knowledge' },
-          { label: module.name },
-        ]}
-      />
+      <SecHead title={m.name} sub={m.blurb} />
 
-      <div style={{ marginBottom: SPACE.x6 }}>
-        {/* In V2 the page header already carries the module's name and
-            tagline, so the body keeps only the chips. */}
-        {version !== 'v2' && (
-          <>
-            {/* h2: the shell owns the page's h1. Styled as a page title. */}
-            <h2 style={{ margin: `0 0 ${SPACE.x2}px`, ...TYPE.pageTitle, lineHeight: 1.25 }}>
-              {module.name}
-            </h2>
-            {/* One line only - the blurb wrapped to three here, which is what
-                made the header block look unsettled. */}
-            <p
-              style={{
-                margin: `0 0 ${SPACE.x3}px`,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                ...TYPE.body,
-              }}
+      <div style={card}>
+        <div style={head}>Guides</div>
+        <div style={{ padding: 4 }}>
+          {m.docs.map((d) => (
+            <Hoverable
+              as="button"
+              type="button"
+              key={d.id}
+              onClick={() => navigate(`/product-hub/knowledge/modules/${m.slug}/documents/${d.id}`)}
+              style={{ ...rowBtn, minHeight: 48, padding: '8px 12px' }}
+              hoverStyle={{ background: 'var(--su1)' }}
             >
-              {module.tagline}
-            </p>
-          </>
-        )}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: SPACE.x2 }}>
-          <MetaChip icon={FileText}>{plural(module.docs.length, 'document')}</MetaChip>
-          <MetaChip icon={MonitorPlay}>{plural(module.videos.length, 'video')}</MetaChip>
-          <MetaChip icon={Rocket}>{plural(features.length, 'feature')} released</MetaChip>
+              <FileText size={16} color="var(--tx3)" style={{ flex: 'none' }} />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--tx)' }}>{d.title}</span>
+                <span style={{ display: 'block', fontSize: 13, color: 'var(--tx3)' }}>{d.blurb}</span>
+              </span>
+              <span style={{ fontSize: 12, color: 'var(--tx4)', whiteSpace: 'nowrap' }}>{d.minutes} min read</span>
+              <CaretRight size={10} weight="bold" color="var(--tx4)" aria-hidden style={{ flex: 'none' }} />
+            </Hoverable>
+          ))}
+          {m.docs.length === 0 && <div style={{ padding: 12, fontSize: 13, color: 'var(--tx3)' }}>No guides for this module yet.</div>}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-4 min-[1181px]:grid-cols-[1.6fr_1fr]">
-        <div className="flex flex-col gap-4">
-          <Panel>
-            <h3
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: SPACE.x2,
-                margin: `0 0 ${SPACE.x4}px`,
-                ...TYPE.sectionTitle,
-              }}
+      <div style={card}>
+        <div style={head}>Features in this module</div>
+        <div style={{ padding: 4 }}>
+          {feats.map((f) => (
+            <Hoverable
+              as="button"
+              type="button"
+              key={f.id}
+              onClick={() => navigate(`/product-hub/features/${f.id}`)}
+              style={{ ...rowBtn, minHeight: 40, padding: '6px 12px' }}
+              hoverStyle={{ background: 'var(--su1)' }}
             >
-              <FileText size={18} />Documents
-            </h3>
-            {module.docs.length ? (
-              <div className="flex flex-col gap-3">
-                {/* The whole row opens the document's own page now, rather
-                    than a corner icon toasting a URL nothing served - so the
-                    row is a button, not a div, and the arrow says "read this"
-                    instead of "leaves the app". */}
-                {module.docs.map((doc) => (
-                  <button
-                    key={doc.id}
-                    type="button"
-                    onClick={() => navigate(`/product-hub/knowledge/modules/${module.slug}/documents/${doc.id}`)}
-                    className="flex w-full items-start justify-between gap-4 rounded-lg border border-ink-150 bg-ink-25 p-4 text-left transition-colors hover:border-brand-border hover:bg-brand-soft"
-                  >
-                    <div>
-                      <h4 className="text-sm font-semibold">{doc.title}</h4>
-                      <p className="mt-1 text-13 text-ink-600">{doc.blurb}</p>
-                      <span className="mt-2 flex items-center gap-1 text-xs text-ink-500">
-                        <Clock size={12} />{doc.minutes} min read
-                      </span>
-                    </div>
-                    <CaretRight size={16} className="mt-1 shrink-0 text-ink-400" />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-ink-600">
-                No documents yet. The features below carry their own release notes.
-              </p>
-            )}
-          </Panel>
-
-          <Panel>
-            <h3
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: SPACE.x2,
-                margin: `0 0 ${SPACE.x4}px`,
-                ...TYPE.sectionTitle,
-              }}
-            >
-              <Rocket size={18} />Features
-            </h3>
-            {features.length ? (
-              <div className="flex flex-col gap-2">
-                {features.map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => navigate(`/product-hub/features/${f.id}`)}
-                    className="flex items-center gap-3 rounded-lg border border-ink-150 bg-white p-3 text-left transition-colors hover:border-brand-border hover:bg-brand-soft"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-ink-900">{f.title}</span>
-                      <span className="mt-1 flex items-center gap-2">
-                        <FeatureTag tag={f.featureTag} />
-                        <span className="text-xs text-ink-500">
-                          {f.releaseMonth} · {formatDate(f.prodEnablementDate)}
-                        </span>
-                      </span>
-                    </span>
-                    <ArrowRight size={16} className="ml-auto shrink-0 text-ink-400" />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-ink-600">Nothing has shipped in this module yet.</p>
-            )}
-          </Panel>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: 'var(--tx)' }}>{f.title}</span>
+              <span style={{ fontSize: 13, color: 'var(--tx3)', whiteSpace: 'nowrap' }}>{f.releaseMonth}</span>
+              <CaretRight size={10} weight="bold" color="var(--tx4)" />
+            </Hoverable>
+          ))}
+          {feats.length === 0 && <div style={{ padding: 12, fontSize: 13, color: 'var(--tx3)' }}>No features have shipped in this module yet.</div>}
         </div>
+      </div>
 
-        <Panel>
-          <h3
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: SPACE.x2,
-              margin: `0 0 ${SPACE.x4}px`,
-              ...TYPE.sectionTitle,
-            }}
-          >
-            <MonitorPlay size={18} />Videos
-          </h3>
-          {module.videos.length ? (
-            <div className="flex flex-col gap-2">
-              {module.videos.map((v) => (
-                <button
-                  key={v.id}
-                  onClick={() => open(v.title, v.url)}
-                  className="flex items-center gap-3 rounded-lg border border-ink-150 bg-ink-25 p-3 text-left transition-colors hover:bg-brand-soft"
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600">
-                    <Play size={14} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium">{v.title}</span>
-                    <span className="text-xs tabular-nums text-ink-500">{v.duration}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-ink-600">No videos for this module yet.</p>
-          )}
-        </Panel>
+      <div style={card}>
+        <div style={{ ...head, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>Videos</span>
+          <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--tx3)' }}>{plural(vids.length, 'video')}</span>
+        </div>
+        <div style={{ padding: 4 }}>
+          {vids.map((f) => (
+            <Hoverable
+              as="button"
+              type="button"
+              key={f.id}
+              aria-label={`Play ${f.title} demo`}
+              onClick={() => navigate(`/product-hub/features/${f.id}`)}
+              style={{ ...rowBtn, minHeight: 48, padding: '8px 12px' }}
+              hoverStyle={{ background: 'var(--su1)' }}
+            >
+              <PlayCircle size={24} weight="fill" color="var(--brand)" aria-hidden style={{ flex: 'none' }} />
+              <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: 'var(--tx)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.title}</span>
+              <span style={{ fontSize: 13, color: 'var(--tx3)', whiteSpace: 'nowrap' }}>{f.releaseMonth}</span>
+              <CaretRight size={10} weight="bold" color="var(--tx4)" aria-hidden style={{ flex: 'none' }} />
+            </Hoverable>
+          ))}
+          {vids.length === 0 && <div style={{ padding: 12, fontSize: 13, color: 'var(--tx3)' }}>No videos for this module yet.</div>}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 0', fontSize: 14, color: 'var(--tx3)' }}>
+        <span>Still can't find what you're looking for?</span>
+        <Hoverable
+          as="button"
+          type="button"
+          onClick={openCreate}
+          style={{ height: 32, padding: '0 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--brand)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+          hoverStyle={{ background: 'var(--brand-soft)' }}
+        >
+          <Ticket size={16} />Raise a ticket
+        </Hoverable>
       </div>
     </>
   );

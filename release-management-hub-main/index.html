@@ -40,6 +40,8 @@
       ::-webkit-scrollbar-thumb { background: #DADADC; border-radius: 999px; }
       ::-webkit-scrollbar-track { background: transparent; }
 
+      @keyframes zdot { 0%,60%,100% { transform: translateY(0) scale(1,1); opacity: .55; } 15% { transform: translateY(1px) scale(1.25,.75); opacity: .8; } 35% { transform: translateY(-6px) scale(.85,1.15); opacity: 1; } 50% { transform: translateY(0) scale(1.15,.85); opacity: .8; } }
+      @keyframes zshimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
       @keyframes zspin { to { transform: rotate(360deg); } }
       @keyframes riseIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
       @keyframes slideInRight { from { transform: translateX(100%); } to { transform: none; } }

@@ -10,9 +10,9 @@ import Hoverable from '@/components/primitives/Hoverable';
 import { TicketsTable } from '@/components/hub/Tickets';
 import { useTickets } from '@/components/TicketStore';
 import { useFeatureStore } from '@/components/FeatureStore';
-import { useLatestRelease, useUpcomingWebinar } from '@/components/ReleaseStore';
+import { useLatestRelease } from '@/components/ReleaseStore';
+import { useShell } from '@/components/shell/ShellContext';
 import { KB_MODULES, plural, releaseNoteGroups, sortedNewsletters } from '@/data/knowledge';
-import { formatWebinarWhen, webinarCountdown } from '@/data/releases';
 import { groupOf } from '@/data/tickets';
 import { HERO_C_BG, RADIUS, SPACE, T, TYPE } from '@/styles/zerra';
 
@@ -124,101 +124,37 @@ const heroPillStyle = (hover: boolean) => ({
   transition: 'transform 180ms cubic-bezier(0.2,0,0,1), background 160ms ease, border-color 160ms ease, box-shadow 180ms ease',
 });
 
-const WebinarPill = ({ month }: { month: string }) => {
-  const webinar = useUpcomingWebinar(month);
-  const [open, setOpen] = useState(false);
+/* The translucent pill above the hero title. Not registered: "Webinar · Live
+   walkthrough · 18 Nov". Registered: "Webinar · Release walkthrough · in 7
+   days". Either way it opens the webinar drawer, where Register (or the
+   registration's details) lives. */
+const WebinarPill = () => {
+  const { webinar, registered, registering, openDrawer, drawerOpen } = useShell();
   const [hover, setHover] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const wrap = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: MouseEvent) => { if (!wrap.current?.contains(e.target as Node)) setOpen(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', away);
-    document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc); };
-  }, [open]);
-
   if (!webinar) return null;
-
+  const meta = registered ? webinar.countdown.replace('starts ', '') : webinar.dateShort;
   return (
-    <div ref={wrap} style={{ position: 'relative', display: 'inline-flex', marginBottom: SPACE.x6 }}>
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        style={heroPillStyle(hover)}
-      >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px', borderRadius: RADIUS.pill, background: '#FFFFFF', color: T.succText, fontSize: 12, fontWeight: 700, transform: hover ? 'scale(1.06)' : 'none', transition: 'transform 240ms cubic-bezier(0.34,1.56,0.64,1)' }}>
-          <VideoCamera size={12} weight="fill" />Webinar
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <span>{webinar.title}</span>
-          <span aria-hidden style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.7 }} />
-          <span>{webinarCountdown(webinar.startsAt)}</span>
-        </span>
-        <ArrowRight size={12} weight="bold" style={{ transform: hover ? 'translateX(4px)' : 'none', transition: 'transform 220ms cubic-bezier(0.34,1.56,0.64,1)' }} />
-      </button>
-
-      {open && (
-        <div
-          role="dialog"
-          aria-label="Webinar details"
-          style={{
-            position: 'absolute', top: 'calc(100% + 6px)', left: '50%', transform: 'translateX(-50%)', zIndex: 70,
-            width: 380, maxWidth: 'calc(100vw - 32px)', background: T.card, border: `1px solid ${T.bd}`,
-            borderRadius: RADIUS.control, boxShadow: T.elev3, textAlign: 'left', color: T.tx, animation: 'riseIn 160ms ease',
-          }}
-        >
-          <div style={{ padding: '16px 16px 12px', display: 'flex', flexDirection: 'column', gap: 8, borderBottom: `1px solid ${T.bd}` }}>
-            <span style={{ alignSelf: 'flex-start', height: 20, padding: '0 8px', borderRadius: RADIUS.pill, background: T.succSoft, border: `1px solid ${T.succBorder}`, color: T.succText, fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center' }}>
-              {month} release
-            </span>
-            <span style={{ fontSize: 16, lineHeight: '22px', fontWeight: 700 }}>{webinar.title}</span>
-            <span style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', fontSize: 13, color: T.tx3 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><CalendarBlank size={14} color="var(--tx4)" />{formatWebinarWhen(webinar.startsAt)}</span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Clock size={14} color="var(--tx4)" />45 min · {webinarCountdown(webinar.startsAt)}</span>
-            </span>
-          </div>
-          <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={TYPE.eyebrow}>What we'll cover</span>
-            {['What shipped this release and why', 'A live walkthrough of the headline features', 'Your questions, answered live'].map((t) => (
-              <span key={t} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, lineHeight: '18px', color: T.tx2 }}>
-                <RocketLaunch size={14} color="var(--tx4)" style={{ marginTop: 2, flex: 'none' }} />{t}
-              </span>
-            ))}
-          </div>
-          <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, borderTop: `1px solid ${T.bd}` }}>
-            <Hoverable
-              as="a"
-              href={webinar.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ height: 36, padding: '0 16px', borderRadius: RADIUS.control, display: 'inline-flex', alignItems: 'center', gap: 8, background: T.brandSolid, color: '#FFFFFF', ...TYPE.button }}
-              hoverStyle={{ background: T.brandSolidHover, color: '#FFFFFF' }}
-            >
-              Register<ArrowUpRight size={16} weight="bold" />
-            </Hoverable>
-            <Hoverable
-              as="button"
-              type="button"
-              onClick={() => { navigator.clipboard?.writeText(webinar.url); setCopied(true); window.setTimeout(() => setCopied(false), 1600); }}
-              style={{ height: 36, padding: '0 12px', borderRadius: RADIUS.control, display: 'inline-flex', alignItems: 'center', gap: 8, border: `1px solid ${T.bd2}`, background: T.card, color: T.tx2, cursor: 'pointer', fontFamily: 'inherit', ...TYPE.button }}
-              hoverStyle={{ background: T.su2 }}
-            >
-              <LinkIcon size={16} />{copied ? 'Link copied' : 'Copy link'}
-            </Hoverable>
-          </div>
-        </div>
-      )}
-    </div>
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      aria-expanded={drawerOpen}
+      onClick={openDrawer}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ ...heroPillStyle(hover), marginBottom: SPACE.x6 }}
+    >
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px', borderRadius: RADIUS.pill, background: '#FFFFFF', color: T.succText, fontSize: 12, fontWeight: 700, transform: hover ? 'scale(1.06)' : 'none', transition: 'transform 240ms cubic-bezier(0.34,1.56,0.64,1)' }}>
+        <VideoCamera size={12} weight="fill" />Webinar
+      </span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        <span>{registered ? 'Release walkthrough' : 'Live walkthrough'}</span>
+        <span aria-hidden style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.7 }} />
+        <span>{registering ? 'Registering…' : meta}</span>
+      </span>
+      <ArrowRight size={12} weight="bold" style={{ transform: hover ? 'translateX(4px)' : 'none', transition: 'transform 220ms cubic-bezier(0.34,1.56,0.64,1)' }} />
+    </button>
   );
 };
-
 const ReleasePill = ({ month, count, onClick }: { month: string; count: number; onClick: () => void }) => {
   const [hover, setHover] = useState(false);
   return (
@@ -245,7 +181,7 @@ const Overview = () => {
   const { visibleFeatures, isCreator } = useFeatureStore();
   const { tickets, openCreate } = useTickets();
   const latestMonth = useLatestRelease();
-  const webinar = useUpcomingWebinar(latestMonth);
+  const { webinar } = useShell();
 
   const groups = useMemo(() => releaseNoteGroups(visibleFeatures), [visibleFeatures]);
   const latest = groups[0];
@@ -342,7 +278,7 @@ const Overview = () => {
         </div>
 
         {webinar ? (
-          <WebinarPill month={latestMonth} />
+          <WebinarPill />
         ) : (
           latest && <ReleasePill month={latest.month} count={latest.features.length} onClick={() => goReleases(latest.month)} />
         )}

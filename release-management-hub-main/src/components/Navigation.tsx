@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Sparkle, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-import Chatbot from '@/components/Chatbot';
-import IconButton from '@/components/primitives/IconButton';
 import { useUserRole } from '@/components/UserRoleProvider';
 import { ShellProvider, useShell } from '@/components/shell/ShellContext';
 import SideRail, { type RailLabel } from '@/components/shell/SideRail';
 import { ReleaseModal, TopBar, WebinarBanner } from '@/components/shell/TopBar';
+import WebinarDrawer from '@/components/shell/WebinarDrawer';
+import ZevaDrawer from '@/components/shell/ZevaDrawer';
+import { useZeva } from '@/components/shell/ZevaStore';
 
 /* ---------------------------------------------------------------------------
    The app shell, as the Release Hub V2 design draws it: a 56px brand top bar,
@@ -43,7 +43,7 @@ const Shell = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userRole]);
-  const [zeva, setZeva] = useState(false);
+  const { open: zevaOpen, toggleZeva } = useZeva();
   /* The release pop-up opens once per session, on first landing on the
      dashboard - the way the design times it. */
   const [relModal, setRelModal] = useState(false);
@@ -67,37 +67,20 @@ const Shell = () => {
 
   return (
     <>
-      <TopBar onZeva={() => setZeva((v) => !v)} zevaOpen={zeva} />
+      <TopBar onZeva={toggleZeva} zevaOpen={zevaOpen} />
       <WebinarBanner />
       <SideRail active={activeFor(location.pathname)} top={shellTop} onNavigate={onNavigate} />
 
-      <div style={{ marginLeft: 'var(--rail-w, 64px)', paddingTop: shellTop, transition: 'margin-left 180ms cubic-bezier(0.4,0,0.2,1)', paddingRight: zeva ? 380 : 0 }}>
+      <div style={{ marginLeft: 'var(--rail-w, 64px)', paddingTop: shellTop, transition: 'margin-left 180ms cubic-bezier(0.4,0,0.2,1)' }}>
         <main style={{ padding: 16, background: 'var(--bg)', minHeight: `calc(100vh - ${shellTop}px)`, boxSizing: 'border-box' }}>
           <Outlet />
         </main>
       </div>
 
-      {zeva && (
-        <aside
-          aria-label="Zēva"
-          style={{ position: 'fixed', top: shellTop, right: 0, bottom: 0, width: 'min(380px, 100%)', zIndex: 180, display: 'flex', flexDirection: 'column', background: 'var(--card)', borderLeft: '1px solid var(--bd2)', fontFamily: "'Source Sans 3', -apple-system, sans-serif" }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--bd2)' }}>
-            <span style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--brand-soft)', color: 'var(--brand)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sparkle size={16} weight="fill" />
-            </span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--tx)' }}>Zēva</div>
-              <div style={{ fontSize: 12, color: 'var(--tx3)' }}>Ask about this release</div>
-            </div>
-            <IconButton size="compact" onClick={() => setZeva(false)} title="Close Zēva" aria-label="Close Zēva">
-              <X size={16} />
-            </IconButton>
-          </div>
-          <Chatbot />
-        </aside>
-      )}
 
+
+      <ZevaDrawer />
+      <WebinarDrawer />
       <ReleaseModal open={relModal} onClose={() => { setRelModal(false); setRelSeen(true); }} />
     </>
   );

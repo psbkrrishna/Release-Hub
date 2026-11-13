@@ -24,7 +24,7 @@ import HubVersionProvider from './components/HubVersionProvider';
 import FeatureStore from './components/FeatureStore';
 import ReleaseStore from './components/ReleaseStore';
 import TicketStore from './components/TicketStore';
-import { CreateTicketModal } from './components/hub/Tickets';
+import ZevaStore from './components/shell/ZevaStore';
 import TicketsPage from './pages/hub/TicketsPage';
 import ConfigConsole from './pages/hub/ConfigConsole';
 import { useFeatureStore } from './components/FeatureStore';
@@ -101,8 +101,8 @@ const App = () => (
         <HubVersionProvider>
         <FeatureStore>
         <ReleaseStore>
+        <ZevaStore>
         <TicketStore>
-          <CreateTicketModal />
           <Routes>
             <Route element={<Navigation />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
@@ -162,6 +162,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TicketStore>
+        </ZevaStore>
         </ReleaseStore>
         </FeatureStore>
         </HubVersionProvider>

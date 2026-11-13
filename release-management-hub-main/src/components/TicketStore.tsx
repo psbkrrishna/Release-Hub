@@ -1,19 +1,22 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 import { seedTickets, sortTickets, type Ticket } from '@/data/tickets';
+import { useZeva } from '@/components/shell/ZevaStore';
 
 /* ---------------------------------------------------------------------------
-   The signed-in customer's support tickets, plus whether the "Create ticket"
-   dialog is open - it can be raised from the Overview hero and from the
-   tickets page, so the dialog's state lives with the list it adds to.
+   The signed-in customer's support tickets.
+
+   Tickets are raised through Zēva, as in the Release Hub V2 design: every
+   "Raise a ticket" opens Zēva with a ticket command, and a ticket Zēva files
+   lands here as an open ticket raised via Zēva. There is no separate create
+   form.
    --------------------------------------------------------------------------- */
 
 interface TicketStoreValue {
   tickets: Ticket[];
-  createOpen: boolean;
+  /** Opens Zēva and starts the ticket conversation. */
   openCreate: () => void;
-  closeCreate: () => void;
-  create: (t: { title: string; module: string; detail: string }) => Ticket;
+  /** A ticket Zēva has just filed. */
+  addFromZeva: (t: { id: string; title: string; detail?: string }) => void;
 }
 
 const Ctx = createContext<TicketStoreValue | undefined>(undefined);
@@ -26,38 +29,19 @@ export const useTickets = () => {
 
 const TicketStore = ({ children }: { children: React.ReactNode }) => {
   const [tickets, setTickets] = useState<Ticket[]>(seedTickets);
-  const [createOpen, setCreateOpen] = useState(false);
+  const { openZeva } = useZeva();
 
-  const create = useCallback((t: { title: string; module: string; detail: string }) => {
-    const now = new Date().toISOString().slice(0, 19);
-    let made!: Ticket;
-    setTickets((cur) => {
-      const next = cur.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1;
-      made = {
-        id: String(next),
-        title: t.title,
-        raw: 'Open',
-        created: now,
-        updated: now,
-        via: 'Portal',
-        module: t.module,
-        chat: [['You', t.detail || t.title]],
-      };
-      return [made, ...cur];
-    });
-    toast.success('Ticket created. Support will reply here and by email');
-    return made;
+  const addFromZeva = useCallback((t: { id: string; title: string; detail?: string }) => {
+    const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19);
+    setTickets((cur) => [
+      { id: t.id, title: t.title, raw: 'Open', created: now, updated: now, via: 'Zēva', module: 'Recruiting', chat: [['You', t.detail || t.title]], fresh: true },
+      ...cur,
+    ]);
   }, []);
 
   const value = useMemo<TicketStoreValue>(
-    () => ({
-      tickets: sortTickets(tickets),
-      createOpen,
-      openCreate: () => setCreateOpen(true),
-      closeCreate: () => setCreateOpen(false),
-      create,
-    }),
-    [tickets, createOpen, create],
+    () => ({ tickets: sortTickets(tickets), openCreate: () => openZeva('ticket'), addFromZeva }),
+    [tickets, openZeva, addFromZeva],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

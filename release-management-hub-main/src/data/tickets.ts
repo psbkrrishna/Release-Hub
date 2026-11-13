@@ -25,6 +25,8 @@ export interface Ticket {
   module: string;
   /** The conversation, oldest first: [who, message]. */
   chat: Array<[string, string]>;
+  /** Raised in this session, so it is not one of the tickets waiting on support. */
+  fresh?: boolean;
 }
 
 export const groupOf = (raw: TicketRaw): TicketGroup =>

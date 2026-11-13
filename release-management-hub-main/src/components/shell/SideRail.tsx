@@ -57,6 +57,13 @@ const SideRail = ({
     document.documentElement.style.setProperty('--rail-w', open ? '279px' : '64px');
   }, [open]);
 
+  /* Zēva folds the rail away when it opens, as the design does. */
+  useEffect(() => {
+    const fold = () => { try { localStorage.setItem('zw-rail-open', '0'); } catch { /* storage blocked */ } setOpen(false); setTip(null); setMore(null); };
+    window.addEventListener('zw:collapse-rail', fold);
+    return () => window.removeEventListener('zw:collapse-rail', fold);
+  }, []);
+
   /* How many of the nine app rows fit, with the rail's fixed furniture
      (padding, bottom pair, divider, collapse toggle) taken out first. */
   const measure = useCallback(() => {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowRight, Bell, CaretDown, CaretRight, CircleNotch, Gift, Globe, RocketLaunch, UserCircle, VideoCamera, X,
+  ArrowRight, Bell, CaretDown, CaretRight, Check, CircleNotch, Gift, Globe, RocketLaunch, UserCircle, VideoCamera, X,
 } from '@phosphor-icons/react';
 import Hoverable from '@/components/primitives/Hoverable';
 import { useFeatureStore } from '@/components/FeatureStore';
@@ -112,7 +112,7 @@ const WhatsNew = () => {
                   {webinar.when} · <span style={{ color: 'var(--succ-text)', fontWeight: 600 }}>{webinar.countdown}</span>
                 </span>
               </span>
-              <RegisterButton onClick={() => { register(); }} label={regLabel} loading={registering} />
+              <RegisterButton onClick={() => { setOpen(false); register(); }} label={regLabel} loading={registering} />
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -217,7 +217,7 @@ export const TopBar = ({ onZeva, zevaOpen }: { onZeva: () => void; zevaOpen: boo
 export const WebinarBanner = () => {
   const navigate = useNavigate();
   const { visibleFeatures } = useFeatureStore();
-  const { showBanner, webinar, month, dismissBanner, register, regLabel, registering } = useShell();
+  const { showBanner, webinar, month, dismissBanner, register, regLabel, registering, registered } = useShell();
   if (!showBanner || !webinar) return null;
   const n = visibleFeatures.filter((f) => f.published && f.releaseMonth === month).length;
   return (
@@ -235,6 +235,7 @@ export const WebinarBanner = () => {
       <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         <b style={{ color: 'var(--tx)', fontWeight: 700 }}>{webinar.title}</b> · live webinar on {webinar.when} ·{' '}
         <span style={{ color: 'var(--tx)', fontWeight: 600 }}>{webinar.countdown}</span>
+        {registered && <span style={{ color: 'var(--succ-text)', fontWeight: 600 }}> · You're registered</span>}
       </span>
       <Hoverable
         as="button"
@@ -245,7 +246,19 @@ export const WebinarBanner = () => {
       >
         View {n} {month.split(' ')[0]} features
       </Hoverable>
-      <RegisterButton onClick={register} label={regLabel} loading={registering} />
+      {registered ? (
+        <Hoverable
+          as="button"
+          type="button"
+          onClick={register}
+          style={{ height: 28, padding: '0 12px', borderRadius: 8, border: '1px solid var(--succ-border)', background: 'var(--card)', color: 'var(--succ-text)', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, flex: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          hoverStyle={{ background: 'var(--succ-softHover)' }}
+        >
+          <Check size={14} weight="bold" />{regLabel}
+        </Hoverable>
+      ) : (
+        <RegisterButton onClick={register} label={regLabel} loading={registering} />
+      )}
       <Hoverable
         as="button"
         type="button"
